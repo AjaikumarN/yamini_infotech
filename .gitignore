@@ -1,0 +1,94 @@
+# ===============================================
+# Yamini Infotech ERP - Root .gitignore
+# ===============================================
+
+# ============ Environment & Secrets ============
+.env
+.env.local
+.env.*.local
+.env.production
+.env.staging
+
+# ============ Python ============
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ============ Node.js / React ============
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+
+# ============ Flutter / Dart ============
+# Build outputs
+**/build/
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/.packages
+
+# Android
+**/android/.gradle/
+**/android/local.properties
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+**/android/**/GeneratedPluginRegistrant.java
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/engine/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# ============ IDE / Editor ============
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# ============ OS ============
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ============ Database ============
+*.db
+*.sqlite
+*.sqlite3
+
+# ============ Logs ============
+*.log
+logs/
+
+# ============ Build Artifacts ============
+*.apk
+*.ipa
+*.aab
+*.app
+
+# ============ Misc ============
+*.backup
+*.bak
+PyWhatKit_DB.txt

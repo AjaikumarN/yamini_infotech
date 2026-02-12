@@ -1,0 +1,203 @@
+/**
+ * Able Pro Dashboard Layout Styles
+ * SCOPED to .able-dashboard to prevent global pollution
+ * All classes prefixed with .able-
+ */
+
+/* Main Dashboard Container */
+.able-dashboard {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #f5f7fa;
+  position: relative;
+}
+
+/* Reset box-sizing within dashboard scope */
+.able-dashboard *,
+.able-dashboard *::before,
+.able-dashboard *::after {
+  box-sizing: border-box;
+}
+
+/* Sidebar Container */
+.able-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 100;
+}
+
+.able-sidebar.collapsed {
+  width: 70px;
+}
+
+/* Sidebar Scrollbar Styling */
+.able-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.able-sidebar::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.able-sidebar::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.able-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Content Area (Right side) */
+.able-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0; /* Prevent flex overflow */
+  margin-left: 50px; /* Fixed sidebar width */
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Top Bar */
+.able-topbar {
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 16px;
+}
+
+/* Main Content Area (Scrollable) */
+.able-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  width: 100%;
+}
+
+/* Inner Container for Max Width */
+.able-main-inner {
+  max-width: 100%;
+  margin: 0 auto;
+  width: 100%;
+  min-height: 100%;
+}
+
+/* Ensure all child content fills width */
+.able-main-inner > * {
+  width: 100%;
+}
+
+/* Mobile Overlay (when sidebar open on mobile) */
+.able-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Responsive Behavior */
+@media (max-width: 768px) {
+  .able-sidebar {
+    position: fixed;
+    left: -260px;
+    height: 100vh;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .able-sidebar.open {
+    left: 0;
+  }
+
+  .able-sidebar.collapsed {
+    width: 260px; /* Full width on mobile even when "collapsed" */
+  }
+  
+  .able-overlay.show {
+    display: block;
+  }
+
+  .able-main {
+    padding: 16px;
+  }
+
+  .able-topbar {
+    padding: 0 16px;
+  }
+
+  /* No margin on mobile - sidebar is overlay */
+  .able-content {
+    margin-left: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .able-main {
+    padding: 12px;
+  }
+
+  .able-topbar {
+    height: 56px;
+    padding: 0 12px;
+  }
+}
+
+/* Tablet Optimization */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .able-sidebar {
+    width: 220px;
+  }
+
+  .able-sidebar.collapsed {
+    width: 70px;
+  }
+
+  .able-main {
+    padding: 20px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .able-sidebar,
+  .able-topbar {
+    display: none;
+  }
+
+  .able-main {
+    padding: 0;
+  }
+
+  .able-dashboard {
+    height: auto;
+    overflow: visible;
+  }
+}

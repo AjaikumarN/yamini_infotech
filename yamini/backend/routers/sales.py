@@ -1,0 +1,604 @@
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from typing import List, Optional
+from datetime import datetime, timedelta, date
+import schemas
+import crud
+import models
+import auth
+from database import get_db
+import os
+import shutil
+from pathlib import Path
+
+router = APIRouter(prefix="/api/sales", tags=["Sales"])
+
+@router.get("/")
+def get_all_sales(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get all sales records (for office staff and admin)"""
+    # Return empty list for now - implement based on your sales table structure
+    return []
+
+@router.post("/calls")
+def create_sales_call(
+    call: schemas.SalesCallCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_attendance_today)
+):
+    """Create a sales call record (Salesman or Reception) - Attendance required for salesmen"""
+    if current_user.role not in [models.UserRole.SALESMAN, models.UserRole.RECEPTION, models.UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only salesmen or reception can create calls")
+    
+    # If reception is logging the call, set salesman_id to None or a default
+    salesman_id = current_user.id if current_user.role == models.UserRole.SALESMAN else None
+    
+    return crud.create_sales_call(db=db, call=call, salesman_id=salesman_id)
+
+@router.post("/visits")
+def create_shop_visit(
+    visit: schemas.ShopVisitCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_attendance_today)
+):
+    """Create a shop visit record - Attendance required"""
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can create visits")
+    
+    return crud.create_shop_visit(db=db, visit=visit, salesman_id=current_user.id)
+
+@router.get("/my-calls")
+def get_my_calls(
+    user_id: Optional[int] = None,
+    today_only: bool = False,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get calls for salesman (SALESMAN or ADMIN viewing)"""
+    # Allow admin to view any salesman's calls by passing user_id
+    if current_user.role == models.UserRole.ADMIN and user_id:
+        target_user_id = user_id
+    elif current_user.role == models.UserRole.SALESMAN:
+        target_user_id = current_user.id
+    else:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    date = None
+    if today_only:
+        date = datetime.utcnow().replace(hour=0, minute=0, second=0)
+    
+    return crud.get_sales_calls_by_salesman(db, salesman_id=target_user_id, date=date)
+
+@router.get("/calls")
+def get_all_calls(
+    today: bool = False,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get all calls (Reception/Admin only)"""
+    if current_user.role not in [models.UserRole.RECEPTION, models.UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    query = db.query(models.SalesCall)
+    
+    if today:
+        today_date = date.today()
+        query = query.filter(func.date(models.SalesCall.call_date) == today_date)
+    
+    calls = query.order_by(models.SalesCall.call_date.desc()).all()
+    return calls
+
+@router.put("/calls/{call_id}/complete")
+def mark_call_completed(
+    call_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Mark a call as completed by changing outcome to 'completed'"""
+    if current_user.role not in [models.UserRole.SALESMAN, models.UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only salesmen can complete calls")
+    
+    call = db.query(models.SalesCall).filter(models.SalesCall.id == call_id).first()
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    # Verify ownership (unless admin)
+    if current_user.role == models.UserRole.SALESMAN and call.salesman_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only complete your own calls")
+    
+    # Update outcome to 'completed'
+    call.outcome = 'completed'
+    db.commit()
+    db.refresh(call)
+    
+    return call
+
+@router.get("/my-visits")
+def get_my_visits(
+    limit: int = 30,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get visits for current salesman"""
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+async def mark_attendance(
+    time: str = Form(...),
+    location: str = Form(...),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    status: str = Form("Present"),
+    photo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Mark attendance with photo upload"""
+    
+    # Create uploads directory if it doesn't exist
+    upload_dir = Path("uploads/attendance")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_extension = os.path.splitext(photo.filename)[1]
+    filename = f"{current_user.id}_{timestamp}{file_extension}"
+    file_path = upload_dir / filename
+    
+    # Save uploaded file
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(photo.file, buffer)
+    
+    # Create attendance record
+    attendance_data = schemas.AttendanceCreate(
+        time=time,
+        location=location,
+        latitude=latitude,
+        longitude=longitude,
+        status=status,
+        photo_path=str(file_path)
+    )
+    
+    return crud.create_attendance(db=db, attendance=attendance_data, employee_id=current_user.id)
+
+@router.get("/my-attendance")
+def get_my_attendance(
+    today_only: bool = False,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get attendance records for current user"""
+    date = None
+    if today_only:
+        date = datetime.utcnow()
+    
+    return crud.get_attendance_by_employee(db, employee_id=current_user.id, date=date)
+
+# ENHANCED SALESMAN FEATURES
+
+@router.get("/salesman/analytics/summary", response_model=schemas.SalesmanAnalytics)
+def get_salesman_analytics_summary(
+    user_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get analytics summary for salesman (SALESMAN or ADMIN viewing)"""
+    # Allow admin to view any salesman's analytics by passing user_id
+    if current_user.role == models.UserRole.ADMIN and user_id:
+        target_user_id = user_id
+    elif current_user.role == models.UserRole.SALESMAN:
+        target_user_id = current_user.id
+    else:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    # Assigned enquiries
+    assigned_enquiries = db.query(models.Enquiry).filter(
+        models.Enquiry.assigned_to == target_user_id
+    ).count()
+    
+    # Pending followups (today or overdue)
+    pending_followups = db.query(models.SalesFollowUp).filter(
+        models.SalesFollowUp.salesman_id == target_user_id,
+        models.SalesFollowUp.status == "Pending",
+        models.SalesFollowUp.followup_date <= datetime.utcnow() + timedelta(days=1)
+    ).count()
+    
+    # Converted enquiries
+    converted_enquiries = db.query(models.Enquiry).filter(
+        models.Enquiry.assigned_to == current_user.id,
+        models.Enquiry.status == "CONVERTED"
+    ).count()
+    
+    # Revenue this month (from approved orders)
+    today = date.today()
+    first_day = today.replace(day=1)
+    
+    revenue_this_month = db.query(func.sum(models.Order.total_amount)).join(
+        models.Enquiry, models.Order.enquiry_id == models.Enquiry.id
+    ).filter(
+        models.Enquiry.assigned_to == current_user.id,
+        models.Order.status == "APPROVED",
+        models.Order.created_at >= first_day
+    ).scalar() or 0
+    
+    # Missed followups
+    missed_followups = db.query(models.SalesFollowUp).filter(
+        models.SalesFollowUp.salesman_id == current_user.id,
+        models.SalesFollowUp.status == "Pending",
+        models.SalesFollowUp.followup_date < datetime.utcnow()
+    ).count()
+    
+    # Orders pending approval
+    orders_pending = db.query(models.Order).filter(
+        models.Order.salesman_id == current_user.id,
+        models.Order.status == "PENDING"
+    ).count()
+    
+    # Conversion rate
+    conversion_rate = (converted_enquiries / assigned_enquiries * 100) if assigned_enquiries > 0 else 0
+    
+    # Average closing days
+    converted = db.query(models.Enquiry).filter(
+        models.Enquiry.assigned_to == current_user.id,
+        models.Enquiry.status == "CONVERTED"
+    ).all()
+    
+    avg_closing_days = 0
+    if converted:
+        total_days = sum([(e.last_follow_up or e.created_at) - e.created_at for e in converted], timedelta()).days
+        avg_closing_days = total_days / len(converted) if len(converted) > 0 else 0
+    
+    return {
+        "assigned_enquiries": assigned_enquiries,
+        "pending_followups": pending_followups,
+        "converted_enquiries": converted_enquiries,
+        "revenue_this_month": revenue_this_month,
+        "missed_followups": missed_followups,
+        "orders_pending_approval": orders_pending,
+        "conversion_rate": round(conversion_rate, 2),
+        "avg_closing_days": round(avg_closing_days, 2)
+    }
+
+@router.get("/salesman/enquiries")
+def get_salesman_enquiries(
+    status: str = None,
+    priority: str = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_attendance_today)
+):
+    """Get enquiries assigned to current salesman - Attendance required"""
+    
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    query = db.query(models.Enquiry).filter(models.Enquiry.assigned_to == current_user.id)
+    
+    if status:
+        query = query.filter(models.Enquiry.status == status)
+    if priority:
+        query = query.filter(models.Enquiry.priority == priority)
+    
+    return query.order_by(models.Enquiry.created_at.desc()).all()
+
+@router.put("/salesman/enquiries/{enquiry_id}")
+def update_salesman_enquiry(
+    enquiry_id: int,
+    enquiry_update: schemas.EnquiryUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_attendance_today)
+):
+    """Update enquiry - Salesman can update their own enquiries - Attendance required"""
+    
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can update enquiries")
+    
+    enquiry = db.query(models.Enquiry).filter(models.Enquiry.id == enquiry_id).first()
+    if not enquiry:
+        raise HTTPException(status_code=404, detail="Enquiry not found")
+    
+    if enquiry.assigned_to != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only update your own enquiries")
+    
+    # Update allowed fields
+    if enquiry_update.status is not None:
+        enquiry.status = enquiry_update.status
+        if enquiry_update.status in ["CONVERTED", "LOST"]:
+            enquiry.last_follow_up = datetime.utcnow()
+    
+    if enquiry_update.priority is not None:
+        enquiry.priority = enquiry_update.priority
+    
+    if enquiry_update.next_follow_up is not None:
+        enquiry.next_follow_up = enquiry_update.next_follow_up
+    
+    if enquiry_update.notes is not None:
+        enquiry.notes = enquiry_update.notes
+    
+    db.commit()
+    db.refresh(enquiry)
+    
+    return enquiry
+
+@router.get("/salesman/followups/today")
+def get_today_followups(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_attendance_today)
+):
+    """Get today's followups for current salesman - Attendance required"""
+    
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0)
+    today_end = today_start + timedelta(days=1)
+    
+    return db.query(models.SalesFollowUp).filter(
+        models.SalesFollowUp.salesman_id == current_user.id,
+        models.SalesFollowUp.status == "Pending",
+        models.SalesFollowUp.followup_date >= today_start,
+        models.SalesFollowUp.followup_date < today_end
+    ).all()
+
+
+# ==========================================
+# DAILY REPORT ENDPOINTS (ENHANCED)
+# ==========================================
+
+@router.get("/salesman/daily-report/today", response_model=schemas.DailyReportPrefill)
+def get_daily_report_prefill(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    GET prefill data for daily report screen.
+    Returns:
+    - Attendance status (gate check)
+    - Auto-derived metrics (calls, meetings, orders)
+    - Whether report is already submitted
+    """
+    
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    today = date.today()
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = today_start + timedelta(days=1)
+    
+    # Check attendance (MANDATORY GATE)
+    attendance = db.query(models.Attendance).filter(
+        models.Attendance.employee_id == current_user.id,
+        func.date(models.Attendance.date) == today
+    ).first()
+    
+    attendance_marked = attendance is not None
+    attendance_id = attendance.id if attendance else None
+    
+    # Check if report already submitted
+    existing_report = db.query(models.DailyReport).filter(
+        models.DailyReport.salesman_id == current_user.id,
+        models.DailyReport.report_date == today
+    ).first()
+    
+    already_submitted = existing_report is not None and existing_report.report_submitted
+    
+    # AUTO-DERIVE METRICS from backend data (NOT manual input)
+    
+    # 1. Calls Made - from SalesCall table (uses call_date)
+    calls_made = db.query(models.SalesCall).filter(
+        models.SalesCall.salesman_id == current_user.id,
+        models.SalesCall.call_date >= today_start,
+        models.SalesCall.call_date < today_end
+    ).count()
+    
+    # 2. Meetings/Visits Done - from ShopVisit table
+    meetings_done = db.query(models.ShopVisit).filter(
+        models.ShopVisit.salesman_id == current_user.id,
+        models.ShopVisit.created_at >= today_start,
+        models.ShopVisit.created_at < today_end
+    ).count()
+    
+    # 3. Orders Closed - from Order table (created today)
+    orders_closed = db.query(models.Order).filter(
+        models.Order.salesman_id == current_user.id,
+        models.Order.created_at >= today_start,
+        models.Order.created_at < today_end
+    ).count()
+    
+    return schemas.DailyReportPrefill(
+        date=today,
+        attendance_marked=attendance_marked,
+        attendance_id=attendance_id,
+        already_submitted=already_submitted,
+        existing_report_id=existing_report.id if existing_report else None,
+        calls_made=calls_made,
+        meetings_done=meetings_done,
+        orders_closed=orders_closed,
+        achievements=existing_report.achievements if existing_report else None,
+        challenges=existing_report.challenges if existing_report else None,
+        tomorrow_plan=existing_report.tomorrow_plan if existing_report else None,
+        submission_time=existing_report.submission_time if existing_report else None
+    )
+
+
+@router.get("/salesman/daily-report")
+def get_today_daily_report(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get today's daily report for current salesman (legacy endpoint)"""
+    
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    today = date.today()
+    
+    report = db.query(models.DailyReport).filter(
+        models.DailyReport.salesman_id == current_user.id,
+        models.DailyReport.report_date == today
+    ).first()
+    
+    # Return null if no report exists for today (better UX)
+    return report
+
+
+@router.post("/salesman/daily-report", response_model=schemas.DailyReport)
+def submit_daily_report(
+    report: schemas.DailyReportCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_attendance_today)
+):
+    """
+    Submit daily report - Salesman only
+    
+    RULES (LOCKED):
+    1. Attendance MUST be marked for today
+    2. ONE report per day (no duplicates)
+    3. Report is IMMUTABLE after submission (no edit/delete)
+    4. Metrics are AUTO-DERIVED (not from frontend)
+    5. Only manual fields: achievements, challenges, tomorrow_plan
+    """
+    
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can submit daily reports")
+    
+    today = date.today()
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = today_start + timedelta(days=1)
+    
+    # GATE 1: Check attendance is marked for TODAY
+    attendance = db.query(models.Attendance).filter(
+        models.Attendance.employee_id == current_user.id,
+        func.date(models.Attendance.date) == today
+    ).first()
+    
+    if not attendance:
+        raise HTTPException(
+            status_code=400, 
+            detail="You must mark attendance before submitting daily report"
+        )
+    
+    # GATE 2: Check for duplicate report (IMMUTABLE - no overwrites)
+    existing_report = db.query(models.DailyReport).filter(
+        models.DailyReport.salesman_id == current_user.id,
+        models.DailyReport.report_date == today
+    ).first()
+    
+    if existing_report and existing_report.report_submitted:
+        raise HTTPException(
+            status_code=400, 
+            detail="Daily report already submitted for today. Reports cannot be edited."
+        )
+    
+    # GATE 3: Validate required fields
+    if not report.achievements or not report.achievements.strip():
+        raise HTTPException(status_code=400, detail="Achievements field is required")
+    
+    if not report.challenges or not report.challenges.strip():
+        raise HTTPException(status_code=400, detail="Challenges field is required")
+    
+    if not report.tomorrow_plan or not report.tomorrow_plan.strip():
+        raise HTTPException(status_code=400, detail="Tomorrow's plan is required")
+    
+    # AUTO-DERIVE METRICS (backend calculated - not from frontend)
+    calls_made = db.query(models.SalesCall).filter(
+        models.SalesCall.salesman_id == current_user.id,
+        models.SalesCall.call_date >= today_start,
+        models.SalesCall.call_date < today_end
+    ).count()
+    
+    meetings_done = db.query(models.ShopVisit).filter(
+        models.ShopVisit.salesman_id == current_user.id,
+        models.ShopVisit.created_at >= today_start,
+        models.ShopVisit.created_at < today_end
+    ).count()
+    
+    orders_closed = db.query(models.Order).filter(
+        models.Order.salesman_id == current_user.id,
+        models.Order.created_at >= today_start,
+        models.Order.created_at < today_end
+    ).count()
+    
+    enquiries_generated = db.query(models.Enquiry).filter(
+        models.Enquiry.assigned_to == current_user.id,
+        models.Enquiry.created_at >= today_start,
+        models.Enquiry.created_at < today_end
+    ).count()
+    
+    # Create report with auto-derived metrics + manual fields
+    db_report = models.DailyReport(
+        salesman_id=current_user.id,
+        report_date=today,
+        
+        # Auto-derived (backend calculated)
+        calls_made=calls_made,
+        shops_visited=meetings_done,
+        enquiries_generated=enquiries_generated,
+        sales_closed=orders_closed,
+        
+        # Manual input (from salesman)
+        achievements=report.achievements.strip(),
+        challenges=report.challenges.strip(),
+        tomorrow_plan=report.tomorrow_plan.strip(),
+        report_notes=report.report_notes.strip() if report.report_notes else None,
+        
+        # Metadata
+        report_submitted=True,
+        submission_time=datetime.utcnow(),
+        attendance_id=attendance.id
+    )
+    
+    db.add(db_report)
+    db.commit()
+    db.refresh(db_report)
+    
+    return db_report
+
+
+@router.get("/salesman/daily-report/{report_date}")
+def get_daily_report(
+    report_date: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get daily report for specific date"""
+    
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    date_obj = datetime.fromisoformat(report_date).date()
+    
+    report = db.query(models.DailyReport).filter(
+        models.DailyReport.salesman_id == current_user.id,
+        models.DailyReport.report_date == date_obj
+    ).first()
+    
+    if not report:
+        # Return null instead of 404 for better UX
+        return None
+    
+    return report
+
+@router.get("/salesman/funnel", response_model=schemas.SalesFunnelData)
+def get_salesman_funnel(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Get sales funnel for current salesman"""
+    
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    query = db.query(models.Enquiry).filter(models.Enquiry.assigned_to == current_user.id)
+    
+    return {
+        "new": query.filter(models.Enquiry.status == "NEW").count(),
+        "contacted": query.filter(models.Enquiry.status == "CONTACTED").count(),
+        "followup": query.filter(models.Enquiry.status == "FOLLOW_UP").count(),
+        "quoted": query.filter(models.Enquiry.status == "QUOTED").count(),
+        "converted": query.filter(models.Enquiry.status == "CONVERTED").count(),
+        "lost": query.filter(models.Enquiry.status == "LOST").count()
+    }
+

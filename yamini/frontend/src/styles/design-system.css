@@ -1,0 +1,661 @@
+/* ============================================================
+   ERP DESIGN SYSTEM - Global UI Standards
+   ============================================================
+   
+   This file defines the enterprise-grade design system.
+   All components must use these variables for consistency.
+   
+   ============================================================ */
+
+:root {
+  /* ============================================================
+     1. TYPOGRAPHY SCALE
+     ============================================================ */
+  
+  /* Font Family - One primary font */
+  --font-primary: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Font Sizes - Consistent scale */
+  --text-page-title: 28px;      /* Page headers */
+  --text-section-title: 20px;   /* Section headers */
+  --text-card-title: 16px;      /* Card titles */
+  --text-body: 14px;            /* Body text */
+  --text-body-sm: 13px;         /* Table cells */
+  --text-helper: 12px;          /* Helper/caption text */
+  --text-badge: 11px;           /* Status badges */
+  
+  /* Font Weights */
+  --weight-bold: 700;
+  --weight-semibold: 600;
+  --weight-medium: 500;
+  --weight-regular: 400;
+  
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ============================================================
+     2. COLOR SYSTEM
+     ============================================================ */
+  
+  /* Brand Colors */
+  --color-primary: #0891B2;        /* Cyan 600 - Main brand */
+  --color-primary-light: #22D3EE;  /* Cyan 400 - Hover/accent */
+  --color-primary-dark: #0E7490;   /* Cyan 700 - Active */
+  --color-primary-bg: #ECFEFF;     /* Cyan 50 - Background tint */
+  
+  /* Status Colors - STRICT RULES */
+  --color-success: #059669;        /* Green - PAID, APPROVED, COMPLETED */
+  --color-success-light: #D1FAE5;  /* Green bg */
+  
+  --color-warning: #D97706;        /* Amber - PENDING, IN_PROGRESS */
+  --color-warning-light: #FEF3C7;  /* Amber bg */
+  
+  --color-danger: #DC2626;         /* Red - FAILED, REJECTED, OVERDUE */
+  --color-danger-light: #FEE2E2;   /* Red bg */
+  
+  --color-info: #2563EB;           /* Blue - NEW, ASSIGNED, INFO */
+  --color-info-light: #DBEAFE;     /* Blue bg */
+  
+  /* Neutral Colors */
+  --color-text-primary: #111827;   /* Gray 900 - Main text */
+  --color-text-secondary: #6B7280; /* Gray 500 - Secondary text */
+  --color-text-muted: #9CA3AF;     /* Gray 400 - Muted/disabled */
+  --color-text-inverse: #FFFFFF;   /* White - On dark backgrounds */
+  
+  /* Background Colors */
+  --color-bg-page: #F9FAFB;        /* Gray 50 - Page background */
+  --color-bg-card: #FFFFFF;        /* White - Card background */
+  --color-bg-hover: #F3F4F6;       /* Gray 100 - Hover state */
+  --color-bg-selected: #E0F2FE;    /* Sky 100 - Selected state */
+  
+  /* Border Colors */
+  --color-border: #E5E7EB;         /* Gray 200 - Default border */
+  --color-border-light: #F3F4F6;   /* Gray 100 - Subtle border */
+  --color-border-focus: var(--color-primary);
+
+  /* ============================================================
+     3. SPACING SYSTEM
+     ============================================================ */
+  
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  
+  /* Component-specific spacing */
+  --card-padding: 20px;
+  --card-padding-sm: 16px;
+  --table-cell-padding: 12px 16px;
+  --form-gap: 16px;
+  --section-gap: 24px;
+
+  /* ============================================================
+     4. BORDER RADIUS
+     ============================================================ */
+  
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ============================================================
+     5. SHADOWS
+     ============================================================ */
+  
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  /* ============================================================
+     6. TRANSITIONS
+     ============================================================ */
+  
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* ============================================================
+   STATUS BADGE SYSTEM
+   ============================================================
+   
+   Usage: <span class="erp-badge erp-badge--paid">PAID</span>
+   
+   Status mapping:
+   - paid, approved, completed, success → Green
+   - pending, in-progress, assigned → Amber
+   - failed, rejected, overdue, cancelled → Red
+   - new, info, default → Blue
+   
+   ============================================================ */
+
+.erp-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-badge);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Success States */
+.erp-badge--paid,
+.erp-badge--approved,
+.erp-badge--completed,
+.erp-badge--success,
+.erp-badge--active {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+/* Warning States */
+.erp-badge--pending,
+.erp-badge--in-progress,
+.erp-badge--assigned,
+.erp-badge--warning {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+/* Danger States */
+.erp-badge--failed,
+.erp-badge--rejected,
+.erp-badge--overdue,
+.erp-badge--cancelled,
+.erp-badge--danger {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* Info States */
+.erp-badge--new,
+.erp-badge--info,
+.erp-badge--open {
+  background: var(--color-info-light);
+  color: var(--color-info);
+}
+
+/* Neutral */
+.erp-badge--neutral,
+.erp-badge--draft {
+  background: var(--color-bg-hover);
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+   TYPOGRAPHY CLASSES
+   ============================================================ */
+
+.erp-page-title {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  margin: 0 0 var(--space-lg) 0;
+}
+
+.erp-section-title {
+  font-size: var(--text-section-title);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  margin: 0 0 var(--space-md) 0;
+}
+
+.erp-card-title {
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.erp-body {
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-normal);
+}
+
+.erp-helper {
+  font-size: var(--text-helper);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.erp-muted {
+  color: var(--color-text-muted);
+}
+
+/* ============================================================
+   CARD COMPONENT
+   ============================================================ */
+
+.erp-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--card-padding);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition-normal);
+}
+
+.erp-card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.erp-card--compact {
+  padding: var(--card-padding-sm);
+}
+
+.erp-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.erp-card__body {
+  /* Body takes remaining card space */
+  flex: 1;
+}
+
+.erp-card__footer {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* ============================================================
+   TABLE STYLES
+   ============================================================ */
+
+.erp-table-container {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.erp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body-sm);
+}
+
+.erp-table thead {
+  background: var(--color-bg-page);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.erp-table th {
+  padding: var(--table-cell-padding);
+  text-align: left;
+  font-size: var(--text-helper);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.erp-table th.text-right,
+.erp-table td.text-right {
+  text-align: right;
+}
+
+.erp-table th.text-center,
+.erp-table td.text-center {
+  text-align: center;
+}
+
+.erp-table td {
+  padding: var(--table-cell-padding);
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border-light);
+  vertical-align: middle;
+}
+
+/* Zebra striping */
+.erp-table--striped tbody tr:nth-child(even) {
+  background: var(--color-bg-page);
+}
+
+.erp-table tbody tr:hover {
+  background: var(--color-bg-hover);
+}
+
+/* Numeric columns */
+.erp-table .numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   FORM ELEMENTS
+   ============================================================ */
+
+.erp-form-group {
+  margin-bottom: var(--form-gap);
+}
+
+.erp-label {
+  display: block;
+  font-size: var(--text-body-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.erp-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: var(--text-body);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.erp-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1);
+}
+
+.erp-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* ============================================================
+   BUTTON SYSTEM
+   ============================================================ */
+
+.erp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 10px 18px;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.erp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.erp-btn--primary {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.erp-btn--primary:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.erp-btn--secondary {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.erp-btn--secondary:hover:not(:disabled) {
+  background: var(--color-border);
+}
+
+.erp-btn--success {
+  background: var(--color-success);
+  color: var(--color-text-inverse);
+}
+
+.erp-btn--danger {
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+}
+
+.erp-btn--ghost {
+  background: transparent;
+  color: var(--color-primary);
+}
+
+.erp-btn--ghost:hover:not(:disabled) {
+  background: var(--color-primary-bg);
+}
+
+.erp-btn--sm {
+  padding: 6px 12px;
+  font-size: var(--text-body-sm);
+}
+
+.erp-btn--lg {
+  padding: 14px 24px;
+  font-size: var(--text-card-title);
+}
+
+/* ============================================================
+   LOADING, EMPTY, ERROR STATES
+   ============================================================ */
+
+.erp-empty-state {
+  text-align: center;
+  padding: var(--space-3xl) var(--space-xl);
+  color: var(--color-text-secondary);
+}
+
+.erp-empty-state__icon {
+  font-size: 48px;
+  margin-bottom: var(--space-lg);
+  opacity: 0.5;
+}
+
+.erp-empty-state__title {
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-sm);
+}
+
+.erp-empty-state__message {
+  font-size: var(--text-body);
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.erp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl);
+}
+
+.erp-loading__spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: erp-spin 0.8s linear infinite;
+}
+
+@keyframes erp-spin {
+  to { transform: rotate(360deg); }
+}
+
+.erp-error {
+  background: var(--color-danger-light);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  color: var(--color-danger);
+}
+
+.erp-error__message {
+  font-weight: var(--weight-medium);
+}
+
+.erp-error__retry {
+  margin-top: var(--space-md);
+}
+
+/* ============================================================
+   FILTER BAR
+   ============================================================ */
+
+.erp-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--color-bg-page);
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
+
+.erp-filter-bar__count {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  margin-left: auto;
+}
+
+/* ============================================================
+   KPI / SUMMARY CARDS
+   ============================================================ */
+
+.erp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--section-gap);
+}
+
+.erp-kpi-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--card-padding);
+  transition: all var(--transition-normal);
+}
+
+.erp-kpi-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.erp-kpi-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.erp-kpi-card__icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  font-size: 22px;
+}
+
+.erp-kpi-card__icon--primary {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.erp-kpi-card__icon--success {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.erp-kpi-card__icon--warning {
+  background: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.erp-kpi-card__icon--danger {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.erp-kpi-card__value {
+  font-size: 32px;
+  font-weight: var(--weight-bold);
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+.erp-kpi-card__label {
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-xs);
+}
+
+.erp-kpi-card__trend {
+  font-size: var(--text-helper);
+  font-weight: var(--weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.erp-kpi-card__trend--up {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.erp-kpi-card__trend--down {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+.text-success { color: var(--color-success) !important; }
+.text-warning { color: var(--color-warning) !important; }
+.text-danger { color: var(--color-danger) !important; }
+.text-info { color: var(--color-info) !important; }
+.text-muted { color: var(--color-text-muted) !important; }
+
+.bg-success-light { background: var(--color-success-light) !important; }
+.bg-warning-light { background: var(--color-warning-light) !important; }
+.bg-danger-light { background: var(--color-danger-light) !important; }
+.bg-info-light { background: var(--color-info-light) !important; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mb-sm { margin-bottom: var(--space-sm) !important; }
+.mb-md { margin-bottom: var(--space-md) !important; }
+.mb-lg { margin-bottom: var(--space-lg) !important; }
+.mb-xl { margin-bottom: var(--space-xl) !important; }
+
+.mt-0 { margin-top: 0 !important; }
+.mt-sm { margin-top: var(--space-sm) !important; }
+.mt-md { margin-top: var(--space-md) !important; }
+.mt-lg { margin-top: var(--space-lg) !important; }
+
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }

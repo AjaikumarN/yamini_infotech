@@ -1,0 +1,38 @@
+Attached HTML and CSS Context
+
+<flutter-view flt-view-id="0" tabindex="0" style="position: absolute; inset: 0px; width: 836px; height: 461px;"><flt-glass-pane></flt-glass-pane><flt-text-editing-host></flt-text-editing-host><flt-semantics-host style="position: absolute; transform-origin: 0px 0px 0px; transform: scale(0.5);"></flt-semantics-host><style id="flt-text-editing-stylesheet">flutter-view flt-scene-host {  font: normal normal 14px sans-serif;}flutter-view flt-semantics input[type=range] {  appearance: none;  -webkit-appearance: none;  width: 100%;  position: absolute;  border: none;  top: 0;  right: 0;  bottom: 0;  left: 0;}flutter-view input::selection {  background-color: transparent;}flutter-view textarea::selection {  background-color: transparent;}flutter-view flt-semantics input,flutter-view flt-semantics textarea,flutter-view flt-semantics [contentEditable="true"] {  caret-color: transparent;}flutter-view .flt-text-editing::placeholder {  opacity: 0;}flutter-view:focus { outline: none;}flutter-view .transparentTextEditing:-webkit-autofill,flutter-view .transparentTextEditing:-webkit-autofill:hover,flutter-view .transparentTextEditing:-webkit-autofill:focus,flutter-view .transparentTextEditing:-webkit-autofill:active {  opacity: 0 !important;}</style></flutter-view>
+
+
+/* Inline style */
+element {
+  position: absolute;
+  inset: 0px;
+  width: 836px;
+  height: 461px;
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  left: 0px;
+  width: 836px;
+  height: 461px;
+}
+
+/* Inherited from ancestor level 1 (user-agent) */
+body {
+  display: block;
+  margin-top: 8px;
+  margin-right: 8px;
+  margin-bottom: 8px;
+  margin-left: 8px;
+}
+
+/* Inherited from ancestor level 2 (user-agent) */
+html {
+  display: block;
+}
+
+/* Inherited from ancestor level 2 (user-agent) */
+:root {
+  view-transition-name: root;
+}

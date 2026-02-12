@@ -1,0 +1,365 @@
+.location-sharing-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.location-sharing-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.location-sharing-header h2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #2c3e50;
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.location-sharing-header p {
+  color: #7f8c8d;
+  font-size: 16px;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.check-in-form {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.check-in-form h3 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+/* GPS Status Bar */
+.gps-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Device Status Bar */
+.device-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.device-status-bar .status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.device-status-bar .status-item.online {
+  background: #d4edda;
+  color: #155724;
+}
+
+.device-status-bar .status-item.offline {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.device-status-bar .status-item.normal {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.device-status-bar .status-item.low {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.device-status-bar .status-item.zone {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.gps-status-bar.searching {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+}
+
+.gps-status-bar.ready {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #28a745;
+}
+
+.gps-status-bar.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #dc3545;
+}
+
+.gps-status-bar .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #34495e;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.btn-primary,
+.btn-danger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-check-in {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+}
+
+.btn-check-in:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2980b9, #2471a3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+}
+
+.btn-check-in:disabled,
+.btn-check-in.disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-check-in .spinning {
+  animation: spin 1s linear infinite;
+}
+
+.btn-check-out {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+}
+
+.btn-check-out:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.btn-primary:disabled,
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.active-visit {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tracking-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  animation: pulse-glow 2s infinite;
+  font-size: 13px;
+}
+
+.tracking-badge.tracking {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+}
+
+.tracking-badge.error {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  animation: none;
+}
+
+.tracking-badge.idle {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(46, 204, 113, 0.8);
+  }
+}
+
+.tracking-pulse {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.3);
+  }
+}
+
+.visit-info h3 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 22px;
+}
+
+.visit-details {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row strong {
+  color: #34495e;
+  font-weight: 600;
+}
+
+.detail-row span {
+  color: #7f8c8d;
+}
+
+.location-coords span {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.info-box {
+  background: linear-gradient(135deg, #fff3cd, #ffe4a3);
+  border-left: 4px solid #ffc107;
+  padding: 20px;
+  border-radius: 8px;
+  margin-top: 30px;
+}
+
+.info-box h4 {
+  color: #856404;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.info-box ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-box li {
+  color: #856404;
+  padding: 8px 0;
+  font-size: 15px;
+}
+
+@media (max-width: 768px) {
+  .location-sharing-container {
+    padding: 15px;
+  }
+
+  .check-in-form,
+  .active-visit {
+    padding: 20px;
+  }
+
+  .location-sharing-header h2 {
+    font-size: 24px;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+}
