@@ -49,5 +49,8 @@ htmlcov/
 # Backup files
 *.backup
 *.bak
-*.txt
 output.txt
+PyWhatKit_DB.txt
+
+# Keep requirements.txt
+!requirements.txt

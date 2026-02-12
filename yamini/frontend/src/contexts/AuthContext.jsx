@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react'
 import { authAPI } from '../utils/api'
+import { getEmployeePhotoUrl } from '../config'
 
 export const AuthContext = createContext()
 
@@ -101,21 +102,8 @@ export function AuthProvider({ children }) {
   // Helper to get full photo URL
   const getPhotoUrl = (photograph) => {
     if (!photograph) return null;
-    // If it's a data URI, return it as-is
-    if (photograph.startsWith('data:')) {
-      return photograph;
-    }
-    // If it's already a full URL, return it
-    if (photograph.startsWith('http://') || photograph.startsWith('https://')) {
-      return photograph;
-    }
-    // If it's a relative path, prepend backend URL
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    if (photograph.startsWith('/uploads/')) {
-      return `${apiBase}${photograph}`;
-    }
-    // If it's just a path without leading slash
-    return `${apiBase}/uploads/employees/${photograph}`;
+    if (photograph.startsWith('data:')) return photograph;
+    return getEmployeePhotoUrl(photograph);
   };
 
   // Check for existing session on mount
