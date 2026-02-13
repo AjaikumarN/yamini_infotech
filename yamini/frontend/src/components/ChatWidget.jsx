@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { API_BASE_URL } from '../config';
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -54,7 +55,7 @@ export default function ChatWidget() {
     setIsTyping(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/chatbot/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/chatbot/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

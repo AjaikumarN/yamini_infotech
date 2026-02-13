@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiRequest } from '../utils/api';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -14,8 +14,8 @@ const ProductDetail = () => {
 
   const fetchProductDetails = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/products/${id}`);
-      setProduct(response.data);
+      const data = await apiRequest(`/api/products/${id}`);
+      setProduct(data);
     } catch (error) {
       console.error('Failed to fetch product details:', error);
     } finally {

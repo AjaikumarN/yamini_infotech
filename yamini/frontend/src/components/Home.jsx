@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { apiRequest } from '../utils/api'
 import ChatWidget from './ChatWidget'
 
 export default function Home() {
@@ -14,9 +14,9 @@ export default function Home() {
 
   const fetchFeaturedProducts = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/products')
+      const data = await apiRequest('/api/products')
       // Show first 6 products as featured
-      setFeaturedProducts(response.data.slice(0, 6))
+      setFeaturedProducts(data.slice(0, 6))
       setLoading(false)
     } catch (error) {
       console.error('Error fetching products:', error)

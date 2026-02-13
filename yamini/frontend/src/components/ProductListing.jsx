@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { apiRequest } from '../utils/api';
 import { FiPlus, FiSearch, FiGrid, FiList, FiPackage, FiEdit2, FiPhone, FiEye, FiX, FiHome, FiBriefcase, FiBook, FiShoppingBag } from 'react-icons/fi';
 
 const ProductListing = ({ mode = 'staff' }) => {
@@ -23,8 +23,8 @@ const ProductListing = ({ mode = 'staff' }) => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/products');
-      setProducts(response.data || []);
+      const data = await apiRequest('/api/products');
+      setProducts(data || []);
     } catch (error) {
       console.error('Failed to fetch products:', error);
     } finally {

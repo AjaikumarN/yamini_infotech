@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-import axios from 'axios';
+import { apiRequest } from '../utils/api';
+import { API_BASE_URL } from '../config';
 
 const AddProduct = () => {
   const { user } = useContext(AuthContext);
@@ -67,10 +68,8 @@ const AddProduct = () => {
 
   const fetchPermissions = async () => {
     try {
-      const response = await axios.get('http://127.0.0.1:8000/api/products/permissions/check', {
-        headers: { Authorization: `Bearer ${user.token}` }
-      });
-      setPermissions(response.data.permissions || []);
+      const data = await apiRequest('/api/products/permissions/check');
+      setPermissions(data.permissions || []);
     } catch (error) {
       console.error('Error fetching permissions:', error);
     }
@@ -78,8 +77,7 @@ const AddProduct = () => {
 
   const fetchProduct = async () => {
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/products/${productId}`);
-      const product = response.data;
+      const product = await apiRequest(`/api/products/${productId}`);
       
       // Parse specifications safely
       let specs = formData.specifications;
@@ -126,15 +124,12 @@ const AddProduct = () => {
 
       // Fetch internal data if user has permission
       if (permissions.includes('VIEW_INTERNAL_DATA')) {
-        const internalResponse = await axios.get(
-          `http://127.0.0.1:8000/api/products/${productId}/internal`,
-          { headers: { Authorization: `Bearer ${user.token}` } }
-        );
+        const internalData = await apiRequest(`/api/products/${productId}/internal`);
         const sanitizedInternal = {
-          purchase_cost: internalResponse.data.purchase_cost || '',
-          vendor_name: internalResponse.data.vendor_name || '',
-          stock_quantity: internalResponse.data.stock_quantity || 0,
-          internal_notes: internalResponse.data.internal_notes || '',
+          purchase_cost: internalData.purchase_cost || '',
+          vendor_name: internalData.vendor_name || '',
+          stock_quantity: internalData.stock_quantity || 0,
+          internal_notes: internalData.internal_notes || '',
         };
         setFormData(prev => ({ ...prev, ...sanitizedInternal }));
       }
@@ -223,18 +218,20 @@ const AddProduct = () => {
         stock_quantity: parseInt(formData.stock_quantity) || 0,
       };
 
-      const config = {
-        headers: { Authorization: `Bearer ${user.token}` }
-      };
-
       let savedProductId;
       if (isEdit) {
-        await axios.put(`http://127.0.0.1:8000/api/products/${productId}`, payload, config);
+        await apiRequest(`/api/products/${productId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
         savedProductId = productId;
         alert('Product updated successfully!');
       } else {
-        const response = await axios.post('http://127.0.0.1:8000/api/products/', payload, config);
-        savedProductId = response.data.id;
+        const responseData = await apiRequest('/api/products/', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        savedProductId = responseData.id;
         alert('Product created successfully!');
       }
 
@@ -245,16 +242,11 @@ const AddProduct = () => {
         imageFormData.append('is_primary', 'true');
         
         try {
-          await axios.post(
-            `http://127.0.0.1:8000/api/products/${savedProductId}/images`,
-            imageFormData,
-            {
-              headers: {
-                'Authorization': `Bearer ${user.token}`,
-                'Content-Type': 'multipart/form-data'
-              }
-            }
-          );
+          await apiRequest(`/api/products/${savedProductId}/images`, {
+            method: 'POST',
+            body: imageFormData,
+            isFormData: true,
+          });
           console.log('Image uploaded successfully');
         } catch (imgError) {
           console.error('Failed to upload image:', imgError);
