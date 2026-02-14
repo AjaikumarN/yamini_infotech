@@ -212,7 +212,7 @@ export default function HomePage() {
   );
 }
 
-/* ── Inline Track Widget ── */
+/* ── Inline Track Widget (Advanced) ── */
 function TrackWidget() {
   const [input, setInput] = useState('');
   const [result, setResult] = useState(null);
@@ -237,41 +237,68 @@ function TrackWidget() {
 
   const STATUSES = ['NEW', 'ASSIGNED', 'ON_THE_WAY', 'IN_PROGRESS', 'COMPLETED'];
 
+  const getStatusBadgeClass = (status) => {
+    if (status === 'COMPLETED') return 'completed';
+    if (['IN_PROGRESS', 'ON_THE_WAY', 'ASSIGNED'].includes(status)) return 'in-progress';
+    return 'new';
+  };
+
   return (
-    <div className="pub-track-widget">
-      <form className="track-form" onSubmit={handleTrack}>
-        <input
-          placeholder="Ticket ID or phone number"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <button type="submit" className="btn btn-primary" disabled={loading}>
-          {loading ? '...' : '🔍 Track'}
-        </button>
+    <div className="pub-track-banner">
+      <div className="track-title">
+        <h2>Track Your Service</h2>
+        <p>Enter your ticket number or phone to check status</p>
+      </div>
+
+      <form onSubmit={handleTrack}>
+        <div className="pub-track-searchbar">
+          <span className="track-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Ticket ID or phone number..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <button type="submit" className="track-btn" disabled={loading}>
+            {loading ? <span className="track-spinner" /> : <>📡 <span className="btn-label">Track</span></>}
+          </button>
+        </div>
       </form>
 
-      {error && <p style={{ color: 'var(--danger)', marginTop: 12, textAlign: 'center', fontSize: 14 }}>{error}</p>}
+      {error && <div className="pub-track-error">❌ {error}</div>}
 
       {result && (
-        <div style={{ marginTop: 24 }}>
-          <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Ticket: {result.ticket_no}</p>
-          <p className="text-muted text-sm" style={{ marginBottom: 16 }}>{result.customer_name} — {result.machine_model}</p>
-          <div className="pub-timeline">
-            {STATUSES.map((s, i) => {
-              const currentIdx = STATUSES.indexOf(result.status);
-              const done = i < currentIdx;
-              const current = i === currentIdx;
-              return (
-                <div key={s} className="pub-timeline-step">
-                  <div className={`pub-timeline-dot ${done ? 'active' : ''} ${current ? 'current' : ''}`}>
-                    {done ? '✓' : i + 1}
+        <div className="pub-track-result">
+          <div className="ticket-header">
+            <span className="ticket-no">🎫 {result.ticket_no}</span>
+            <span className={`status-badge ${getStatusBadgeClass(result.status)}`}>
+              {result.status === 'COMPLETED' ? '✓ ' : '● '}{result.status?.replace(/_/g, ' ')}
+            </span>
+          </div>
+
+          <div className="ticket-meta">
+            {result.customer_name && <div><span>Name: </span><strong>{result.customer_name}</strong></div>}
+            {result.machine_model && <div><span>Machine: </span><strong>{result.machine_model}</strong></div>}
+          </div>
+
+          <div style={{ marginTop: 'var(--sp-lg)' }}>
+            <div className="pub-timeline">
+              {STATUSES.map((s, i) => {
+                const currentIdx = STATUSES.indexOf(result.status);
+                const done = i < currentIdx;
+                const current = i === currentIdx;
+                return (
+                  <div key={s} className="pub-timeline-step">
+                    <div className={`pub-timeline-dot ${done ? 'active' : ''} ${current ? 'current' : ''}`}>
+                      {done ? '✓' : i + 1}
+                    </div>
+                    <div className="pub-timeline-content">
+                      <h4>{s.replace(/_/g, ' ')}</h4>
+                    </div>
                   </div>
-                  <div className="pub-timeline-content">
-                    <h4>{s.replace(/_/g, ' ')}</h4>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

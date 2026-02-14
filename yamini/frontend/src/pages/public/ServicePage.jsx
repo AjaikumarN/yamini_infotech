@@ -13,6 +13,7 @@ const SERVICE_TYPES = [
 ];
 
 const STEP_LABELS = ['Service Type', 'Your Details', 'Confirm'];
+const STATUSES = ['NEW', 'ASSIGNED', 'ON_THE_WAY', 'IN_PROGRESS', 'COMPLETED'];
 
 export default function ServicePage() {
   const [params] = useSearchParams();
@@ -112,6 +113,11 @@ export default function ServicePage() {
                 <p className="text-sm text-muted" style={{ marginTop: 4 }}>{s.desc}</p>
               </div>
             ))}
+          </div>
+
+          {/* ── Track Service (inline on services page) ── */}
+          <div style={{ marginTop: 'var(--sp-section)' }}>
+            <ServiceTrackWidget />
           </div>
         </>
       )}
@@ -227,6 +233,115 @@ export default function ServicePage() {
             <button className="btn btn-secondary btn-block" onClick={() => navigate('/')}>
               🏠 Go Home
             </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Service Track Widget (embedded in Services page) ── */
+function ServiceTrackWidget() {
+  const [input, setInput] = useState('');
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleTrack = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    setLoading(true);
+    setError('');
+    setResult(null);
+    try {
+      const data = await apiRequest(`/api/service-requests/track/${encodeURIComponent(input.trim())}`);
+      setResult(data);
+    } catch (err) {
+      setError(err.message || 'Service not found. Check your ticket ID or phone number.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadgeClass = (status) => {
+    if (status === 'COMPLETED') return 'completed';
+    if (['IN_PROGRESS', 'ON_THE_WAY', 'ASSIGNED'].includes(status)) return 'in-progress';
+    return 'new';
+  };
+
+  return (
+    <div className="pub-track-banner">
+      <div className="track-title">
+        <h2>Already submitted? Track here</h2>
+        <p>Enter your ticket number or phone to check status</p>
+      </div>
+
+      <form onSubmit={handleTrack}>
+        <div className="pub-track-searchbar">
+          <span className="track-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Ticket ID or phone number..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <button type="submit" className="track-btn" disabled={loading}>
+            {loading ? <span className="track-spinner" /> : <>📡 <span className="btn-label">Track</span></>}
+          </button>
+        </div>
+      </form>
+
+      {error && <div className="pub-track-error">❌ {error}</div>}
+
+      {result && (
+        <div className="pub-track-result">
+          <div className="ticket-header">
+            <span className="ticket-no">🎫 {result.ticket_no}</span>
+            <span className={`status-badge ${getStatusBadgeClass(result.status)}`}>
+              {result.status === 'COMPLETED' ? '✓ ' : '● '}{result.status?.replace(/_/g, ' ')}
+            </span>
+          </div>
+
+          <div className="ticket-meta">
+            {result.customer_name && <div><span>Name: </span><strong>{result.customer_name}</strong></div>}
+            {result.machine_model && <div><span>Machine: </span><strong>{result.machine_model}</strong></div>}
+            {result.service_type && <div><span>Type: </span><strong>{result.service_type}</strong></div>}
+            {result.engineer_name && <div><span>Engineer: </span><strong>{result.engineer_name}</strong></div>}
+          </div>
+
+          <div style={{ marginTop: 'var(--sp-lg)' }}>
+            <div className="pub-timeline">
+              {STATUSES.map((s, i) => {
+                const currentIdx = STATUSES.indexOf(result.status);
+                const done = i < currentIdx;
+                const current = i === currentIdx;
+                return (
+                  <div key={s} className="pub-timeline-step">
+                    <div className={`pub-timeline-dot ${done ? 'active' : ''} ${current ? 'current' : ''}`}>
+                      {done ? '✓' : i + 1}
+                    </div>
+                    <div className="pub-timeline-content">
+                      <h4>{s.replace(/_/g, ' ')}</h4>
+                      {current && <p>Current status</p>}
+                      {done && <p>Completed</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 'var(--sp-lg)', display: 'flex', gap: 'var(--sp-md)' }}>
+            <a href="tel:+919842122952" className="btn btn-secondary" style={{ flex: 1 }}>
+              📞 Call Support
+            </a>
+            <a
+              href={`https://wa.me/919842122952?text=Hi%2C%20I%20need%20an%20update%20on%20ticket%20${result.ticket_no}`}
+              target="_blank" rel="noopener noreferrer"
+              className="btn btn-whatsapp" style={{ flex: 1 }}
+            >
+              💬 WhatsApp
+            </a>
           </div>
         </div>
       )}
