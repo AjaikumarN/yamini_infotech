@@ -280,10 +280,9 @@ async def upload_product_image(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    # Create upload directory - use absolute path from backend
-    backend_dir = Path(__file__).parent.parent
-    upload_dir = backend_dir / "../frontend/public/assets/products"
-    upload_dir = upload_dir.resolve()
+    # Create upload directory - save inside backend/uploads/products (served by nginx /uploads/)
+    backend_dir = Path(__file__).resolve().parent.parent
+    upload_dir = backend_dir / "uploads" / "products"
     upload_dir.mkdir(parents=True, exist_ok=True)
     
     # Save file
@@ -298,8 +297,8 @@ async def upload_product_image(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
     
-    # Update product image_url
-    image_url = f"/assets/products/{file_name}"
+    # URL served by nginx /uploads/ location block
+    image_url = f"/uploads/products/{file_name}"
     product.image_url = image_url
     db.commit()
     
