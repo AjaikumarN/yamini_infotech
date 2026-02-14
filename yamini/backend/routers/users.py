@@ -128,15 +128,21 @@ def update_user(
     # Update fields
     update_data = user_update.dict(exclude_unset=True)
     
-    # Check username uniqueness if being updated
+    # Check username uniqueness if being updated (exclude current user)
     if 'username' in update_data and update_data['username'] != db_user.username:
-        existing = crud.get_user_by_username(db, update_data['username'])
+        existing = db.query(models.User).filter(
+            models.User.username == update_data['username'],
+            models.User.id != user_id
+        ).first()
         if existing:
             raise HTTPException(status_code=400, detail="Username already taken")
     
-    # Check email uniqueness if being updated
+    # Check email uniqueness if being updated (exclude current user)
     if 'email' in update_data and update_data['email'] != db_user.email:
-        existing = db.query(models.User).filter(models.User.email == update_data['email']).first()
+        existing = db.query(models.User).filter(
+            models.User.email == update_data['email'],
+            models.User.id != user_id
+        ).first()
         if existing:
             raise HTTPException(status_code=400, detail="Email already taken")
     
