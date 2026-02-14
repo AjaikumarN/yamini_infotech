@@ -34,14 +34,20 @@ from sqlalchemy import text
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Try to import pywhatkit, fallback to mock if not available
+# ---------------------------------------------------------------------------
+# Safe import of pywhatkit — must not crash on headless (no DISPLAY) servers
+# pywhatkit → pyautogui → mouseinfo → X11 DISPLAY lookup
+# On headless Linux this raises KeyError: 'DISPLAY' and kills the worker.
+# ---------------------------------------------------------------------------
 try:
     import pywhatkit as kit
     PYWHATKIT_AVAILABLE = True
     logger.info("✅ PyWhatKit loaded successfully")
-except ImportError:
+except Exception as e:
+    # Catches ImportError, KeyError('DISPLAY'), and any other GUI-related error
     PYWHATKIT_AVAILABLE = False
-    logger.warning("⚠️ PyWhatKit not installed. Run: pip install pywhatkit")
+    print("WhatsApp automation disabled — headless server mode")
+    logger.warning(f"⚠️ WhatsApp service disabled in server: {e}")
 
 
 class WhatsAppEventType(str, Enum):
@@ -270,12 +276,14 @@ class WhatsAppService:
         Send WhatsApp message using PyWhatKit.
         Returns (success, error_message)
         """
+        if not PYWHATKIT_AVAILABLE:
+            raise RuntimeError(
+                "WhatsApp automation not available in headless server environment"
+            )
+
         if not self.enabled:
             logger.info(f"WhatsApp disabled. Would send to {phone}: {message[:50]}...")
             return True, None
-            
-        if not PYWHATKIT_AVAILABLE:
-            return False, "PyWhatKit not installed"
         
         try:
             # Normalize phone number
