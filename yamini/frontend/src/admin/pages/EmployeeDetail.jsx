@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { apiRequest } from '../../utils/api'
+import { getEmployeePhotoUrl, DEFAULT_AVATAR } from '../../config'
 
 export default function EmployeeDetail() {
   const { role, userId } = useParams()
@@ -90,11 +91,14 @@ export default function EmployeeDetail() {
       <div style={{ background: '#fff', borderRadius: 12, padding: 18, marginBottom: 16, border: '1px solid #e5e7eb' }}>
         <div style={{ display: 'flex', gap: 16 }}>
           <div>
-            {user.photo || user.avatar ? (
-              <img src={user.photo || user.avatar} alt="photo" style={{ width: 96, height: 96, borderRadius: 8, objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: 96, height: 96, borderRadius: 8, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#777', fontWeight: 700, fontSize: 20 }}>{(user.full_name || user.username || 'U').split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase()}</div>
-            )}
+            {(() => {
+              const photoSrc = getEmployeePhotoUrl(user.photograph || user.photo || user.avatar);
+              return photoSrc ? (
+                <img src={photoSrc} alt="photo" style={{ width: 96, height: 96, borderRadius: 8, objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR; }} />
+              ) : (
+                <img src={DEFAULT_AVATAR} alt="avatar" style={{ width: 96, height: 96, borderRadius: 8, objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling && (e.target.nextElementSibling.style.display = 'flex'); }} />
+              );
+            })()}
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
@@ -128,9 +132,12 @@ export default function EmployeeDetail() {
             <div><small>Employee ID</small><div style={{ color: '#333' }}>{user.employee_id || user.id}</div></div>
             <div><small>Nationality</small><div style={{ color: '#333' }}>{user.nationality || '-'}</div></div>
             <div><small>Photograph</small>
-              <div style={{ marginTop: 8 }}>{user.photograph || user.photo || user.avatar ? (
-                <img src={user.photograph || user.photo || user.avatar} alt="photo" style={{ width: 120, height: 120, borderRadius: 8, objectFit: 'cover' }} />
-              ) : <div style={{ width: 120, height: 120, borderRadius: 8, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>No Photo</div>}</div>
+              <div style={{ marginTop: 8 }}>{(() => {
+                const photoSrc = getEmployeePhotoUrl(user.photograph || user.photo || user.avatar);
+                return photoSrc ? (
+                  <img src={photoSrc} alt="photo" style={{ width: 120, height: 120, borderRadius: 8, objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_AVATAR; }} />
+                ) : <div style={{ width: 120, height: 120, borderRadius: 8, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>No Photo</div>;
+              })()}</div>
             </div>
           </div>
         </div>

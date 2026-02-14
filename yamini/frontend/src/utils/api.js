@@ -1,6 +1,6 @@
 // API utility for backend communication
-// Uses environment variable VITE_API_URL, defaults to localhost:8000
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Uses environment variable VITE_API_URL, defaults to production API
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api.yaminicopier.com';
 
 // Get auth token from localStorage
 const getAuthToken = () => {

@@ -12,6 +12,10 @@ import uuid
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
+# Standardized upload directories
+UPLOAD_EMPLOYEE_DIR = "uploads/employees"
+os.makedirs(UPLOAD_EMPLOYEE_DIR, exist_ok=True)
+
 @router.get("/me", response_model=schemas.User)
 def get_current_user_info(
     current_user: models.User = Depends(auth.get_current_user)
@@ -176,8 +180,8 @@ async def upload_employee_photo(
     current_user: models.User = Depends(auth.get_current_user)
 ):
     """Upload employee photograph"""
-    # Create uploads directory if it doesn't exist
-    upload_dir = Path("uploads/employees")
+    # Use standardized upload directory
+    upload_dir = Path(UPLOAD_EMPLOYEE_DIR)
     upload_dir.mkdir(parents=True, exist_ok=True)
     
     # Generate unique filename
@@ -190,8 +194,8 @@ async def upload_employee_photo(
         content = await file.read()
         buffer.write(content)
     
-    # Return the path that can be used in the frontend
+    # Return relative path — never store absolute localhost URLs
     return {
         "file_path": f"/uploads/employees/{unique_filename}",
-        "url": f"http://localhost:8000/uploads/employees/{unique_filename}"
+        "url": f"/uploads/employees/{unique_filename}"
     }

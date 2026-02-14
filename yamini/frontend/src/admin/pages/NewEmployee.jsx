@@ -144,7 +144,7 @@ export default function NewEmployee() {
             });
             if (uploadResponse.ok) {
               const uploadData = await uploadResponse.json();
-              photographPath = uploadData.url;
+              photographPath = uploadData.file_path; // Use relative path, never absolute URL
             } else {
               console.error('Photo upload failed:', await uploadResponse.text());
             }
@@ -222,7 +222,7 @@ export default function NewEmployee() {
             });
             if (uploadResponse.ok) {
               const uploadData = await uploadResponse.json();
-              photographPath = uploadData.url;
+              photographPath = uploadData.file_path; // Use relative path, never absolute URL
             } else {
               console.error('Photo upload failed:', await uploadResponse.text());
             }

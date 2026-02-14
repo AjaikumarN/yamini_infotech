@@ -115,8 +115,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS middleware — configure via ALLOWED_ORIGINS env var for production
-# Example: ALLOWED_ORIGINS=https://yamini.com,https://admin.yamini.com
+# CORS middleware — production domains + local dev fallback
+_production_origins = [
+    "https://yaminicopier.com",
+    "https://www.yaminicopier.com",
+    "https://api.yaminicopier.com",
+]
 _dev_origins = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -128,7 +132,7 @@ _dev_origins = [
     "http://127.0.0.1:8080",
 ]
 _env_origins = os.getenv("ALLOWED_ORIGINS", "").split(",") if os.getenv("ALLOWED_ORIGINS") else []
-_cors_origins = _env_origins if _env_origins else _dev_origins
+_cors_origins = _env_origins if _env_origins else (_production_origins + _dev_origins)
 
 app.add_middleware(
     CORSMiddleware,
