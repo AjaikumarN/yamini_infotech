@@ -76,7 +76,7 @@ const DeliveryLog = () => {
         notes: deliveryForm.notes || null,
       };
       // Backend automatically sets: approval_status=PENDING, payment_status=UNBILLED
-      await apiRequest('/api/stock-movements', {
+      await apiRequest('/api/stock-movements/', {
         method: 'POST',
         body: JSON.stringify(payload)
       });

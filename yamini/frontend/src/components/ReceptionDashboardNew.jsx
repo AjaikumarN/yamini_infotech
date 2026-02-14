@@ -294,9 +294,13 @@ const ReceptionDashboardNew = ({ userId = null, isAdminView = false }) => {
   const logDelivery = async (e) => {
     e.preventDefault();
     try {
-      await apiRequest('/api/stock-movements', {
+      await apiRequest('/api/stock-movements/', {
         method: 'POST',
-        body: JSON.stringify(deliveryForm)
+        body: JSON.stringify({
+          ...deliveryForm,
+          engineer_id: deliveryForm.engineer_id || null,
+          service_request_id: deliveryForm.service_request_id || null,
+        })
       });
       setShowDeliveryForm(false);
       setDeliveryForm({

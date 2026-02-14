@@ -20,7 +20,7 @@ export default function StockManagement() {
   const loadMovements = async () => {
     try {
       setLoading(true);
-      const endpoint = filter === 'today' ? '/api/stock-movements?today=true' : '/api/stock-movements';
+      const endpoint = filter === 'today' ? '/api/stock-movements/?today=true' : '/api/stock-movements/';
       const data = await apiRequest(endpoint);
       setMovements(data);
     } catch (error) {
