@@ -96,7 +96,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="pub-products-grid reveal">
+            <div className="pub-products-grid">
               {products.map((p, i) => (
                 <div key={p.id} className="pub-product-card" style={{ '--i': i }} onClick={() => navigate(`/products/${p.id}`)}>
                   <div className="pub-product-card-img">

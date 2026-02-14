@@ -474,6 +474,10 @@
 .pub-track-widget .track-form { display: flex; flex-direction: column; gap: var(--sp-md); }
 [data-density="comfortable"] .pub-track-widget .track-form,
 [data-density="expanded"]    .pub-track-widget .track-form { flex-direction: row; }
+[data-density="comfortable"] .pub-track-widget .track-form input,
+[data-density="expanded"]    .pub-track-widget .track-form input { flex: 1; min-width: 0; }
+[data-density="comfortable"] .pub-track-widget .track-form .btn,
+[data-density="expanded"]    .pub-track-widget .track-form .btn { flex-shrink: 0; white-space: nowrap; }
 .pub-track-widget input {
   width: 100%; min-height: var(--tap-min); padding: 10px 16px; font-size: 15px;
   border: 2px solid var(--border); border-radius: var(--radius-sm); font-family: inherit;
