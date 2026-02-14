@@ -119,16 +119,13 @@ def reject_movement(
 
 def mark_paid(db: Session, movement_id: int, user: User) -> StockMovement:
     """
-    Mark an APPROVED movement as PAID.
+    Mark a movement as PAID.
     Rules:
-      - approval_status MUST be APPROVED
       - Cannot revert PAID → PENDING
     """
     movement = db.query(StockMovement).filter(StockMovement.id == movement_id).first()
     if not movement:
         raise ValueError("Stock movement not found")
-    if movement.approval_status != "APPROVED":
-        raise ValueError("Cannot mark PAID — movement is not yet APPROVED")
     if movement.payment_status == "PAID":
         raise ValueError("Already marked as PAID — cannot revert")
 
