@@ -44,16 +44,25 @@ export default function ServicePage() {
       setError('Name and phone are required');
       return;
     }
+    if (!form.description.trim()) {
+      setError('Please describe your issue');
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
+      // Map frontend fields to backend ComplaintCreate schema
+      const selectedService = SERVICE_TYPES.find(s => s.id === serviceType);
       const payload = {
-        ...form,
-        service_type: serviceType,
-        source: 'WEBSITE',
-        status: 'NEW',
+        customer_name: form.customer_name.trim(),
+        phone: form.phone.trim(),
+        email: form.email || null,
+        address: form.address || null,
+        machine_model: form.machine_model || null,
+        fault_description: `[${selectedService?.label || serviceType}] ${form.description.trim()}${form.serial_number ? `\nSerial: ${form.serial_number}` : ''}`,
+        priority: form.priority === 'LOW' ? 'NORMAL' : form.priority === 'HIGH' ? 'URGENT' : 'NORMAL',
       };
-      const data = await apiRequest('/api/complaints/', {
+      const data = await apiRequest('/api/service-requests/public', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -117,7 +126,7 @@ export default function ServicePage() {
             ← Change Service Type
           </button>
 
-          <div className="reveal" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--sp-2xl)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--sp-2xl)' }}>
             <span style={{ fontSize: 36 }}>
               {SERVICE_TYPES.find(s => s.id === serviceType)?.icon || '🔧'}
             </span>
@@ -128,42 +137,42 @@ export default function ServicePage() {
           </div>
 
           <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
-            <div className="pub-form-group reveal" style={{ '--i': 0 }}>
+            <div className="pub-form-group">
               <label>Your Name *</label>
               <input name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="Enter your name" required />
             </div>
 
-            <div className="pub-form-group reveal" style={{ '--i': 1 }}>
+            <div className="pub-form-group">
               <label>Phone Number *</label>
               <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Enter your phone number" required />
             </div>
 
-            <div className="pub-form-group reveal" style={{ '--i': 2 }}>
+            <div className="pub-form-group">
               <label>Email (optional)</label>
               <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Enter your email" />
             </div>
 
-            <div className="pub-form-group reveal" style={{ '--i': 3 }}>
+            <div className="pub-form-group">
               <label>Address / Location</label>
               <textarea name="address" value={form.address} onChange={handleChange} placeholder="Enter your address or location" rows={2} />
             </div>
 
-            <div className="pub-form-group reveal" style={{ '--i': 4 }}>
+            <div className="pub-form-group">
               <label>Machine Model</label>
               <input name="machine_model" value={form.machine_model} onChange={handleChange} placeholder="e.g., Kyocera 2040dn" />
             </div>
 
-            <div className="pub-form-group reveal" style={{ '--i': 5 }}>
+            <div className="pub-form-group">
               <label>Serial Number</label>
               <input name="serial_number" value={form.serial_number} onChange={handleChange} placeholder="Machine serial number (if known)" />
             </div>
 
-            <div className="pub-form-group reveal" style={{ '--i': 6 }}>
-              <label>Issue Description</label>
-              <textarea name="description" value={form.description} onChange={handleChange} placeholder="Describe your issue or requirement" rows={3} />
+            <div className="pub-form-group">
+              <label>Issue Description *</label>
+              <textarea name="description" value={form.description} onChange={handleChange} placeholder="Describe your issue or requirement" rows={3} required />
             </div>
 
-            <div className="pub-form-group reveal" style={{ '--i': 7 }}>
+            <div className="pub-form-group">
               <label>Priority</label>
               <select name="priority" value={form.priority} onChange={handleChange}>
                 <option value="LOW">Low — Not urgent</option>
@@ -174,7 +183,7 @@ export default function ServicePage() {
 
             {error && <p style={{ color: 'var(--danger)', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{error}</p>}
 
-            <button type="submit" className="btn btn-primary btn-block btn-lg reveal" disabled={submitting}>
+            <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={submitting}>
               {submitting ? 'Submitting...' : '📤 Submit Service Request'}
             </button>
           </form>
@@ -201,6 +210,14 @@ export default function ServicePage() {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 320, margin: '0 auto' }}>
+            <a
+              href={`https://wa.me/919842122952?text=${encodeURIComponent(`Hi Yamini Infotech, I just submitted a service request.\nTicket: ${success.ticket_no}\nName: ${form.customer_name}\nIssue: ${form.description}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-whatsapp btn-block btn-lg"
+            >
+              💬 Confirm on WhatsApp
+            </a>
             <button className="btn btn-primary btn-block" onClick={() => navigate('/track')}>
               📍 Track Service Status
             </button>
