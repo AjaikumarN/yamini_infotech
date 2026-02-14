@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, func
 from typing import List, Optional
@@ -405,8 +406,6 @@ async def update_service_status(
         except:
             service.checkin_time = datetime.utcnow()
     
-    service.updated_at = datetime.utcnow()
-    
     db.commit()
     db.refresh(service)
     
@@ -416,6 +415,44 @@ async def update_service_status(
     service.sla_remaining = sla_info["remaining_seconds"]
     
     return service
+
+
+# === CHECK-IN LOCATION ===
+
+class LocationUpdate(BaseModel):
+    latitude: float
+    longitude: float
+
+@router.put("/{service_id}/location", response_model=schemas.Complaint)
+async def update_service_location(
+    service_id: int,
+    location: LocationUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Check-in at service location (SERVICE_ENGINEER only)"""
+    if current_user.role != models.UserRole.SERVICE_ENGINEER:
+        raise HTTPException(status_code=403, detail="Only service engineers can check in")
+    
+    service = db.query(models.Complaint).filter(models.Complaint.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service request not found")
+    if service.assigned_to != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only check in to services assigned to you")
+    
+    service.checkin_latitude = location.latitude
+    service.checkin_longitude = location.longitude
+    service.checkin_time = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(service)
+    
+    sla_info = check_sla_status(service)
+    service.sla_status = sla_info
+    service.sla_remaining = sla_info["remaining_seconds"]
+    
+    return service
+
 
 @router.post("/{service_id}/complete", response_model=schemas.Complaint)
 async def complete_service(
