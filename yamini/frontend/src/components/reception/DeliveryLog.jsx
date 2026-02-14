@@ -5,6 +5,7 @@ const DeliveryLog = () => {
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [engineers, setEngineers] = useState([]);
+  const [complaints, setComplaints] = useState([]);
   const [filters, setFilters] = useState({
     type: 'ALL',
     search: '',
@@ -27,6 +28,7 @@ const DeliveryLog = () => {
   useEffect(() => {
     fetchDeliveries();
     fetchEngineers();
+    fetchComplaints();
   }, []);
 
   const fetchEngineers = async () => {
@@ -35,6 +37,15 @@ const DeliveryLog = () => {
       setEngineers(data || []);
     } catch (error) {
       console.error('Failed to fetch engineers:', error);
+    }
+  };
+
+  const fetchComplaints = async () => {
+    try {
+      const data = await apiRequest('/api/complaints/');
+      setComplaints(data || []);
+    } catch (error) {
+      console.error('Failed to fetch complaints:', error);
     }
   };
 
@@ -357,13 +368,18 @@ const DeliveryLog = () => {
                   
                   <div className="form-group">
                     <label>Ticket ID * (Required for OUT)</label>
-                    <input
+                    <select
                       required
-                      type="number"
-                      placeholder="Ticket ID (e.g., 123)"
                       value={deliveryForm.service_request_id}
                       onChange={(e) => setDeliveryForm({...deliveryForm, service_request_id: e.target.value})}
-                    />
+                    >
+                      <option value="">Select Ticket</option>
+                      {complaints.map(c => (
+                        <option key={c.id} value={c.id}>
+                          #{c.id} - {c.ticket_no || ''} - {c.customer_name} ({c.machine_model || 'N/A'})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </>
               )}
