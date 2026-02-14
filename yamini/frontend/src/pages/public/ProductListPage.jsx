@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDeviceProfile } from '../../hooks/useDeviceProfile';
 import { apiRequest } from '../../utils/api';
 import { getUploadUrl } from '../../config';
 
@@ -11,7 +12,9 @@ export default function ProductListPage() {
   const [sort, setSort] = useState('name');
   const [loading, setLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
+  const { type: deviceType } = useDeviceProfile();
   const navigate = useNavigate();
+  const isWide = deviceType === 'desktop' || deviceType === 'hybrid';
 
   const categories = [
     { id: 'all', label: 'All', icon: '📦' },
@@ -58,9 +61,11 @@ export default function ProductListPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button className="filter-btn" onClick={() => setFilterOpen(true)} title="Filter & Sort">
-          ⚙
-        </button>
+        {!isWide && (
+          <button className="filter-btn" onClick={() => setFilterOpen(true)} title="Filter & Sort">
+            ⚙
+          </button>
+        )}
       </div>
 
       {/* Category chips - horizontal scroll */}
@@ -77,7 +82,20 @@ export default function ProductListPage() {
             </button>
           ))}
         </div>
-        <p className="text-sm text-muted" style={{ marginTop: 8 }}>{filtered.length} product{filtered.length !== 1 ? 's' : ''}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+          <p className="text-sm text-muted">{filtered.length} product{filtered.length !== 1 ? 's' : ''}</p>
+          {isWide && (
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              style={{ padding: '6px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: 13, background: 'var(--bg-card)' }}
+            >
+              <option value="name">Name (A-Z)</option>
+              <option value="price-low">Price: Low → High</option>
+              <option value="price-high">Price: High → Low</option>
+            </select>
+          )}
+        </div>
       </div>
 
       {/* Product Grid */}

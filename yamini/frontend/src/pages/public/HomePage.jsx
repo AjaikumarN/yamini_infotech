@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDeviceProfile } from '../../hooks/useDeviceProfile';
 import { apiRequest } from '../../utils/api';
 import { getUploadUrl } from '../../config';
 
@@ -10,32 +11,41 @@ const TESTIMONIALS = [
   { name: 'Deepa Nair', company: 'City Print Shop', rating: 5, text: 'Best prices in town and genuine spares. The engineer was very knowledgeable and fixed our issue quickly.' },
 ];
 
+const SERVICES = [
+  { icon: '🔧', label: 'Repair', id: 'repair', desc: 'Machine not working' },
+  { icon: '🖨️', label: 'Toner', id: 'toner', desc: 'Refill or cartridge' },
+  { icon: '📦', label: 'Install', id: 'installation', desc: 'New machine setup' },
+  { icon: '✅', label: 'AMC', id: 'amc_support', desc: 'Annual contract' },
+  { icon: '🔄', label: 'Exchange', id: 'exchange', desc: 'Trade-in / upgrade' },
+];
+
 export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { type: deviceType } = useDeviceProfile();
   const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
       try {
         const data = await apiRequest('/api/products');
-        setProducts((data || []).slice(0, 6));
+        setProducts((data || []).slice(0, deviceType === 'mobile' ? 4 : 6));
       } catch (e) {
         console.error('Error fetching products:', e);
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [deviceType]);
 
   return (
     <>
       {/* ── HERO ── */}
       <section className="pub-hero">
         <div className="pub-hero-text">
-          <h1>Your Trusted Copier &amp; Printer Partner</h1>
-          <p>Sales, Service, Toner &amp; AMC — 25+ years serving Tirunelveli, Tenkasi &amp; Nagercoil with fast, reliable support.</p>
-          <div className="pub-hero-actions">
+          <h1 className="reveal">Your Trusted Copier &amp; Printer Partner</h1>
+          <p className="reveal">Sales, Service, Toner &amp; AMC — 25+ years serving Tirunelveli, Tenkasi &amp; Nagercoil with fast, reliable support.</p>
+          <div className="pub-hero-actions reveal">
             <button className="btn btn-primary btn-lg" onClick={() => navigate('/products')}>
               View Products
             </button>
@@ -44,7 +54,7 @@ export default function HomePage() {
             </button>
           </div>
         </div>
-        <div className="pub-hero-image">
+        <div className="pub-hero-image reveal-scale">
           <img
             src="/assets/images/hero-copier.webp"
             alt="Copier Machine"
@@ -86,9 +96,9 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="pub-products-grid">
-              {products.map((p) => (
-                <div key={p.id} className="pub-product-card" onClick={() => navigate(`/products/${p.id}`)}>
+            <div className="pub-products-grid reveal">
+              {products.map((p, i) => (
+                <div key={p.id} className="pub-product-card" style={{ '--i': i }} onClick={() => navigate(`/products/${p.id}`)}>
                   <div className="pub-product-card-img">
                     {p.image_url ? (
                       <img
@@ -124,7 +134,7 @@ export default function HomePage() {
           )}
 
           {!loading && products.length > 0 && (
-            <div style={{ textAlign: 'center', marginTop: 'var(--sp-xl)' }}>
+            <div style={{ textAlign: 'center', marginTop: 'var(--sp-xl)' }} className="reveal">
               <button className="btn btn-secondary" onClick={() => navigate('/products')}>
                 View All Products →
               </button>
@@ -140,21 +150,17 @@ export default function HomePage() {
             <h2>What do you need?</h2>
             <p>Tap to request service directly</p>
           </div>
-          <div className="pub-service-grid reveal stagger">
-            {[
-              { icon: '🔧', label: 'Repair', id: 'repair' },
-              { icon: '🖨️', label: 'Toner', id: 'toner' },
-              { icon: '📦', label: 'Install', id: 'installation' },
-              { icon: '✅', label: 'AMC', id: 'amc_support' },
-              { icon: '🔄', label: 'Exchange', id: 'exchange' },
-            ].map((s) => (
+          <div className="pub-service-grid reveal">
+            {SERVICES.map((s, i) => (
               <div
                 key={s.id}
                 className="pub-service-card"
+                style={{ '--i': i }}
                 onClick={() => navigate(`/services?type=${s.id}`)}
               >
                 <div className="icon">{s.icon}</div>
                 <div className="label">{s.label}</div>
+                <p className="text-sm text-muted" style={{ marginTop: 4, fontSize: 11 }}>{s.desc}</p>
               </div>
             ))}
           </div>
@@ -191,7 +197,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── STICKY BOTTOM CTA (Mobile) ── */}
+      {/* ── STICKY BOTTOM CTA (Mobile only — hidden by CSS on tablet+) ── */}
       <div className="pub-sticky-cta">
         <a
           href="https://wa.me/919842122952?text=Hi%20Yamini%20Infotech%2C%20I%20need%20a%20price%20quote"

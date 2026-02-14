@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext.jsx'
 import { NotificationProvider } from './contexts/NotificationContext.jsx'
+import { DeviceProfileProvider } from './hooks/useDeviceProfile.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Login from './components/Login.jsx'
 
@@ -401,14 +402,16 @@ function AppWithProviders() {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true
-          }}
-        >
-          <App />
-        </BrowserRouter>
+        <DeviceProfileProvider>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}
+          >
+            <App />
+          </BrowserRouter>
+        </DeviceProfileProvider>
       </NotificationProvider>
     </AuthProvider>
   )

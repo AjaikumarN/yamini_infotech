@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import useUIProfile from '../hooks/useUIProfile';
+import { useDeviceProfile } from '../hooks/useDeviceProfile';
 import '../styles/public.css';
 
 const NAV_ITEMS = [
@@ -21,11 +21,14 @@ const HEADER_NAV = [
 
 export default function PublicLayoutNew() {
   const location = useLocation();
+  const { type: deviceType } = useDeviceProfile();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('yi_visited'));
   const [scrolled, setScrolled] = useState(false);
   const pubRef = useRef(null);
-  useUIProfile(); // sets body data-* attributes
+
+  // Close mobile menu on navigation
+  useEffect(() => { setMenuOpen(false); }, [location.pathname]);
 
   // Splash: show once per session
   useEffect(() => {
@@ -33,20 +36,25 @@ export default function PublicLayoutNew() {
     const timer = setTimeout(() => {
       setShowSplash(false);
       sessionStorage.setItem('yi_visited', '1');
-    }, 1900);
+    }, 1800);
     return () => clearTimeout(timer);
   }, [showSplash]);
 
   // Scroll-reveal observer
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
+      (entries) => entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      }),
       { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
     );
     const els = pubRef.current?.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
     els?.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [location.pathname]); // re-observe on route change
+  }, [location.pathname]);
+
+  // Scroll to top on route change
+  useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
 
   // Header scroll shadow
   useEffect(() => {
@@ -65,8 +73,8 @@ export default function PublicLayoutNew() {
       {/* ── SPLASH ── */}
       {showSplash && (
         <div className="pub-splash">
-          <img src="/assets/main_logo.png" alt="Yamini Infotech" />
-          <div className="splash-text">Yamini Infotech</div>
+          <img className="splash-logo" src="/assets/main_logo.png" alt="Yamini Infotech" />
+          <div className="splash-name">Yamini Infotech</div>
           <div className="splash-bar" />
         </div>
       )}
@@ -79,14 +87,10 @@ export default function PublicLayoutNew() {
             <span>YAMINI INFOTECH</span>
           </Link>
 
-          {/* Desktop Nav */}
+          {/* Desktop / Hybrid top nav — shown via CSS [data-density="expanded"] */}
           <nav className="pub-header-nav">
             {HEADER_NAV.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={isActive(item.path) ? 'active' : ''}
-              >
+              <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
                 {item.label}
               </Link>
             ))}
@@ -95,19 +99,29 @@ export default function PublicLayoutNew() {
             </Link>
           </nav>
 
-          {/* Mobile Menu Toggle */}
+          {/* Hamburger — hidden on expanded density */}
           <div className="pub-header-actions">
-            <button className="pub-header-menu" onClick={() => setMenuOpen(true)}>
+            <button className="pub-header-menu" onClick={() => setMenuOpen(true)} aria-label="Open menu">
               ☰
             </button>
           </div>
         </div>
       </header>
 
+      {/* ── TABLET SIDE RAIL ── shown via CSS [data-device="tablet"] */}
+      <nav className="pub-side-rail">
+        {NAV_ITEMS.map((item) => (
+          <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
+            <span className="rail-icon">{item.icon}</span>
+            <span className="rail-label">{item.label}</span>
+          </Link>
+        ))}
+      </nav>
+
       {/* ── MOBILE MENU OVERLAY ── */}
       <div className={`pub-mobile-menu ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(false)}>
         <div className="pub-mobile-menu-panel" onClick={(e) => e.stopPropagation()}>
-          <button className="pub-mobile-menu-close" onClick={() => setMenuOpen(false)}>✕</button>
+          <button className="pub-mobile-menu-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">✕</button>
           {HEADER_NAV.map((item) => (
             <Link
               key={item.path}
@@ -162,29 +176,25 @@ export default function PublicLayoutNew() {
         </div>
       </footer>
 
-      {/* ── BOTTOM NAV (Mobile) ── */}
+      {/* ── BOTTOM NAV — shown via CSS on mobile only ── */}
       <nav className="pub-bottom-nav">
         {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={isActive(item.path) ? 'active' : ''}
-          >
+          <Link key={item.path} to={item.path} className={isActive(item.path) ? 'active' : ''}>
             <span className="nav-icon">{item.icon}</span>
             <span>{item.label}</span>
           </Link>
         ))}
       </nav>
 
-      {/* ── FLOATING WHATSAPP ── */}
+      {/* ── FLOATING WHATSAPP FAB ── */}
       <a
         href="https://wa.me/919842122952?text=Hi%20Yamini%20Infotech%2C%20I%20have%20an%20enquiry"
         target="_blank"
         rel="noopener noreferrer"
-        className="pub-fab-whatsapp"
+        className="pub-fab-wa"
       >
-        <span style={{ fontSize: 'inherit' }}>💬</span>
-        <span className="fab-label">WhatsApp Enquiry</span>
+        <span className="fab-icon">💬</span>
+        <span className="fab-text">WhatsApp</span>
       </a>
     </div>
   );

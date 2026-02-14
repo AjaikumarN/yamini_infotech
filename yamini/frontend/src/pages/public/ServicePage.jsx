@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useDeviceProfile } from '../../hooks/useDeviceProfile';
 import { apiRequest } from '../../utils/api';
 
 const SERVICE_TYPES = [
@@ -11,9 +12,12 @@ const SERVICE_TYPES = [
   { id: 'other', icon: '💬', label: 'Other', desc: 'General enquiry' },
 ];
 
+const STEP_LABELS = ['Service Type', 'Your Details', 'Confirm'];
+
 export default function ServicePage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { type: deviceType } = useDeviceProfile();
   const initialType = params.get('type') || '';
   const [step, setStep] = useState(initialType ? 2 : 1);
   const [serviceType, setServiceType] = useState(initialType);
@@ -63,15 +67,35 @@ export default function ServicePage() {
   };
 
   return (
-    <div className="container" style={{ padding: 'var(--sp-2xl) var(--page-margin)' }}>
+    <div className="container" style={{ padding: 'var(--sp-2xl) var(--page-mx)' }}>
+
+      {/* ── STEPPER INDICATOR ── */}
+      {!success && (
+        <div className="pub-stepper reveal">
+          {STEP_LABELS.map((label, i) => {
+            const stepNum = i + 1;
+            const done = step > stepNum;
+            const current = step === stepNum;
+            return (
+              <React.Fragment key={label}>
+                {i > 0 && <div className={`pub-stepper-line${done ? ' done' : ''}`} />}
+                <div className={`pub-stepper-dot${done ? ' done' : ''}${current ? ' current' : ''}`}>
+                  {done ? '✓' : stepNum}
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
+      )}
+
       {/* Step 1: Choose Service Type */}
       {step === 1 && (
         <>
-          <div className="pub-section-header" style={{ textAlign: 'left' }}>
+          <div className="pub-section-header reveal" style={{ textAlign: 'left' }}>
             <h1>What do you need?</h1>
             <p>Select the type of service you require</p>
           </div>
-          <div className="pub-service-grid stagger">
+          <div className="pub-service-grid">
             {SERVICE_TYPES.map((s, idx) => (
               <div key={s.id} className="pub-service-card reveal-scale" style={{ '--i': idx }} onClick={() => handleSelect(s.id)}>
                 <div className="icon">{s.icon}</div>
@@ -84,7 +108,7 @@ export default function ServicePage() {
       )}
 
       {/* Step 2: Service Form */}
-      {step === 2 && (
+      {step === 2 && !success && (
         <>
           <button
             onClick={() => { setStep(1); setServiceType(''); }}
@@ -93,7 +117,7 @@ export default function ServicePage() {
             ← Change Service Type
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--sp-2xl)' }}>
+          <div className="reveal" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 'var(--sp-2xl)' }}>
             <span style={{ fontSize: 36 }}>
               {SERVICE_TYPES.find(s => s.id === serviceType)?.icon || '🔧'}
             </span>
@@ -104,42 +128,42 @@ export default function ServicePage() {
           </div>
 
           <form onSubmit={handleSubmit} style={{ maxWidth: 560 }}>
-            <div className="pub-form-group">
+            <div className="pub-form-group reveal" style={{ '--i': 0 }}>
               <label>Your Name *</label>
               <input name="customer_name" value={form.customer_name} onChange={handleChange} placeholder="Enter your name" required />
             </div>
 
-            <div className="pub-form-group">
+            <div className="pub-form-group reveal" style={{ '--i': 1 }}>
               <label>Phone Number *</label>
               <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="Enter your phone number" required />
             </div>
 
-            <div className="pub-form-group">
+            <div className="pub-form-group reveal" style={{ '--i': 2 }}>
               <label>Email (optional)</label>
               <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="Enter your email" />
             </div>
 
-            <div className="pub-form-group">
+            <div className="pub-form-group reveal" style={{ '--i': 3 }}>
               <label>Address / Location</label>
               <textarea name="address" value={form.address} onChange={handleChange} placeholder="Enter your address or location" rows={2} />
             </div>
 
-            <div className="pub-form-group">
+            <div className="pub-form-group reveal" style={{ '--i': 4 }}>
               <label>Machine Model</label>
               <input name="machine_model" value={form.machine_model} onChange={handleChange} placeholder="e.g., Kyocera 2040dn" />
             </div>
 
-            <div className="pub-form-group">
+            <div className="pub-form-group reveal" style={{ '--i': 5 }}>
               <label>Serial Number</label>
               <input name="serial_number" value={form.serial_number} onChange={handleChange} placeholder="Machine serial number (if known)" />
             </div>
 
-            <div className="pub-form-group">
+            <div className="pub-form-group reveal" style={{ '--i': 6 }}>
               <label>Issue Description</label>
               <textarea name="description" value={form.description} onChange={handleChange} placeholder="Describe your issue or requirement" rows={3} />
             </div>
 
-            <div className="pub-form-group">
+            <div className="pub-form-group reveal" style={{ '--i': 7 }}>
               <label>Priority</label>
               <select name="priority" value={form.priority} onChange={handleChange}>
                 <option value="LOW">Low — Not urgent</option>
@@ -150,7 +174,7 @@ export default function ServicePage() {
 
             {error && <p style={{ color: 'var(--danger)', fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{error}</p>}
 
-            <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={submitting}>
+            <button type="submit" className="btn btn-primary btn-block btn-lg reveal" disabled={submitting}>
               {submitting ? 'Submitting...' : '📤 Submit Service Request'}
             </button>
           </form>
