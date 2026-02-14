@@ -46,7 +46,7 @@ export default function ContactPage() {
       {/* Quick Actions */}
       <section className="pub-section">
         <div className="container">
-          <div className="pub-contact-actions">
+          <div className="pub-contact-actions reveal">
             <a href="tel:+919842122952">
               <span className="icon">📞</span>
               Call Us
@@ -76,9 +76,9 @@ export default function ContactPage() {
           <div className="pub-section-header">
             <h2>Our Branches</h2>
           </div>
-          <div className="pub-branch-cards">
+          <div className="pub-branch-cards stagger">
             {BRANCHES.map((b, i) => (
-              <div key={i} className="pub-branch-card">
+              <div key={i} className="pub-branch-card reveal" style={{ '--i': i }}>
                 <h3>📍 {b.city}</h3>
                 <p>{b.address}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 14 }}>

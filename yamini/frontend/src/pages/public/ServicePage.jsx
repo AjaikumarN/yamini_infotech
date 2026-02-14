@@ -71,9 +71,9 @@ export default function ServicePage() {
             <h1>What do you need?</h1>
             <p>Select the type of service you require</p>
           </div>
-          <div className="pub-service-grid">
-            {SERVICE_TYPES.map(s => (
-              <div key={s.id} className="pub-service-card" onClick={() => handleSelect(s.id)}>
+          <div className="pub-service-grid stagger">
+            {SERVICE_TYPES.map((s, idx) => (
+              <div key={s.id} className="pub-service-card reveal-scale" style={{ '--i': idx }} onClick={() => handleSelect(s.id)}>
                 <div className="icon">{s.icon}</div>
                 <div className="label">{s.label}</div>
                 <p className="text-sm text-muted" style={{ marginTop: 4 }}>{s.desc}</p>

@@ -55,7 +55,7 @@ export default function HomePage() {
       </section>
 
       {/* ── TRUST STRIP ── */}
-      <div className="container">
+      <div className="container reveal">
         <div className="pub-trust">
           <div className="pub-trust-item"><span className="icon">✅</span> 25+ Years</div>
           <div className="pub-trust-item"><span className="icon">⚡</span> Fast Response</div>
@@ -67,7 +67,7 @@ export default function HomePage() {
       {/* ── FEATURED PRODUCTS ── */}
       <section className="pub-section">
         <div className="container">
-          <div className="pub-section-header">
+          <div className="pub-section-header reveal">
             <h2>Featured Products</h2>
             <p>Top-selling copiers and printers for your business</p>
           </div>
@@ -136,11 +136,11 @@ export default function HomePage() {
       {/* ── SERVICE OPTIONS ── */}
       <section className="pub-section" style={{ background: 'var(--bg-section)' }}>
         <div className="container">
-          <div className="pub-section-header">
+          <div className="pub-section-header reveal">
             <h2>What do you need?</h2>
             <p>Tap to request service directly</p>
           </div>
-          <div className="pub-service-grid">
+          <div className="pub-service-grid reveal stagger">
             {[
               { icon: '🔧', label: 'Repair', id: 'repair' },
               { icon: '🖨️', label: 'Toner', id: 'toner' },
@@ -164,7 +164,7 @@ export default function HomePage() {
       {/* ── QUICK TRACK ── */}
       <section className="pub-section">
         <div className="container">
-          <div className="pub-section-header">
+          <div className="pub-section-header reveal">
             <h2>Track Your Service</h2>
             <p>Enter your ticket number or phone to check status</p>
           </div>
@@ -175,7 +175,7 @@ export default function HomePage() {
       {/* ── TESTIMONIALS ── */}
       <section className="pub-section" style={{ background: 'var(--bg-section)' }}>
         <div className="container">
-          <div className="pub-section-header">
+          <div className="pub-section-header reveal">
             <h2>What Our Customers Say</h2>
           </div>
           <div className="pub-testimonials-track">

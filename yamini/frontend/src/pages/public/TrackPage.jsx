@@ -27,7 +27,7 @@ export default function TrackPage() {
 
   return (
     <div className="container" style={{ padding: 'var(--sp-section) var(--page-margin)' }}>
-      <div className="pub-section-header">
+      <div className="pub-section-header reveal">
         <h1>Track Your Service</h1>
         <p>Enter your ticket number or phone number to check current status</p>
       </div>

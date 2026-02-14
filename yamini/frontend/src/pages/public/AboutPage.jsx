@@ -38,7 +38,7 @@ export default function AboutPage() {
 
       {/* Who We Are */}
       <section className="pub-section">
-        <div className="container" style={{ maxWidth: 720 }}>
+        <div className="container reveal" style={{ maxWidth: 720 }}>
           <h2 style={{ marginBottom: 'var(--sp-lg)' }}>Who We Are</h2>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8, marginBottom: 'var(--sp-lg)' }}>
             Yamini Infotech is a leading authorized dealer and service provider for copiers, printers, and multifunction devices in the Tirunelveli, Tenkasi, and Nagercoil regions. With over 25 years of industry experience, we specialize in delivering reliable document solutions for offices, schools, shops, and businesses of all sizes.
@@ -55,9 +55,9 @@ export default function AboutPage() {
           <div className="pub-section-header">
             <h2>Why Choose Yamini Infotech?</h2>
           </div>
-          <div className="pub-why-grid">
+          <div className="pub-why-grid stagger">
             {WHY_CARDS.map((c, i) => (
-              <div key={i} className="pub-why-card">
+              <div key={i} className="pub-why-card reveal-scale" style={{ '--i': i }}>
                 <div className="icon">{c.icon}</div>
                 <h3>{c.title}</h3>
                 <p>{c.desc}</p>
@@ -94,7 +94,7 @@ export default function AboutPage() {
             <h2>Our Coverage Area</h2>
             <p>We provide service across South Tamil Nadu</p>
           </div>
-          <div className="pub-area-chips">
+          <div className="pub-area-chips reveal">
             {AREAS.map((a, i) => (
               <span key={i} className="chip">{a}</span>
             ))}

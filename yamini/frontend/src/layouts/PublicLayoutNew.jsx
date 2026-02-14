@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import useUIProfile from '../hooks/useUIProfile';
 import '../styles/public.css';
 
 const NAV_ITEMS = [
@@ -21,6 +22,38 @@ const HEADER_NAV = [
 export default function PublicLayoutNew() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(() => !sessionStorage.getItem('yi_visited'));
+  const [scrolled, setScrolled] = useState(false);
+  const pubRef = useRef(null);
+  useUIProfile(); // sets body data-* attributes
+
+  // Splash: show once per session
+  useEffect(() => {
+    if (!showSplash) return;
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+      sessionStorage.setItem('yi_visited', '1');
+    }, 1900);
+    return () => clearTimeout(timer);
+  }, [showSplash]);
+
+  // Scroll-reveal observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } }),
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+    );
+    const els = pubRef.current?.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+    els?.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [location.pathname]); // re-observe on route change
+
+  // Header scroll shadow
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const isActive = (path) => {
     if (path === '/') return location.pathname === '/';
@@ -28,9 +61,18 @@ export default function PublicLayoutNew() {
   };
 
   return (
-    <div className="pub">
+    <div className="pub" ref={pubRef}>
+      {/* ── SPLASH ── */}
+      {showSplash && (
+        <div className="pub-splash">
+          <img src="/assets/main_logo.png" alt="Yamini Infotech" />
+          <div className="splash-text">Yamini Infotech</div>
+          <div className="splash-bar" />
+        </div>
+      )}
+
       {/* ── HEADER ── */}
-      <header className="pub-header">
+      <header className={`pub-header${scrolled ? ' scrolled' : ''}`}>
         <div className="container">
           <Link to="/" className="pub-header-logo">
             <img src="/assets/main_logo.png" alt="Yamini Infotech" />
