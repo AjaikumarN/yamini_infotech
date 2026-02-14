@@ -4,6 +4,8 @@ import { AuthProvider } from './contexts/AuthContext.jsx'
 import { NotificationProvider } from './contexts/NotificationContext.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import Login from './components/Login.jsx'
+
+// OLD public components (kept for fallback)
 import Home from './components/Home.jsx'
 import Contact from './components/Contact.jsx'
 import Customer from './components/Customer.jsx'
@@ -11,6 +13,15 @@ import SalesService from './components/SalesService.jsx'
 import AboutUs from './components/AboutUs.jsx'
 import Blog from './components/Blog.jsx'
 import ServicePage from './components/ServicePage.jsx'
+
+// NEW mobile-first public pages
+import HomePage from './pages/public/HomePage.jsx'
+import ProductListPage from './pages/public/ProductListPage.jsx'
+import ProductDetailPage from './pages/public/ProductDetailPage.jsx'
+import ServicePageNew from './pages/public/ServicePage.jsx'
+import TrackPage from './pages/public/TrackPage.jsx'
+import AboutPage from './pages/public/AboutPage.jsx'
+import ContactPage from './pages/public/ContactPage.jsx'
 
 // New Components
 import ProductListing from './components/ProductListing.jsx'
@@ -67,6 +78,7 @@ import CallManagement from './reception/pages/CallManagement.jsx'
 // Admin Module - Clean single-source architecture
 import AdminLayout from './admin/layout/AdminLayout.jsx'
 import PublicLayout from './layouts/PublicLayout.jsx'
+import PublicLayoutNew from './layouts/PublicLayoutNew.jsx'
 import AdminDashboardPage from './admin/pages/Dashboard.jsx'
 import UserManagement from './admin/pages/UserManagement.jsx'
 import AdminStockManagement from './admin/pages/StockManagement.jsx'
@@ -103,25 +115,26 @@ function App() {
     <div className="app">
       <Routes>
               {/* ========================================
-                  PUBLIC ROUTES - Use PublicLayout (with Header.jsx)
+                  PUBLIC ROUTES - Mobile-First Layout
                   ======================================== */}
-              <Route element={<PublicLayout showNotificationPanel={showNotificationPanel} setShowNotificationPanel={setShowNotificationPanel} />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/about" element={<AboutUs />} />
+              <Route element={<PublicLayoutNew />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/track" element={<TrackPage />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/login" element={<Login />} />
                 
-                {/* Customer Public Routes - Product Catalog & Enquiry */}
-                <Route path="/products" element={<ProductListing />} />
-                <Route path="/products/:id" element={<ProductDetail />} />
+                {/* Product Catalog */}
+                <Route path="/products" element={<ProductListPage />} />
+                <Route path="/products/:id" element={<ProductDetailPage />} />
                 <Route path="/enquiry/:productId" element={<EnquiryForm />} />
                 
-                {/* Public Feedback Route - Customer feedback after service completion */}
+                {/* Public Feedback Route */}
                 <Route path="/feedback/:id" element={<FeedbackPage />} />
                 
-                {/* Public Service Request Page - Customer can create service requests */}
-                <Route path="/services" element={<ServicePage />} />
+                {/* Service Request */}
+                <Route path="/services" element={<ServicePageNew />} />
               </Route>
               
               {/* ========================================
