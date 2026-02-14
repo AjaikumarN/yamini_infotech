@@ -64,19 +64,13 @@ export const getMyOrders = async (userId = null) => {
 
 // ========== DAILY REPORT ==========
 export const submitDailyReport = async (data) => {
-  // Format date as ISO datetime string (YYYY-MM-DDTHH:MM:SS)
-  const reportDate = new Date().toISOString();
-  
   return apiRequest('/api/sales/salesman/daily-report', {
     method: 'POST',
     body: JSON.stringify({
-      report_date: reportDate,
-      calls_made: data.calls_made || 0,
-      meetings_done: data.meetings_done || 0,
-      shops_visited: 0,
-      enquiries_generated: 0,
-      sales_closed: data.orders_closed || 0,
-      report_notes: `Achievements: ${data.achievements || 'None'}\n\nChallenges: ${data.challenges || 'None'}\n\nTomorrow's Plan: ${data.tomorrow_plan || 'None'}`
+      achievements: data.achievements || '',
+      challenges: data.challenges || '',
+      tomorrow_plan: data.tomorrow_plan || '',
+      report_notes: data.report_notes || null
     })
   });
 };

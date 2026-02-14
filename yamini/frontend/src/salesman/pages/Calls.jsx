@@ -367,13 +367,6 @@ export default function Calls() {
                 </select>
               </div>
 
-              {/* Photo Gallery */}
-              <PhotoGallery
-                photos={photos}
-                onAddPhoto={handleAddPhoto}
-                onDeletePhoto={handleDeletePhoto}
-              />
-
               {/* Submit Button */}
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px' }}>
                 <button
