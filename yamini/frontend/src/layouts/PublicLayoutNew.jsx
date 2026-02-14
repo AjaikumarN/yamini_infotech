@@ -94,10 +94,10 @@ export default function PublicLayoutNew() {
                 {item.label}
               </Link>
             ))}
-            <Link to="/login" className="btn btn-primary btn-pill" style={{ marginLeft: 8 }}>
-              Login
-            </Link>
           </nav>
+          <Link to="/login" className="pub-header-login" style={{ display: deviceType === 'mobile' || deviceType === 'tablet' ? 'none' : 'inline-flex' }}>
+            Login
+          </Link>
 
           {/* Hamburger — hidden on expanded density */}
           <div className="pub-header-actions">

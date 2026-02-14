@@ -11,10 +11,8 @@ export default function ProductListPage() {
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState('name');
   const [loading, setLoading] = useState(true);
-  const [filterOpen, setFilterOpen] = useState(false);
   const { type: deviceType } = useDeviceProfile();
   const navigate = useNavigate();
-  const isWide = deviceType === 'desktop' || deviceType === 'hybrid';
 
   const categories = [
     { id: 'all', label: 'All', icon: '📦' },
@@ -53,7 +51,7 @@ export default function ProductListPage() {
 
   return (
     <>
-      {/* Search + Filter bar */}
+      {/* Search bar */}
       <div className="pub-list-controls">
         <input
           className="search-input"
@@ -61,11 +59,6 @@ export default function ProductListPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {!isWide && (
-          <button className="filter-btn" onClick={() => setFilterOpen(true)} title="Filter & Sort">
-            ⚙
-          </button>
-        )}
       </div>
 
       {/* Category chips - horizontal scroll */}
@@ -82,19 +75,8 @@ export default function ProductListPage() {
             </button>
           ))}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+        <div style={{ marginTop: 8 }}>
           <p className="text-sm text-muted">{filtered.length} product{filtered.length !== 1 ? 's' : ''}</p>
-          {isWide && (
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              style={{ padding: '6px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: 13, background: 'var(--bg-card)' }}
-            >
-              <option value="name">Name (A-Z)</option>
-              <option value="price-low">Price: Low → High</option>
-              <option value="price-high">Price: High → Low</option>
-            </select>
-          )}
         </div>
       </div>
 
@@ -155,42 +137,7 @@ export default function ProductListPage() {
         )}
       </div>
 
-      {/* Filter Bottom Sheet */}
-      <div className={`pub-bottom-sheet ${filterOpen ? 'open' : ''}`} onClick={() => setFilterOpen(false)}>
-        <div className="pub-bottom-sheet-panel" onClick={(e) => e.stopPropagation()}>
-          <div className="pub-bottom-sheet-handle" />
-          <h3 style={{ marginBottom: 'var(--sp-xl)' }}>Sort & Filter</h3>
 
-          <div className="pub-form-group">
-            <label>Sort By</label>
-            <select value={sort} onChange={(e) => setSort(e.target.value)}>
-              <option value="name">Name (A-Z)</option>
-              <option value="price-low">Price: Low → High</option>
-              <option value="price-high">Price: High → Low</option>
-            </select>
-          </div>
-
-          <div className="pub-form-group">
-            <label>Category</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {categories.map(c => (
-                <button
-                  key={c.id}
-                  className={`btn ${category === c.id ? 'btn-primary' : 'btn-secondary'} btn-pill`}
-                  style={{ minHeight: 36, padding: '6px 16px', fontSize: 13 }}
-                  onClick={() => setCategory(c.id)}
-                >
-                  {c.icon} {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button className="btn btn-primary btn-block btn-lg" onClick={() => setFilterOpen(false)} style={{ marginTop: 'var(--sp-xl)' }}>
-            Apply
-          </button>
-        </div>
-      </div>
     </>
   );
 }
