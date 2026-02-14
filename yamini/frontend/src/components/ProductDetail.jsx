@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../utils/api';
+import { getUploadUrl } from '../config';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -70,7 +71,7 @@ const ProductDetail = () => {
           {/* Product Image Section */}
           <div className="image-section">
             {product.image_url ? (
-              <img src={product.image_url} alt={product.name} className="main-image" />
+              <img src={getUploadUrl(product.image_url)} alt={product.name} className="main-image" />
             ) : (
               <div className="placeholder-image">
                 <span>🖨️</span>

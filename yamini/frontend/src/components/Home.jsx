@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '../utils/api'
+import { getUploadUrl } from '../config'
 import ChatWidget from './ChatWidget'
 
 export default function Home() {
@@ -60,7 +61,7 @@ export default function Home() {
                 <div style={styles.imageContainer}>
                   {product.image_url ? (
                     <img 
-                      src={product.image_url} 
+                      src={getUploadUrl(product.image_url)} 
                       alt={product.name}
                       style={styles.productImage}
                       onError={(e) => {

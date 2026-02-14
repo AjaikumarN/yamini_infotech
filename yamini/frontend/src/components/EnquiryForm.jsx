@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../utils/api';
+import { getUploadUrl } from '../config';
 
 const EnquiryForm = () => {
   const { productId } = useParams();
@@ -227,7 +228,7 @@ const EnquiryForm = () => {
               <h3>📋 Enquiry For</h3>
               <div className="product-card">
                 {product.image_url ? (
-                  <img src={product.image_url} alt={product.name} />
+                  <img src={getUploadUrl(product.image_url)} alt={product.name} />
                 ) : (
                   <div className="placeholder-img">🖨️</div>
                 )}

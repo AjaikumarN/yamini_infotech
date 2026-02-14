@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../utils/api';
+import { getUploadUrl } from '../config';
 import { FiPlus, FiSearch, FiGrid, FiList, FiPackage, FiEdit2, FiPhone, FiEye, FiX, FiHome, FiBriefcase, FiBook, FiShoppingBag } from 'react-icons/fi';
 
 const ProductListing = ({ mode = 'staff' }) => {
@@ -194,7 +195,7 @@ const ProductListing = ({ mode = 'staff' }) => {
                 >
                   <div className="prod-card-image">
                     {product.image_url ? (
-                      <img src={product.image_url} alt={product.name} />
+                      <img src={getUploadUrl(product.image_url)} alt={product.name} />
                     ) : (
                       <div className="prod-placeholder">
                         <FiPackage size={48} />
