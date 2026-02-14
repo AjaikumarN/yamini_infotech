@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from models import StockMovement, User, UserRole
+from models import StockMovement, User, UserRole, Complaint
 from services.stock_service import (
     approve_movement,
     get_all_stock_balances,
@@ -163,6 +163,10 @@ def log_stock_movement(
         eng = db.query(User).filter(User.id == data.engineer_id).first()
         if not eng or eng.role != UserRole.SERVICE_ENGINEER:
             raise HTTPException(400, "Invalid engineer ID")
+    if data.service_request_id:
+        ticket = db.query(Complaint).filter(Complaint.id == data.service_request_id).first()
+        if not ticket:
+            raise HTTPException(400, f"Ticket ID {data.service_request_id} not found")
     movement = StockMovement(
         movement_type=data.movement_type,
         item_name=data.item_name,
@@ -178,16 +182,21 @@ def log_stock_movement(
         date=date.today(),
         logged_by=current_user.id,
     )
-    db.add(movement)
-    db.commit()
-    db.refresh(movement)
-
-    # Auto-generate reference_id if not provided
-    if not movement.reference_id:
-        prefix = "STK-IN" if movement.movement_type == "IN" else "STK-OUT"
-        movement.reference_id = f"{prefix}-{movement.id}"
+    try:
+        db.add(movement)
         db.commit()
         db.refresh(movement)
+
+        # Auto-generate reference_id if not provided
+        if not movement.reference_id:
+            prefix = "STK-IN" if movement.movement_type == "IN" else "STK-OUT"
+            movement.reference_id = f"{prefix}-{movement.id}"
+            db.commit()
+            db.refresh(movement)
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to create stock movement: {e}")
+        raise HTTPException(500, f"Failed to create stock movement: {str(e)}")
 
     return _build_response(movement, db)
 

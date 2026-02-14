@@ -19,7 +19,6 @@ const DeliveryLog = () => {
     item_name: '',
     quantity: 1,
     reference_type: '',
-    reference_id: '',
     notes: '',
     engineer_id: '',
     service_request_id: ''
@@ -60,19 +59,23 @@ const DeliveryLog = () => {
         return;
       }
       if (!deliveryForm.service_request_id) {
-        alert('❌ Service Request ID is required for stock OUT movements');
+        alert('❌ Ticket ID is required for stock OUT movements');
         return;
       }
     }
     
     try {
       // Clean payload: convert empty strings to null for optional int fields
+      const engId = deliveryForm.engineer_id ? Number(deliveryForm.engineer_id) : null;
+      const svcId = deliveryForm.service_request_id ? Number(deliveryForm.service_request_id) : null;
+      const qty = Number(deliveryForm.quantity) || 1;
       const payload = {
-        ...deliveryForm,
-        engineer_id: deliveryForm.engineer_id || null,
-        service_request_id: deliveryForm.service_request_id || null,
+        movement_type: deliveryForm.movement_type,
+        item_name: deliveryForm.item_name,
+        quantity: qty,
+        engineer_id: isNaN(engId) ? null : engId,
+        service_request_id: isNaN(svcId) ? null : svcId,
         reference_type: deliveryForm.reference_type || null,
-        reference_id: deliveryForm.reference_id || null,
         notes: deliveryForm.notes || null,
       };
       // Backend automatically sets: approval_status=PENDING, payment_status=UNBILLED
@@ -86,7 +89,6 @@ const DeliveryLog = () => {
         item_name: '',
         quantity: 1,
         reference_type: '',
-        reference_id: '',
         notes: '',
         engineer_id: '',
         service_request_id: ''
@@ -332,7 +334,7 @@ const DeliveryLog = () => {
                   required
                   min="1"
                   value={deliveryForm.quantity}
-                  onChange={(e) => setDeliveryForm({...deliveryForm, quantity: parseInt(e.target.value)})}
+                  onChange={(e) => setDeliveryForm({...deliveryForm, quantity: e.target.value === '' ? '' : parseInt(e.target.value) || 1})}
                 />
               </div>
               
@@ -344,7 +346,7 @@ const DeliveryLog = () => {
                     <select
                       required
                       value={deliveryForm.engineer_id}
-                      onChange={(e) => setDeliveryForm({...deliveryForm, engineer_id: parseInt(e.target.value)})}
+                      onChange={(e) => setDeliveryForm({...deliveryForm, engineer_id: e.target.value})}
                     >
                       <option value="">Select Engineer</option>
                       {engineers.map(eng => (
@@ -354,41 +356,31 @@ const DeliveryLog = () => {
                   </div>
                   
                   <div className="form-group">
-                    <label>Service Request ID * (Required for OUT)</label>
+                    <label>Ticket ID * (Required for OUT)</label>
                     <input
                       required
                       type="number"
-                      placeholder="Service Ticket ID (e.g., 123)"
+                      placeholder="Ticket ID (e.g., 123)"
                       value={deliveryForm.service_request_id}
-                      onChange={(e) => setDeliveryForm({...deliveryForm, service_request_id: parseInt(e.target.value)})}
+                      onChange={(e) => setDeliveryForm({...deliveryForm, service_request_id: e.target.value})}
                     />
                   </div>
                 </>
               )}
               
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Reference Type</label>
-                  <select
-                    value={deliveryForm.reference_type}
-                    onChange={(e) => setDeliveryForm({...deliveryForm, reference_type: e.target.value})}
-                  >
-                    <option value="">Select Type</option>
-                    <option value="INVOICE">Invoice</option>
-                    <option value="PO">Purchase Order</option>
-                    <option value="DO">Delivery Order</option>
-                    <option value="DC">Delivery Challan</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-                <div className="form-group half">
-                  <label>Reference ID</label>
-                  <input
-                    placeholder="e.g., INV-2024-001"
-                    value={deliveryForm.reference_id}
-                    onChange={(e) => setDeliveryForm({...deliveryForm, reference_id: e.target.value})}
-                  />
-                </div>
+              <div className="form-group">
+                <label>Reference Type</label>
+                <select
+                  value={deliveryForm.reference_type}
+                  onChange={(e) => setDeliveryForm({...deliveryForm, reference_type: e.target.value})}
+                >
+                  <option value="">Select Type</option>
+                  <option value="INVOICE">Invoice</option>
+                  <option value="PO">Purchase Order</option>
+                  <option value="DO">Delivery Order</option>
+                  <option value="DC">Delivery Challan</option>
+                  <option value="OTHER">Other</option>
+                </select>
               </div>
               
               <div className="form-group">
