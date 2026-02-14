@@ -8,7 +8,7 @@ from datetime import date, datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session
 
 from auth import get_current_user
@@ -48,6 +48,18 @@ class StockMovementCreate(BaseModel):
     engineer_id: Optional[int] = None
     service_request_id: Optional[int] = None
     notes: Optional[str] = None
+
+    @validator("engineer_id", "service_request_id", pre=True)
+    def empty_str_to_none_int(cls, v):
+        if v == "" or v == "":
+            return None
+        return v
+
+    @validator("reference_type", "reference_id", "notes", pre=True)
+    def empty_str_to_none_str(cls, v):
+        if v == "" or v == "":
+            return None
+        return v
 
 
 class StockMovementResponse(BaseModel):
@@ -169,6 +181,14 @@ def log_stock_movement(
     db.add(movement)
     db.commit()
     db.refresh(movement)
+
+    # Auto-generate reference_id if not provided
+    if not movement.reference_id:
+        prefix = "STK-IN" if movement.movement_type == "IN" else "STK-OUT"
+        movement.reference_id = f"{prefix}-{movement.id}"
+        db.commit()
+        db.refresh(movement)
+
     return _build_response(movement, db)
 
 

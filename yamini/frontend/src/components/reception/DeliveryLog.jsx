@@ -66,10 +66,19 @@ const DeliveryLog = () => {
     }
     
     try {
+      // Clean payload: convert empty strings to null for optional int fields
+      const payload = {
+        ...deliveryForm,
+        engineer_id: deliveryForm.engineer_id || null,
+        service_request_id: deliveryForm.service_request_id || null,
+        reference_type: deliveryForm.reference_type || null,
+        reference_id: deliveryForm.reference_id || null,
+        notes: deliveryForm.notes || null,
+      };
       // Backend automatically sets: approval_status=PENDING, payment_status=UNBILLED
       await apiRequest('/api/stock-movements', {
         method: 'POST',
-        body: JSON.stringify(deliveryForm)
+        body: JSON.stringify(payload)
       });
       setShowLogForm(false);
       setDeliveryForm({
