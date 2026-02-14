@@ -134,7 +134,7 @@ export default function PublicLayoutNew() {
         <div className="container">
           <div className="pub-footer-grid">
             <div>
-              <img src="/assets/main_logo.png" alt="Yamini Infotech" style={{ height: 48, width: 'auto', marginBottom: 12, filter: 'brightness(0) invert(1)', objectFit: 'contain' }} />
+              <img src="/assets/main_logo.png" alt="Yamini Infotech" style={{ height: 56, width: 'auto', marginBottom: 12, objectFit: 'contain', borderRadius: 8, background: 'white', padding: 4 }} />
               <p style={{ color: '#94a3b8', fontSize: 14 }}>Driving Business Through Technology</p>
             </div>
             <div>
