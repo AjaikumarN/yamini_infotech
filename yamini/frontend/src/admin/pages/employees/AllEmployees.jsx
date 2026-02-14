@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../../utils/api';
+import { getEmployeePhotoUrl } from '../../../config';
 import DataCard from '../../../components/shared/dashboard/DataCard';
 import SimpleTable from '../../../components/shared/dashboard/SimpleTable';
 import StatusBadge from '../../../components/shared/dashboard/StatusBadge';
@@ -76,11 +77,12 @@ export default function AllEmployees() {
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            {row.photograph || row.photo ? (
+            {getEmployeePhotoUrl(row.photograph || row.photo) ? (
               <img 
-                src={row.photograph || row.photo} 
+                src={getEmployeePhotoUrl(row.photograph || row.photo)} 
                 alt={row.name}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling && (e.target.nextSibling.style.display = 'flex'); }}
               />
             ) : (
               <span style={{ fontSize: '16px', fontWeight: '600', color: '#6366f1' }}>
