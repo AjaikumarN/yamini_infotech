@@ -158,7 +158,26 @@ export default function Login() {
               </label>
             </div>
 
-            <button type="submit" className="submit-btn" disabled={loading}>
+            <button
+              type="submit"
+              className="submit-btn"
+              disabled={loading}
+              style={{
+                marginTop: 20,
+                background: 'linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '16px',
+                borderRadius: '50px',
+                fontSize: '15px',
+                fontWeight: 700,
+                letterSpacing: '1.5px',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                width: '100%',
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
               {loading ? 'SIGNING IN...' : 'SIGN IN'}
             </button>
           </form>
