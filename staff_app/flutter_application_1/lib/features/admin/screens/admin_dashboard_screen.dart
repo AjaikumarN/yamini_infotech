@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/theme/admin_theme.dart';
 import '../../../core/widgets/admin_components.dart';
+import '../../../core/widgets/performance_widgets.dart';
 
 /// Admin Dashboard Screen - Control Panel Design
 ///
@@ -71,6 +73,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     try {
       final response = await ApiService.instance.get(
         '/api/attendance/all/today',
+        cacheDuration: const Duration(minutes: 2),
       );
       if (response.success && response.data != null) {
         final List data = response.data as List;
@@ -91,7 +94,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Attendance fetch error: $e');
+      if (kDebugMode) debugPrint('Attendance fetch error: $e');
     }
   }
 
@@ -99,6 +102,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     try {
       final response = await ApiService.instance.get(
         '/api/tracking/live/locations',
+        cacheDuration: const Duration(minutes: 1),
       );
       if (response.success && response.data != null) {
         setState(() {
@@ -106,13 +110,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Live location fetch error: $e');
+      if (kDebugMode) debugPrint('Live location fetch error: $e');
     }
   }
 
   Future<void> _fetchEnquiriesCount() async {
     try {
-      final response = await ApiService.instance.get('/api/enquiries');
+      final response = await ApiService.instance.get('/api/enquiries', cacheDuration: const Duration(minutes: 3));
       if (response.success && response.data != null) {
         final List data = response.data as List;
         setState(() {
@@ -125,13 +129,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Enquiries fetch error: $e');
+      if (kDebugMode) debugPrint('Enquiries fetch error: $e');
     }
   }
 
   Future<void> _fetchOrdersCount() async {
     try {
-      final response = await ApiService.instance.get('/api/orders');
+      final response = await ApiService.instance.get('/api/orders', cacheDuration: const Duration(minutes: 3));
       if (response.success && response.data != null) {
         final List data = response.data as List;
         setState(() {
@@ -144,13 +148,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Orders fetch error: $e');
+      if (kDebugMode) debugPrint('Orders fetch error: $e');
     }
   }
 
   Future<void> _fetchServiceJobsCount() async {
     try {
-      final response = await ApiService.instance.get('/api/service-requests');
+      final response = await ApiService.instance.get('/api/service-requests', cacheDuration: const Duration(minutes: 3));
       if (response.success && response.data != null) {
         final List data = response.data as List;
         setState(() {
@@ -163,7 +167,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Service jobs fetch error: $e');
+      if (kDebugMode) debugPrint('Service jobs fetch error: $e');
     }
   }
 
@@ -237,7 +241,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ],
       ),
       body: isLoading
-          ? const AdminLoadingState(message: 'Loading dashboard...')
+          ? const ShimmerDashboard(cardCount: 5)
           : error != null
           ? _buildErrorState()
           : RefreshIndicator(

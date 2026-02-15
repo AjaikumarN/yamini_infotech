@@ -1,9 +1,8 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import '../../../core/constants/api_constants.dart';
-import '../../../core/services/storage_service.dart';
+import '../../../core/services/dio_client.dart';
 
 /// Attendance Data Model
 class AttendanceData {
@@ -78,7 +77,6 @@ class AttendanceResult {
 /// - Get today's status
 class AttendanceService {
   static AttendanceService? _instance;
-  final StorageService _storage = StorageService.instance;
 
   AttendanceService._();
 
@@ -87,35 +85,23 @@ class AttendanceService {
     return _instance!;
   }
 
-  /// Get authorization headers
-  Map<String, String> _getAuthHeaders() {
-    final token = _storage.getToken();
-    return {
-      'Authorization': 'Bearer $token',
-      'Accept': 'application/json',
-    };
-  }
-
   /// Get today's attendance status
   Future<AttendanceResult> getTodayAttendance() async {
     try {
-      final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.ATTENDANCE_TODAY}');
-      
-      final response = await http.get(
-        uri,
-        headers: _getAuthHeaders(),
-      ).timeout(ApiConstants.TIMEOUT_DURATION);
+      final response = await DioClient.instance.dio.get(
+        ApiConstants.ATTENDANCE_TODAY,
+      );
 
       if (response.statusCode == 200) {
-        final body = response.body;
-        if (body.isEmpty || body == 'null') {
+        final data = response.data;
+        if (data == null || data == 'null' || (data is String && data.isEmpty)) {
           return AttendanceResult(
             success: true,
             data: AttendanceData.notCheckedIn(),
           );
         }
         
-        final json = jsonDecode(body);
+        final json = data is Map<String, dynamic> ? data : null;
         if (json == null) {
           return AttendanceResult(
             success: true,
@@ -125,24 +111,29 @@ class AttendanceService {
         
         return AttendanceResult(
           success: true,
-          data: AttendanceData.fromJson(json as Map<String, dynamic>),
+          data: AttendanceData.fromJson(json),
         );
       } else {
-        final error = _parseError(response);
-        return AttendanceResult(success: false, message: error);
+        return AttendanceResult(success: false, message: 'Request failed');
       }
-    } catch (e) {
-      debugPrint('❌ getTodayAttendance error: $e');
+    } on DioException catch (e) {
+      if (kDebugMode) debugPrint('❌ getTodayAttendance error: $e');
       return AttendanceResult(
         success: false,
-        message: _handleException(e),
+        message: _handleDioException(e),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getTodayAttendance error: $e');
+      return AttendanceResult(
+        success: false,
+        message: 'An error occurred: $e',
       );
     }
   }
 
   /// Check-in with photo upload
   /// 
-  /// Sends multipart form data:
+  /// Sends multipart form data via Dio:
   /// - photo: File (required)
   /// - latitude: double
   /// - longitude: double
@@ -156,130 +147,111 @@ class AttendanceService {
     required String location,
   }) async {
     try {
-      final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.ATTENDANCE_CHECK_IN}');
-      
-      debugPrint('📤 ===== CHECK-IN REQUEST =====');
-      debugPrint('📤 URL: $uri');
+      if (kDebugMode) debugPrint('📤 ===== CHECK-IN REQUEST =====');
       
       // Verify photo file exists
       if (!await photoFile.exists()) {
-        debugPrint('❌ Photo file does not exist: ${photoFile.path}');
+        if (kDebugMode) debugPrint('❌ Photo file does not exist: ${photoFile.path}');
         return AttendanceResult(success: false, message: 'Photo file not found');
       }
       
       final photoSize = await photoFile.length();
-      debugPrint('📷 Photo file: ${photoFile.path}');
-      debugPrint('📷 Photo size: ${(photoSize / 1024).toStringAsFixed(2)} KB');
+      if (kDebugMode) debugPrint('📷 Photo size: ${(photoSize / 1024).toStringAsFixed(2)} KB');
       
-      // Create multipart request
-      final request = http.MultipartRequest('POST', uri);
-      
-      // Add auth header
-      final token = _storage.getToken();
-      if (token == null || token.isEmpty) {
-        debugPrint('❌ No auth token found');
-        return AttendanceResult(success: false, message: 'Not authenticated');
-      }
-      request.headers['Authorization'] = 'Bearer $token';
-      
-      // Add photo file
-      request.files.add(await http.MultipartFile.fromPath(
-        'photo',
-        photoFile.path,
-      ));
-      
-      // Add form fields
       final now = DateTime.now();
-      request.fields['latitude'] = latitude.toString();
-      request.fields['longitude'] = longitude.toString();
-      request.fields['location'] = location;
-      request.fields['attendance_status'] = 'Present';
-      request.fields['time'] = now.toIso8601String();
       
-      debugPrint('📍 Location: $latitude, $longitude');
-      debugPrint('📍 Address: $location');
-      debugPrint('🕐 Time: ${now.toIso8601String()}');
-      debugPrint('📤 Sending request...');
+      final formData = FormData.fromMap({
+        'photo': await MultipartFile.fromFile(
+          photoFile.path,
+          filename: 'attendance_${now.millisecondsSinceEpoch}.jpg',
+        ),
+        'latitude': latitude.toString(),
+        'longitude': longitude.toString(),
+        'location': location,
+        'attendance_status': 'Present',
+        'time': now.toIso8601String(),
+      });
       
-      // Send request
-      final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 60), // Longer timeout for upload
+      if (kDebugMode) debugPrint('📍 Location: $latitude, $longitude');
+      if (kDebugMode) debugPrint('📍 Address: $location');
+      if (kDebugMode) debugPrint('📤 Sending request...');
+      
+      final response = await DioClient.instance.dio.post(
+        ApiConstants.ATTENDANCE_CHECK_IN,
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
       );
       
-      final response = await http.Response.fromStream(streamedResponse);
+      if (kDebugMode) debugPrint('📥 Response status: ${response.statusCode}');
       
-      debugPrint('📥 Response status: ${response.statusCode}');
-      debugPrint('📥 Response body: ${response.body}');
-      
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final json = jsonDecode(response.body) as Map<String, dynamic>;
-        debugPrint('✅ Check-in successful!');
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        final json = response.data is Map<String, dynamic> ? response.data : <String, dynamic>{};
+        if (kDebugMode) debugPrint('✅ Check-in successful!');
         return AttendanceResult(
           success: true,
           message: 'Checked in successfully',
           data: AttendanceData.fromJson(json),
         );
       } else {
-        final error = _parseError(response);
-        debugPrint('❌ Check-in failed: $error');
-        return AttendanceResult(success: false, message: error);
+        if (kDebugMode) debugPrint('❌ Check-in failed: ${response.statusCode}');
+        return AttendanceResult(success: false, message: 'Check-in failed');
       }
-    } catch (e) {
-      debugPrint('❌ checkIn exception: $e');
+    } on DioException catch (e) {
+      if (kDebugMode) debugPrint('❌ checkIn exception: $e');
       return AttendanceResult(
         success: false,
-        message: _handleException(e),
+        message: _handleDioException(e),
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ checkIn exception: $e');
+      return AttendanceResult(
+        success: false,
+        message: 'An error occurred: $e',
       );
     }
   }
 
   /// Check-out (end of day)
-  /// 
-  /// Currently the backend doesn't have a dedicated check-out endpoint for attendance.
-  /// The tracking system has visit check-out, but attendance is a single check-in per day.
-  /// This is a placeholder for when backend adds check-out support.
   Future<AttendanceResult> checkOut({
     required double latitude,
     required double longitude,
   }) async {
     try {
-      // For now, we'll use the tracking check-out if there's an active visit
-      // or return success as attendance doesn't require check-out
-      final uri = Uri.parse('${ApiConstants.BASE_URL}/api/attendance/check-out');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          ..._getAuthHeaders(),
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
+      final response = await DioClient.instance.dio.post(
+        '/api/attendance/check-out',
+        data: {
           'latitude': latitude,
           'longitude': longitude,
-        }),
-      ).timeout(ApiConstants.TIMEOUT_DURATION);
+        },
+      );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('✅ Check-out successful');
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        if (kDebugMode) debugPrint('✅ Check-out successful');
         return AttendanceResult(
           success: true,
           message: 'Checked out successfully',
         );
-      } else if (response.statusCode == 404) {
-        // If endpoint doesn't exist, just mark as success locally
-        // The app will stop tracking
+      } else {
+        if (kDebugMode) debugPrint('❌ Check-out failed: ${response.statusCode}');
+        return AttendanceResult(success: false, message: 'Check-out failed');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
         return AttendanceResult(
           success: true,
           message: 'Tracking stopped',
         );
-      } else {
-        final error = _parseError(response);
-        debugPrint('❌ Check-out failed: $error');
-        return AttendanceResult(success: false, message: error);
       }
+      if (kDebugMode) debugPrint('❌ checkOut error: $e');
+      return AttendanceResult(
+        success: true,
+        message: 'Tracking stopped',
+      );
     } catch (e) {
-      debugPrint('❌ checkOut error: $e');
-      // For attendance, check-out is optional - just stop tracking
+      if (kDebugMode) debugPrint('❌ checkOut error: $e');
       return AttendanceResult(
         success: true,
         message: 'Tracking stopped',
@@ -287,23 +259,23 @@ class AttendanceService {
     }
   }
 
-  /// Parse error from response
-  String _parseError(http.Response response) {
-    try {
-      final json = jsonDecode(response.body);
-      return json['detail'] ?? json['message'] ?? 'Request failed';
-    } catch (_) {
-      return 'Request failed: ${response.reasonPhrase}';
+  /// Handle Dio exceptions
+  String _handleDioException(DioException e) {
+    switch (e.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+        return 'No internet connection';
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'Request timeout. Please try again.';
+      case DioExceptionType.badResponse:
+        final data = e.response?.data;
+        if (data is Map) {
+          return data['detail'] ?? data['message'] ?? 'Request failed';
+        }
+        return 'Request failed: ${e.response?.statusCode}';
+      default:
+        return 'An error occurred: ${e.message}';
     }
-  }
-
-  /// Handle exceptions
-  String _handleException(dynamic e) {
-    if (e.toString().contains('SocketException')) {
-      return 'No internet connection';
-    } else if (e.toString().contains('TimeoutException')) {
-      return 'Request timeout. Please try again.';
-    }
-    return 'An error occurred: ${e.toString()}';
   }
 }

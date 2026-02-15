@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/services/api_service.dart';
@@ -43,18 +44,18 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
   Future<void> _refreshJob() async {
     try {
-      debugPrint('🔄 Refreshing job ${job.id}...');
+      if (kDebugMode) debugPrint('🔄 Refreshing job ${job.id}...');
       final response = await ApiService.instance.get('/api/service-requests/${job.id}');
-      debugPrint('📥 Response success: ${response.success}, data: ${response.data}');
+      if (kDebugMode) debugPrint('📥 Response success: ${response.success}, data: ${response.data}');
       if (response.success && response.data != null && mounted) {
         final updatedJob = ServiceJob.fromJson(response.data);
-        debugPrint('📋 Updated job status: ${updatedJob.status}');
+        if (kDebugMode) debugPrint('📋 Updated job status: ${updatedJob.status}');
         setState(() {
           job = updatedJob;
         });
       }
     } catch (e) {
-      debugPrint('❌ Error refreshing job: $e');
+      if (kDebugMode) debugPrint('❌ Error refreshing job: $e');
     }
   }
 
@@ -458,11 +459,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               builder: (context) => SiteCheckinScreen(job: job),
             ),
           );
-          debugPrint('📤 Check-in returned with result: $result');
+          if (kDebugMode) debugPrint('📤 Check-in returned with result: $result');
           if (result == true && mounted) {
-            debugPrint('🔄 Calling _refreshJob...');
+            if (kDebugMode) debugPrint('🔄 Calling _refreshJob...');
             await _refreshJob();
-            debugPrint('✅ Refresh complete. Current status: ${job.status}');
+            if (kDebugMode) debugPrint('✅ Refresh complete. Current status: ${job.status}');
           }
         },
       );

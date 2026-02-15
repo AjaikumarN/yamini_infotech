@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/salesman_animation_constants.dart';
 import '../../../core/services/api_service.dart';
@@ -37,11 +38,11 @@ class _FollowupsScreenState extends State<FollowupsScreen> {
 
     try {
       // Use correct endpoint: /api/sales/my-calls
-      print('📞 Fetching follow-ups from ${ApiConstants.SALESMAN_CALLS}');
+      if (kDebugMode) print('📞 Fetching follow-ups from ${ApiConstants.SALESMAN_CALLS}');
       final response = await ApiService.instance.get(
         ApiConstants.SALESMAN_CALLS,
       );
-      print(
+      if (kDebugMode) print(
         '📥 Response: success=${response.success}, data type=${response.data.runtimeType}',
       );
 
@@ -49,16 +50,16 @@ class _FollowupsScreenState extends State<FollowupsScreen> {
         setState(() {
           if (response.data is List) {
             followups = response.data as List<dynamic>;
-            print('✅ Loaded ${followups.length} follow-ups');
+            if (kDebugMode) print('✅ Loaded ${followups.length} follow-ups');
           } else {
             followups = [];
-            print('⚠️ Data is not a list: ${response.data}');
+            if (kDebugMode) print('⚠️ Data is not a list: ${response.data}');
           }
           isLoading = false;
         });
       } else {
         final errorMsg = response.message ?? 'Failed to load follow-ups';
-        print('❌ Follow-ups error: $errorMsg');
+        if (kDebugMode) print('❌ Follow-ups error: $errorMsg');
         setState(() {
           error = errorMsg;
           followups = [];
@@ -66,7 +67,7 @@ class _FollowupsScreenState extends State<FollowupsScreen> {
         });
       }
     } catch (e) {
-      print('❌ Follow-ups exception: $e');
+      if (kDebugMode) print('❌ Follow-ups exception: $e');
       setState(() {
         error = e.toString();
         followups = [];

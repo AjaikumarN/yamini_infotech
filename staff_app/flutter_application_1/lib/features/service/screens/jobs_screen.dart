@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/performance_widgets.dart';
 
 /// Jobs Screen - List of assigned jobs for engineer
 class JobsScreen extends StatefulWidget {
@@ -94,7 +95,7 @@ class _JobsScreenState extends State<JobsScreen> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerList(itemCount: 5)
           : jobs.isEmpty
               ? const Center(child: Text('No jobs assigned'))
               : RefreshIndicator(

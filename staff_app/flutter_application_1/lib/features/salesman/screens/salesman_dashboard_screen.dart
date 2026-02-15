@@ -5,6 +5,7 @@ import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/salesman_animation_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/performance_widgets.dart';
 import '../widgets/salesman_ui_components.dart';
 
 /// Salesman Dashboard Screen
@@ -44,10 +45,10 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
     try {
       // Fetch attendance status, analytics, and today's visits in parallel
       final results = await Future.wait([
-        ApiService.instance.get(ApiConstants.ATTENDANCE_TODAY),
-        ApiService.instance.get(ApiConstants.SALESMAN_ANALYTICS),
-        ApiService.instance.get(ApiConstants.TRACKING_VISIT_HISTORY),
-        ApiService.instance.get(ApiConstants.TRACKING_ACTIVE_VISIT),
+        ApiService.instance.get(ApiConstants.ATTENDANCE_TODAY, cacheDuration: const Duration(minutes: 2)),
+        ApiService.instance.get(ApiConstants.SALESMAN_ANALYTICS, cacheDuration: const Duration(minutes: 5)),
+        ApiService.instance.get(ApiConstants.TRACKING_VISIT_HISTORY, cacheDuration: const Duration(minutes: 2)),
+        ApiService.instance.get(ApiConstants.TRACKING_ACTIVE_VISIT, cacheDuration: const Duration(minutes: 1)),
       ]);
 
       final attendanceResponse = results[0];
@@ -110,7 +111,7 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerDashboard(cardCount: 4)
           : error != null
           ? _buildErrorState()
           : RefreshIndicator(

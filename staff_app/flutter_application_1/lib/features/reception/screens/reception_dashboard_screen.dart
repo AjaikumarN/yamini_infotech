@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/reception_animation_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/performance_widgets.dart';
 import '../widgets/reception_ui_components.dart';
 
 /// Reception Dashboard Screen
@@ -99,7 +101,7 @@ class _ReceptionDashboardScreenState extends State<ReceptionDashboardScreen> {
 
   Future<void> _fetchEnquiryStats() async {
     try {
-      final response = await ApiService.instance.get('/api/enquiries');
+      final response = await ApiService.instance.get('/api/enquiries', cacheDuration: const Duration(minutes: 3));
       if (response.success && response.data != null) {
         final List data = response.data as List;
         final today = DateTime.now();
@@ -147,13 +149,13 @@ class _ReceptionDashboardScreenState extends State<ReceptionDashboardScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Enquiry stats error: $e');
+      if (kDebugMode) debugPrint('Enquiry stats error: $e');
     }
   }
 
   Future<void> _fetchServiceRequestStats() async {
     try {
-      final response = await ApiService.instance.get('/api/service-requests');
+      final response = await ApiService.instance.get('/api/service-requests', cacheDuration: const Duration(minutes: 3));
       if (response.success && response.data != null) {
         final List data = response.data as List;
         final today = DateTime.now();
@@ -201,7 +203,7 @@ class _ReceptionDashboardScreenState extends State<ReceptionDashboardScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Service request stats error: $e');
+      if (kDebugMode) debugPrint('Service request stats error: $e');
     }
   }
 
@@ -315,7 +317,7 @@ class _ReceptionDashboardScreenState extends State<ReceptionDashboardScreen> {
 
   Widget _buildBody() {
     if (isLoading) {
-      return _buildLoadingState();
+      return const ShimmerDashboard(cardCount: 4);
     }
 
     if (error != null) {

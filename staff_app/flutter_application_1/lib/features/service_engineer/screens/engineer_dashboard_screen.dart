@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/theme/service_engineer_theme.dart';
 import '../../../core/widgets/engineer_components.dart';
+import '../../../core/widgets/performance_widgets.dart';
 import '../../../core/utils/animations.dart';
 
 /// Engineer Dashboard Screen
@@ -47,6 +49,7 @@ class _EngineerDashboardScreenState extends State<EngineerDashboardScreen> {
     try {
       final response = await ApiService.instance.get(
         '/api/service-requests/my-services',
+        cacheDuration: const Duration(minutes: 3),
       );
 
       if (response.success && response.data != null) {
@@ -180,7 +183,7 @@ class _EngineerDashboardScreenState extends State<EngineerDashboardScreen> {
         ],
       ),
       body: isLoading
-          ? _buildLoadingState()
+          ? const ShimmerDashboard(cardCount: 4)
           : error != null
           ? _buildErrorState()
           : RefreshIndicator(
@@ -248,22 +251,16 @@ class _EngineerDashboardScreenState extends State<EngineerDashboardScreen> {
     String? imageUrl = user?.profileImage;
     final String name = user?.name ?? 'Engineer';
 
-    // Construct full URL if it's a relative path or fix localhost URLs
+    // Construct full URL if it's a relative path
     if (imageUrl != null && imageUrl.isNotEmpty) {
       if (!imageUrl.startsWith('http')) {
         // It's a relative path, prepend base URL
         imageUrl = '${ApiConstants.BASE_URL}$imageUrl';
-      } else if (imageUrl.contains('localhost')) {
-        // Replace localhost with the emulator's host address
-        imageUrl = imageUrl.replaceAll(
-          'http://localhost:8000',
-          ApiConstants.BASE_URL,
-        );
       }
     }
 
     // Debug print to check the URL
-    debugPrint('📷 Profile image URL: $imageUrl');
+    if (kDebugMode) debugPrint('📷 Profile image URL: $imageUrl');
 
     // Get initials from name
     final initials = name
@@ -458,7 +455,7 @@ class _EngineerDashboardScreenState extends State<EngineerDashboardScreen> {
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: 1.4,
+          childAspectRatio: 1.2,
           children: [
             StaggeredFadeIn(
               index: 0,

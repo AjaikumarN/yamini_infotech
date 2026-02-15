@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'api_service.dart';
 
@@ -103,7 +104,7 @@ class TrackingService {
       }
       return null;
     } catch (e) {
-      print('❌ Get my visits error: $e');
+      if (kDebugMode) print('❌ Get my visits error: $e');
       return null;
     }
   }
@@ -132,7 +133,7 @@ class TrackingService {
 
       return response.success;
     } catch (e) {
-      print('❌ Live location update error: $e');
+      if (kDebugMode) print('❌ Live location update error: $e');
       return false;
     }
   }
@@ -149,7 +150,7 @@ class TrackingService {
 
       return response.success;
     } catch (e) {
-      print('❌ Stop tracking error: $e');
+      if (kDebugMode) print('❌ Stop tracking error: $e');
       return false;
     }
   }
@@ -172,7 +173,7 @@ class TrackingService {
       }
       return [];
     } catch (e) {
-      print('❌ Get live locations error: $e');
+      if (kDebugMode) print('❌ Get live locations error: $e');
       return [];
     }
   }
@@ -200,7 +201,7 @@ class TrackingService {
       }
       return null;
     } catch (e) {
-      print('❌ Get salesman route error: $e');
+      if (kDebugMode) print('❌ Get salesman route error: $e');
       return null;
     }
   }
@@ -221,7 +222,7 @@ class TrackingService {
       }
       return [];
     } catch (e) {
-      print('❌ Get all routes error: $e');
+      if (kDebugMode) print('❌ Get all routes error: $e');
       return [];
     }
   }
@@ -307,7 +308,7 @@ class TrackingService {
         desiredAccuracy: LocationAccuracy.high,
       );
     } catch (e) {
-      print('❌ Get position error: $e');
+      if (kDebugMode) print('❌ Get position error: $e');
       return null;
     }
   }

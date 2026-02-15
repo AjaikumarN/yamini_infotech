@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/services/api_service.dart';
@@ -87,7 +88,7 @@ class _FieldOverviewScreenState extends State<FieldOverviewScreen> {
         }
       });
     } catch (e) {
-      debugPrint('Live locations error: $e');
+      if (kDebugMode) debugPrint('Live locations error: $e');
     }
   }
 
@@ -116,7 +117,7 @@ class _FieldOverviewScreenState extends State<FieldOverviewScreen> {
         });
       }
     } catch (e) {
-      debugPrint('Stats error: $e');
+      if (kDebugMode) debugPrint('Stats error: $e');
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Followup Details Screen
 ///
@@ -58,10 +59,23 @@ class FollowupDetailsScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.phone),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Call feature coming in Phase-2')),
-              );
+            onPressed: () async {
+              if (phone != 'N/A' && phone.isNotEmpty) {
+                final uri = Uri.parse('tel:$phone');
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Could not launch phone dialer')),
+                    );
+                  }
+                }
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No phone number available')),
+                );
+              }
             },
           ),
         ],

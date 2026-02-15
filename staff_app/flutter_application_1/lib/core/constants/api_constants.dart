@@ -23,13 +23,13 @@ class ApiConstants {
   // - Use your server's public URL (e.g., 'https://api.yourdomain.com')
   // ==================================================================
   
-  // Change this URL based on your environment:
-  static const String BASE_URL = 'http://10.0.2.2:8000';
+  // PRODUCTION URL (DO NOT change for release builds)
+  static const String BASE_URL = 'https://api.yaminicopier.com';
   
-  // Alternative configurations (uncomment as needed):
-  // static const String BASE_URL = 'http://localhost:8000';        // iOS Simulator
-  // static const String BASE_URL = 'http://192.168.1.100:8000';    // Physical device (update IP)
-  // static const String BASE_URL = 'https://api.yaminicopier.com'; // Production
+  // DEV ONLY — uncomment ONE for local development, re-comment before release:
+  // static const String BASE_URL = 'http://10.0.2.2:8000';         // Android Emulator
+  // static const String BASE_URL = 'http://localhost:8000';         // iOS Simulator
+  // static const String BASE_URL = 'http://192.168.1.100:8000';     // Physical device (update IP)
   
   static const Duration TIMEOUT_DURATION = Duration(seconds: 30);
 

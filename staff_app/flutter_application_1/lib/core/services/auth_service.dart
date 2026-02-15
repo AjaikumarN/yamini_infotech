@@ -1,12 +1,13 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
 import '../models/user.dart';
 import '../models/api_response.dart';
 import 'storage_service.dart';
 import 'secure_storage_service.dart';
 import 'api_service.dart';
+import 'dio_client.dart';
 import '../../features/salesman/services/live_tracking_service.dart';
 
 /// Authentication Service
@@ -62,7 +63,7 @@ class AuthService extends ChangeNotifier {
       final keepLoggedIn = await _secureStorage.getKeepLoggedIn();
       
       if (!keepLoggedIn) {
-        debugPrint('⚠️ Keep me logged in disabled - user must login manually');
+        if (kDebugMode) debugPrint('⚠️ Keep me logged in disabled - user must login manually');
         return;
       }
       
@@ -82,23 +83,23 @@ class AuthService extends ChangeNotifier {
           // Update cached token in ApiService for subsequent API calls
           ApiService.instance.updateToken(accessToken);
           
-          debugPrint('✅ Auto-login successful: ${user.name} (${user.role.value})');
+          if (kDebugMode) debugPrint('✅ Auto-login successful: ${user.name} (${user.role.value})');
         } else {
           // Token expired, try to refresh
-          debugPrint('⚠️ Access token expired, attempting refresh...');
+          if (kDebugMode) debugPrint('⚠️ Access token expired, attempting refresh...');
           final refreshed = await refreshToken();
           
           if (!refreshed) {
             // Refresh failed, clear auth and require login
-            debugPrint('❌ Token refresh failed - user must login');
+            if (kDebugMode) debugPrint('❌ Token refresh failed - user must login');
             await clearAuth();
           }
         }
       } else {
-        debugPrint('⚠️ No stored credentials found');
+        if (kDebugMode) debugPrint('⚠️ No stored credentials found');
       }
     } catch (e) {
-      debugPrint('❌ Auto-login error: $e');
+      if (kDebugMode) debugPrint('❌ Auto-login error: $e');
       // If anything fails, clear auth state
       await clearAuth();
     } finally {
@@ -127,8 +128,6 @@ class AuthService extends ChangeNotifier {
     
     try {
       // Backend uses OAuth2PasswordRequestForm which expects form data
-      final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.AUTH_LOGIN}');
-      
       final body = {
         'username': username,
         'password': password,
@@ -139,37 +138,40 @@ class AuthService extends ChangeNotifier {
         body['fcm_token'] = fcmToken;
       }
       
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-        },
-        body: body,
-      ).timeout(ApiConstants.TIMEOUT_DURATION);
+      final response = await DioClient.instance.dio.post(
+        ApiConstants.AUTH_LOGIN,
+        data: body,
+        options: Options(
+          contentType: Headers.formUrlEncodedContentType,
+          headers: {'skipAuth': true},
+        ),
+      );
       
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('📥 Login response: ${response.body}');
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        final Map<String, dynamic> responseData = response.data is String 
+            ? jsonDecode(response.data) 
+            : response.data;
         
         // Extract tokens
         final accessToken = responseData['access_token'] as String?;
         final refreshToken = responseData['refresh_token'] as String?;
         
-        debugPrint('🔑 Access token: ${accessToken != null ? "present" : "MISSING"}');
-        debugPrint('🔑 Refresh token: ${refreshToken != null ? "present" : "MISSING"}');
+        if (kDebugMode) {
+          debugPrint('🔑 Access token: ${accessToken != null ? "present" : "MISSING"}');
+          debugPrint('🔑 Refresh token: ${refreshToken != null ? "present" : "MISSING"}');
+        }
         
         if (accessToken == null) {
-          debugPrint('❌ No access token in response');
+          if (kDebugMode) debugPrint('❌ No access token in response');
           return ApiResponse.error('Invalid response: missing access token');
         }
         
         // Extract user data from response
         final userData = responseData['user'] as Map<String, dynamic>?;
-        debugPrint('👤 User data: ${userData != null ? "present" : "MISSING"}');
+        if (kDebugMode) debugPrint('👤 User data: ${userData != null ? "present" : "MISSING"}');
         
         if (userData == null) {
-          debugPrint('❌ No user data in response');
+          if (kDebugMode) debugPrint('❌ No user data in response');
           return ApiResponse.error('Invalid response: missing user data');
         }
         
@@ -186,7 +188,7 @@ class AuthService extends ChangeNotifier {
           await _secureStorage.saveUser(user);
           await _secureStorage.setKeepLoggedIn(true);
           
-          debugPrint('🔐 Session saved securely (Keep Me Logged In enabled)');
+          if (kDebugMode) debugPrint('🔐 Session saved securely (Keep Me Logged In enabled)');
         } else {
           // Save to regular storage (session-based, cleared on app close)
           await _storage.saveToken(accessToken);
@@ -195,7 +197,7 @@ class AuthService extends ChangeNotifier {
           }
           await _storage.saveUser(user);
           
-          debugPrint('📝 Session saved (temporary, cleared on logout)');
+          if (kDebugMode) debugPrint('📝 Session saved (temporary, cleared on logout)');
         }
         
         // Update cached token in ApiService for subsequent API calls
@@ -206,26 +208,33 @@ class AuthService extends ChangeNotifier {
         
         notifyListeners();
         
-        debugPrint('✅ Login successful: ${user.name} (${user.role.value})');
+        if (kDebugMode) debugPrint('✅ Login successful: ${user.name} (${user.role.value})');
         return ApiResponse.success(user, message: 'Login successful');
       } else {
         // Parse error response
-        try {
-          final errorData = jsonDecode(response.body);
-          final message = errorData['detail'] ?? 'Login failed';
-          return ApiResponse.error(message);
-        } catch (_) {
-          return ApiResponse.error('Login failed: ${response.reasonPhrase}');
+        final errorData = response.data;
+        if (errorData is Map) {
+          return ApiResponse.error(errorData['detail'] ?? 'Login failed');
         }
+        return ApiResponse.error('Login failed');
       }
-    } catch (e) {
-      debugPrint('❌ Login error: $e');
-      if (e.toString().contains('SocketException')) {
+    } on DioException catch (e) {
+      if (kDebugMode) debugPrint('❌ Login error: $e');
+      if (e.type == DioExceptionType.connectionError) {
         return ApiResponse.error('Cannot connect to server. Please check your connection.');
-      } else if (e.toString().contains('TimeoutException')) {
+      } else if (e.type == DioExceptionType.connectionTimeout || 
+                 e.type == DioExceptionType.receiveTimeout) {
         return ApiResponse.error('Connection timeout. Please try again.');
       }
-      return ApiResponse.error('Login error: ${e.toString()}');
+      // Try to extract error detail from response
+      final data = e.response?.data;
+      if (data is Map) {
+        return ApiResponse.error(data['detail'] ?? 'Login failed');
+      }
+      return ApiResponse.error('Login error: ${e.message}');
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Unexpected login error: $e');
+      return ApiResponse.error('An unexpected error occurred: $e');
     } finally {
       _setLoading(false);
     }
@@ -246,9 +255,9 @@ class AuthService extends ChangeNotifier {
       // IMPORTANT: Stop live tracking before logout
       try {
         await LiveTrackingService.instance.stopTracking();
-        debugPrint('✅ Live tracking stopped on logout');
+        if (kDebugMode) debugPrint('✅ Live tracking stopped on logout');
       } catch (e) {
-        debugPrint('⚠️ Failed to stop tracking: $e');
+        if (kDebugMode) debugPrint('⚠️ Failed to stop tracking: $e');
       }
       
       // Get token before clearing (for backend logout API call)
@@ -257,17 +266,12 @@ class AuthService extends ChangeNotifier {
       // Optional: Call backend logout endpoint to invalidate token server-side
       if (token != null) {
         try {
-          final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.AUTH_LOGOUT}');
-          await http.post(
-            uri,
-            headers: {
-              'Authorization': 'Bearer $token',
-              'Accept': 'application/json',
-            },
-          ).timeout(const Duration(seconds: 5));
-          debugPrint('✅ Backend logout successful');
+          await DioClient.instance.post(
+            ApiConstants.AUTH_LOGOUT,
+          );
+          if (kDebugMode) debugPrint('✅ Backend logout successful');
         } catch (e) {
-          debugPrint('⚠️ Backend logout failed (continuing with local logout): $e');
+          if (kDebugMode) debugPrint('⚠️ Backend logout failed (continuing with local logout): $e');
           // Continue with local logout even if backend call fails
         }
       }
@@ -275,9 +279,12 @@ class AuthService extends ChangeNotifier {
       // Clear ALL authentication data (secure + regular storage)
       await clearAuth();
       
-      debugPrint('✅ Logout complete - all data cleared');
+      // Clear API caches
+      ApiService.instance.clearCaches();
+      
+      if (kDebugMode) debugPrint('✅ Logout complete - all data cleared');
     } catch (e) {
-      debugPrint('❌ Logout error: $e');
+      if (kDebugMode) debugPrint('❌ Logout error: $e');
       // Even if something fails, clear local auth
       await clearAuth();
     } finally {
@@ -296,20 +303,21 @@ class AuthService extends ChangeNotifier {
       
       if (tokenToVerify == null) return false;
       
-      final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.AUTH_VERIFY}');
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $tokenToVerify',
-          'Accept': 'application/json',
-        },
-      ).timeout(ApiConstants.TIMEOUT_DURATION);
+      final response = await DioClient.instance.dio.get(
+        ApiConstants.AUTH_VERIFY,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $tokenToVerify',
+            'skipAuth': true,
+          },
+        ),
+      );
       
-      final isValid = response.statusCode >= 200 && response.statusCode < 300;
-      debugPrint(isValid ? '✅ Token valid' : '❌ Token invalid');
+      final isValid = response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300;
+      if (kDebugMode) debugPrint(isValid ? '✅ Token valid' : '❌ Token invalid');
       return isValid;
     } catch (e) {
-      debugPrint('❌ Token verification error: $e');
+      if (kDebugMode) debugPrint('❌ Token verification error: $e');
       return false;
     }
   }
@@ -329,30 +337,26 @@ class AuthService extends ChangeNotifier {
       final refreshToken = await _secureStorage.getRefreshToken();
       
       if (refreshToken == null) {
-        debugPrint('❌ No refresh token available');
+        if (kDebugMode) debugPrint('❌ No refresh token available');
         return false;
       }
       
       // Call backend refresh endpoint
-      final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.AUTH_REFRESH}');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
-          'refresh_token': refreshToken,
-        }),
-      ).timeout(ApiConstants.TIMEOUT_DURATION);
+      final response = await DioClient.instance.dio.post(
+        ApiConstants.AUTH_REFRESH,
+        data: {'refresh_token': refreshToken},
+        options: Options(
+          headers: {'skipAuth': true},
+        ),
+      );
       
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final responseData = jsonDecode(response.body);
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        final responseData = response.data;
         final newAccessToken = responseData['access_token'] as String?;
         final newRefreshToken = responseData['refresh_token'] as String?;
         
         if (newAccessToken == null) {
-          debugPrint('❌ Invalid refresh response: missing access token');
+          if (kDebugMode) debugPrint('❌ Invalid refresh response: missing access token');
           return false;
         }
         
@@ -373,14 +377,14 @@ class AuthService extends ChangeNotifier {
           notifyListeners();
         }
         
-        debugPrint('✅ Token refreshed successfully');
+        if (kDebugMode) debugPrint('✅ Token refreshed successfully');
         return true;
       } else {
-        debugPrint('❌ Token refresh failed: ${response.statusCode}');
+        if (kDebugMode) debugPrint('❌ Token refresh failed: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      debugPrint('❌ Token refresh error: $e');
+      if (kDebugMode) debugPrint('❌ Token refresh error: $e');
       return false;
     }
   }
@@ -409,7 +413,7 @@ class AuthService extends ChangeNotifier {
     _isAuthenticated = false;
     
     notifyListeners();
-    debugPrint('🗑️ All authentication data cleared');
+    if (kDebugMode) debugPrint('🗑️ All authentication data cleared');
   }
   
   /// Set loading state

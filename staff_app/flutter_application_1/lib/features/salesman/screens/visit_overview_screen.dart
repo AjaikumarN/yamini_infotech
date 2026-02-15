@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/widgets/performance_widgets.dart';
 
 /// Salesman Today's Visit Overview Screen
 /// 
@@ -57,8 +58,8 @@ class _VisitOverviewScreenState extends State<VisitOverviewScreen> {
           // Center map on first visit if available
           if (visits.isNotEmpty) {
             final firstVisit = visits.first;
-            final lat = _parseDouble(firstVisit['latitude']);
-            final lng = _parseDouble(firstVisit['longitude']);
+            final lat = _parseDouble(firstVisit['checkin_latitude'] ?? firstVisit['latitude']);
+            final lng = _parseDouble(firstVisit['checkin_longitude'] ?? firstVisit['longitude']);
             if (lat != null && lng != null) {
               _center = LatLng(lat, lng);
             }
@@ -92,8 +93,8 @@ class _VisitOverviewScreenState extends State<VisitOverviewScreen> {
     final points = <LatLng>[];
     
     for (final visit in visits) {
-      final lat = _parseDouble(visit['latitude']);
-      final lng = _parseDouble(visit['longitude']);
+      final lat = _parseDouble(visit['checkin_latitude'] ?? visit['latitude']);
+      final lng = _parseDouble(visit['checkin_longitude'] ?? visit['longitude']);
       if (lat != null && lng != null) {
         points.add(LatLng(lat, lng));
       }
@@ -117,7 +118,7 @@ class _VisitOverviewScreenState extends State<VisitOverviewScreen> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerDashboard(cardCount: 3)
           : error != null
               ? _buildErrorState()
               : _buildContent(),
@@ -230,8 +231,8 @@ class _VisitOverviewScreenState extends State<VisitOverviewScreen> {
     
     for (int i = 0; i < visits.length; i++) {
       final visit = visits[i];
-      final lat = _parseDouble(visit['latitude']);
-      final lng = _parseDouble(visit['longitude']);
+      final lat = _parseDouble(visit['checkin_latitude'] ?? visit['latitude']);
+      final lng = _parseDouble(visit['checkin_longitude'] ?? visit['longitude']);
       
       if (lat != null && lng != null) {
         final isActive = visit['status'] == 'active' || 
@@ -462,8 +463,8 @@ class _VisitOverviewScreenState extends State<VisitOverviewScreen> {
     
     return GestureDetector(
       onTap: () {
-        final lat = _parseDouble(visit['latitude']);
-        final lng = _parseDouble(visit['longitude']);
+        final lat = _parseDouble(visit['checkin_latitude'] ?? visit['latitude']);
+        final lng = _parseDouble(visit['checkin_longitude'] ?? visit['longitude']);
         if (lat != null && lng != null) {
           _mapController.move(LatLng(lat, lng), 15);
         }

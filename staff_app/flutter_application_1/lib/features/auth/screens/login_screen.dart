@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/route_constants.dart';
 import '../../../core/services/auth_service.dart';
@@ -58,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
         
         if (pendingRoute != null) {
           // Navigate to notification route
-          debugPrint('🔔 Navigating to pending notification route: $pendingRoute');
+          if (kDebugMode) debugPrint('🔔 Navigating to pending notification route: $pendingRoute');
           context.go(pendingRoute);
           return;
         }

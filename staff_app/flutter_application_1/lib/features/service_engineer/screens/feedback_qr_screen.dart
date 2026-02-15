@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/theme/service_engineer_theme.dart';
 import '../../../core/widgets/engineer_components.dart';
 import '../../../core/utils/animations.dart';
@@ -34,7 +35,7 @@ class _FeedbackQrScreenState extends State<FeedbackQrScreen> {
 
   String get qrData =>
       widget.feedbackUrl ??
-      'https://erp.example.com/feedback/${widget.job.id}?token=${widget.feedbackToken ?? 'demo'}';
+      '${ApiConstants.BASE_URL}/feedback/${widget.job.id}?token=${widget.feedbackToken ?? ''}';
 
   void _copyLink() {
     Clipboard.setData(ClipboardData(text: qrData));

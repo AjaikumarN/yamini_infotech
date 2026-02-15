@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/constants/api_constants.dart';
@@ -50,7 +51,7 @@ class _AttendanceOverviewScreenState extends State<AttendanceOverviewScreen> {
 
       if (response.success && response.data != null) {
         // Debug: print the response structure
-        debugPrint('📋 Attendance response: ${response.data}');
+        if (kDebugMode) debugPrint('📋 Attendance response: ${response.data}');
         
         List<dynamic> data;
         if (response.data is List) {
@@ -69,8 +70,8 @@ class _AttendanceOverviewScreenState extends State<AttendanceOverviewScreen> {
         
         // Debug: print first record structure
         if (data.isNotEmpty) {
-          debugPrint('📋 First record keys: ${data[0].keys.toList()}');
-          debugPrint('📋 First record: ${data[0]}');
+          if (kDebugMode) debugPrint('📋 First record keys: ${data[0].keys.toList()}');
+          if (kDebugMode) debugPrint('📋 First record: ${data[0]}');
         }
 
         setState(() {
@@ -547,9 +548,9 @@ class _AttendanceOverviewScreenState extends State<AttendanceOverviewScreen> {
                      attendanceData['longitude'] ?? 
                      attendanceData['check_in_lng'];
     
-    debugPrint('📸 Photo URL: $photoUrl');
-    debugPrint('📍 Location: $location');
-    debugPrint('🗺️ Coords: $latitude, $longitude');
+    if (kDebugMode) debugPrint('📸 Photo URL: $photoUrl');
+    if (kDebugMode) debugPrint('📍 Location: $location');
+    if (kDebugMode) debugPrint('🗺️ Coords: $latitude, $longitude');
     
     showModalBottomSheet(
       context: context,

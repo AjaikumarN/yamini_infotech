@@ -275,6 +275,26 @@ const AddProduct = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!isEdit || !productId) return;
+    const confirmed = window.confirm(
+      '⚠️ Are you sure you want to delete this product? This action cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      await apiRequest(`/api/products/${productId}`, { method: 'DELETE' });
+      alert('Product deleted successfully');
+      navigate('/admin/products');
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      setError('Failed to delete product. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Admin has god mode - no permission checks needed
   // Removed permission restrictions for admin
 
@@ -720,6 +740,12 @@ const AddProduct = () => {
 
         {/* Submit Buttons */}
         <div style={styles.actions}>
+          {isEdit && (
+            <button type="button" onClick={handleDelete} disabled={loading} style={styles.deleteBtn}>
+              🗑️ Delete Product
+            </button>
+          )}
+          <div style={{ flex: 1 }} />
           <button type="button" onClick={() => navigate(-1)} style={styles.cancelBtn}>
             Cancel
           </button>
@@ -833,6 +859,16 @@ const styles = {
   submitBtn: {
     padding: '12px 30px',
     backgroundColor: '#28a745',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+  },
+  deleteBtn: {
+    padding: '12px 30px',
+    backgroundColor: '#dc3545',
     color: 'white',
     border: 'none',
     borderRadius: '6px',

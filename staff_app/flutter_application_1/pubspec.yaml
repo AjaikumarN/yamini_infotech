@@ -52,11 +52,24 @@ dependencies:
   # HTTP client for API communication
   http: ^1.2.2
   
+  # Dio - performant HTTP client with interceptors, retry, cache
+  dio: ^5.4.0
+  dio_smart_retry: ^6.0.0
+  
   # Local storage for persistence
   shared_preferences: ^2.3.3
   
   # Secure storage for tokens (Keep Me Logged In)
   flutter_secure_storage: ^9.2.2
+  
+  # Shimmer loading effects
+  shimmer: ^3.0.0
+  
+  # Cached network images
+  cached_network_image: ^3.3.1
+  
+  # Connectivity check
+  connectivity_plus: ^6.0.3
   
   # Firebase Cloud Messaging for push notifications
   firebase_core: ^3.10.0

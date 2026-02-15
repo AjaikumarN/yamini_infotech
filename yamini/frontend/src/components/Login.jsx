@@ -481,8 +481,8 @@ export default function Login() {
 
         .submit-btn {
           margin-top: 20px;
-          background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
-          color: white;
+          background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%) !important;
+          color: white !important;
           border: none;
           padding: 16px;
           border-radius: 50px;
@@ -492,6 +492,7 @@ export default function Login() {
           cursor: pointer;
           transition: all 0.3s ease;
           text-transform: uppercase;
+          width: 100%;
         }
 
         .submit-btn:hover:not(:disabled) {

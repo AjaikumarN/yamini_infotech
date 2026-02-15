@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
-import '../../../core/services/storage_service.dart';
+import '../../../core/services/dio_client.dart';
+import '../../../core/widgets/performance_widgets.dart';
 import '../services/live_tracking_service.dart';
 
 /// Simple Check-In Only Attendance Screen
@@ -104,43 +106,36 @@ class _SimpleAttendanceScreenState extends State<SimpleAttendanceScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // Step 5: Upload photo and mark attendance
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${ApiConstants.BASE_URL}/api/attendance/simple/check-in'),
+      // Step 5: Upload photo and mark attendance via Dio
+      final formData = FormData.fromMap({
+        'photo': await MultipartFile.fromFile(
+          photo.path,
+          filename: 'attendance_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ),
+        'latitude': position.latitude.toString(),
+        'longitude': position.longitude.toString(),
+        'accuracy': position.accuracy.toString(),
+      });
+
+      final response = await DioClient.instance.dio.post(
+        '/api/attendance/simple/check-in',
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(seconds: 60),
+          receiveTimeout: const Duration(seconds: 60),
+        ),
       );
 
-      // Add token
-      final token = StorageService.instance.getToken();
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
-
-      // Add photo
-      request.files.add(await http.MultipartFile.fromPath(
-        'photo',
-        photo.path,
-        filename: 'attendance_${DateTime.now().millisecondsSinceEpoch}.jpg',
-      ));
-
-      // Add location data
-      request.fields['latitude'] = position.latitude.toString();
-      request.fields['longitude'] = position.longitude.toString();
-      request.fields['accuracy'] = position.accuracy.toString();
-
-      final streamedResponse = await request.send();
-      final response = await http.Response.fromStream(streamedResponse);
-
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data is Map ? response.data : json.decode(response.data.toString());
         
         if (data['success'] == true) {
           // IMPORTANT: Start live tracking after successful attendance
           try {
             await LiveTrackingService.instance.startTracking();
-            debugPrint('✅ Live tracking started after attendance');
+            if (kDebugMode) debugPrint('✅ Live tracking started after attendance');
           } catch (e) {
-            debugPrint('⚠️ Failed to start tracking: $e');
+            if (kDebugMode) debugPrint('⚠️ Failed to start tracking: $e');
           }
           
           // Reload attendance data
@@ -212,7 +207,7 @@ class _SimpleAttendanceScreenState extends State<SimpleAttendanceScreen> {
       body: RefreshIndicator(
         onRefresh: _loadTodayAttendance,
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const ShimmerDashboard(cardCount: 2)
             : _buildContent(),
       ),
     );

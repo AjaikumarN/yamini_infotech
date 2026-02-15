@@ -8,14 +8,13 @@ export default function ProductListPage() {
   const [products, setProducts] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('all');
+  const [category, setCategory] = useState(null);
   const [sort, setSort] = useState('name');
   const [loading, setLoading] = useState(true);
   const { type: deviceType } = useDeviceProfile();
   const navigate = useNavigate();
 
   const categories = [
-    { id: 'all', label: 'All', icon: '📦' },
     { id: 'office', label: 'Office', icon: '🏢' },
     { id: 'school', label: 'School', icon: '🎓' },
     { id: 'shop', label: 'Shop', icon: '🏪' },
@@ -34,7 +33,7 @@ export default function ProductListPage() {
 
   useEffect(() => {
     let list = [...products];
-    if (category !== 'all') list = list.filter(p => p.usage_type === category);
+    if (category) list = list.filter(p => p.usage_type === category);
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(p =>
@@ -69,7 +68,7 @@ export default function ProductListPage() {
               key={c.id}
               className={`btn ${category === c.id ? 'btn-primary' : 'btn-secondary'} btn-pill`}
               style={{ flexShrink: 0, minHeight: 36, padding: '6px 16px', fontSize: 13 }}
-              onClick={() => setCategory(c.id)}
+              onClick={() => setCategory(category === c.id ? null : c.id)}
             >
               {c.icon} {c.label}
             </button>
@@ -100,7 +99,7 @@ export default function ProductListPage() {
             <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
             <h3>No products found</h3>
             <p className="text-muted" style={{ margin: '8px auto' }}>Try adjusting your search or filter</p>
-            <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => { setSearch(''); setCategory('all'); }}>
+            <button className="btn btn-secondary" style={{ marginTop: 16 }} onClick={() => { setSearch(''); setCategory(null); }}>
               Clear Filters
             </button>
           </div>

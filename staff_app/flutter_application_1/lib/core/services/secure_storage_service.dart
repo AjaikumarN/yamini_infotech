@@ -62,9 +62,9 @@ class SecureStorageService {
   Future<void> saveAccessToken(String token) async {
     try {
       await _storage.write(key: _keyAccessToken, value: token);
-      debugPrint('🔐 Access token saved securely');
+      if (kDebugMode) debugPrint('🔐 Access token saved securely');
     } catch (e) {
-      debugPrint('❌ Error saving access token: $e');
+      if (kDebugMode) debugPrint('❌ Error saving access token: $e');
       rethrow;
     }
   }
@@ -74,7 +74,7 @@ class SecureStorageService {
     try {
       return await _storage.read(key: _keyAccessToken);
     } catch (e) {
-      debugPrint('❌ Error reading access token: $e');
+      if (kDebugMode) debugPrint('❌ Error reading access token: $e');
       return null;
     }
   }
@@ -83,9 +83,9 @@ class SecureStorageService {
   Future<void> saveRefreshToken(String token) async {
     try {
       await _storage.write(key: _keyRefreshToken, value: token);
-      debugPrint('🔐 Refresh token saved securely');
+      if (kDebugMode) debugPrint('🔐 Refresh token saved securely');
     } catch (e) {
-      debugPrint('❌ Error saving refresh token: $e');
+      if (kDebugMode) debugPrint('❌ Error saving refresh token: $e');
       rethrow;
     }
   }
@@ -95,7 +95,7 @@ class SecureStorageService {
     try {
       return await _storage.read(key: _keyRefreshToken);
     } catch (e) {
-      debugPrint('❌ Error reading refresh token: $e');
+      if (kDebugMode) debugPrint('❌ Error reading refresh token: $e');
       return null;
     }
   }
@@ -105,9 +105,9 @@ class SecureStorageService {
     try {
       await _storage.delete(key: _keyAccessToken);
       await _storage.delete(key: _keyRefreshToken);
-      debugPrint('🗑️ Tokens deleted');
+      if (kDebugMode) debugPrint('🗑️ Tokens deleted');
     } catch (e) {
-      debugPrint('❌ Error deleting tokens: $e');
+      if (kDebugMode) debugPrint('❌ Error deleting tokens: $e');
       rethrow;
     }
   }
@@ -119,9 +119,9 @@ class SecureStorageService {
     try {
       final userJson = jsonEncode(user.toJson());
       await _storage.write(key: _keyUserData, value: userJson);
-      debugPrint('🔐 User data saved securely');
+      if (kDebugMode) debugPrint('🔐 User data saved securely');
     } catch (e) {
-      debugPrint('❌ Error saving user data: $e');
+      if (kDebugMode) debugPrint('❌ Error saving user data: $e');
       rethrow;
     }
   }
@@ -135,7 +135,7 @@ class SecureStorageService {
       final Map<String, dynamic> userData = jsonDecode(userJson);
       return User.fromJson(userData);
     } catch (e) {
-      debugPrint('❌ Error reading user data: $e');
+      if (kDebugMode) debugPrint('❌ Error reading user data: $e');
       return null;
     }
   }
@@ -144,9 +144,9 @@ class SecureStorageService {
   Future<void> deleteUser() async {
     try {
       await _storage.delete(key: _keyUserData);
-      debugPrint('🗑️ User data deleted');
+      if (kDebugMode) debugPrint('🗑️ User data deleted');
     } catch (e) {
-      debugPrint('❌ Error deleting user data: $e');
+      if (kDebugMode) debugPrint('❌ Error deleting user data: $e');
       rethrow;
     }
   }
@@ -157,9 +157,9 @@ class SecureStorageService {
   Future<void> setKeepLoggedIn(bool value) async {
     try {
       await _storage.write(key: _keyKeepLoggedIn, value: value.toString());
-      debugPrint('🔐 Keep logged in: $value');
+      if (kDebugMode) debugPrint('🔐 Keep logged in: $value');
     } catch (e) {
-      debugPrint('❌ Error saving keep logged in: $e');
+      if (kDebugMode) debugPrint('❌ Error saving keep logged in: $e');
       rethrow;
     }
   }
@@ -170,7 +170,7 @@ class SecureStorageService {
       final value = await _storage.read(key: _keyKeepLoggedIn);
       return value == 'true';
     } catch (e) {
-      debugPrint('❌ Error reading keep logged in: $e');
+      if (kDebugMode) debugPrint('❌ Error reading keep logged in: $e');
       return false;
     }
   }
@@ -181,9 +181,9 @@ class SecureStorageService {
   Future<void> saveFcmToken(String token) async {
     try {
       await _storage.write(key: _keyFcmToken, value: token);
-      debugPrint('🔐 FCM token saved securely');
+      if (kDebugMode) debugPrint('🔐 FCM token saved securely');
     } catch (e) {
-      debugPrint('❌ Error saving FCM token: $e');
+      if (kDebugMode) debugPrint('❌ Error saving FCM token: $e');
       rethrow;
     }
   }
@@ -193,7 +193,7 @@ class SecureStorageService {
     try {
       return await _storage.read(key: _keyFcmToken);
     } catch (e) {
-      debugPrint('❌ Error reading FCM token: $e');
+      if (kDebugMode) debugPrint('❌ Error reading FCM token: $e');
       return null;
     }
   }
@@ -206,9 +206,9 @@ class SecureStorageService {
   Future<void> clearAll() async {
     try {
       await _storage.deleteAll();
-      debugPrint('🗑️ All secure data cleared');
+      if (kDebugMode) debugPrint('🗑️ All secure data cleared');
     } catch (e) {
-      debugPrint('❌ Error clearing all data: $e');
+      if (kDebugMode) debugPrint('❌ Error clearing all data: $e');
       rethrow;
     }
   }

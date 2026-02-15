@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/widgets/performance_widgets.dart';
 import 'jobs_screen.dart';
 import 'schedule_screen.dart';
 
@@ -80,7 +81,7 @@ class _ServiceDashboardScreenState extends State<ServiceDashboardScreen> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerDashboard(cardCount: 4)
           : RefreshIndicator(
               onRefresh: _loadStats,
               child: SingleChildScrollView(

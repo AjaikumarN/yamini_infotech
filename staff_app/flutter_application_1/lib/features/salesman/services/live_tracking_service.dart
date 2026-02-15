@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:dio/dio.dart';
 import '../../../core/constants/api_constants.dart';
-import '../../../core/services/storage_service.dart';
+import '../../../core/services/dio_client.dart';
 /// Live Tracking Service
 /// 
 /// Handles background GPS tracking for salesman:
@@ -18,7 +17,6 @@ import '../../../core/services/storage_service.dart';
 /// - Must handle app lifecycle (pause/resume)
 class LiveTrackingService extends ChangeNotifier {
   static LiveTrackingService? _instance;
-  final StorageService _storage = StorageService.instance;
   
   Timer? _trackingTimer;
   bool _isTracking = false;
@@ -93,10 +91,10 @@ class LiveTrackingService extends ChangeNotifier {
       _error = null;
       notifyListeners();
       
-      debugPrint('📍 Got position: ${position.latitude}, ${position.longitude}');
+      if (kDebugMode) debugPrint('📍 Got position: ${position.latitude}, ${position.longitude}');
       return position;
     } catch (e) {
-      debugPrint('❌ getCurrentPosition error: $e');
+      if (kDebugMode) debugPrint('❌ getCurrentPosition error: $e');
       _error = 'Failed to get location: ${e.toString()}';
       notifyListeners();
       return null;
@@ -109,11 +107,11 @@ class LiveTrackingService extends ChangeNotifier {
   /// Call this after successful check-in
   Future<bool> startTracking() async {
     if (_isTracking) {
-      debugPrint('⚠️ Tracking already active');
+      if (kDebugMode) debugPrint('⚠️ Tracking already active');
       return true;
     }
     
-    debugPrint('🚀 Starting live tracking...');
+    if (kDebugMode) debugPrint('🚀 Starting live tracking...');
     
     // Get initial position
     final position = await getCurrentPosition();
@@ -134,7 +132,7 @@ class LiveTrackingService extends ChangeNotifier {
     _error = null;
     notifyListeners();
     
-    debugPrint('✅ Live tracking started (interval: ${_trackingIntervalSeconds}s)');
+    if (kDebugMode) debugPrint('✅ Live tracking started (interval: ${_trackingIntervalSeconds}s)');
     return true;
   }
 
@@ -145,7 +143,7 @@ class LiveTrackingService extends ChangeNotifier {
       return;
     }
     
-    debugPrint('🛑 Stopping live tracking...');
+    if (kDebugMode) debugPrint('🛑 Stopping live tracking...');
     
     // Cancel timer
     _trackingTimer?.cancel();
@@ -159,7 +157,7 @@ class LiveTrackingService extends ChangeNotifier {
     _isTracking = false;
     notifyListeners();
     
-    debugPrint('✅ Live tracking stopped');
+    if (kDebugMode) debugPrint('✅ Live tracking stopped');
   }
 
   /// Handle tracking tick
@@ -181,7 +179,7 @@ class LiveTrackingService extends ChangeNotifier {
       
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ Tracking tick error: $e');
+      if (kDebugMode) debugPrint('❌ Tracking tick error: $e');
       _error = 'Location update failed';
       notifyListeners();
     }
@@ -192,40 +190,30 @@ class LiveTrackingService extends ChangeNotifier {
   /// Send location update to backend
   Future<bool> _sendLocationUpdate(Position position, {bool isFinal = false}) async {
     try {
-      final token = _storage.getToken();
-      if (token == null) {
-        debugPrint('❌ No auth token for location update');
-        return false;
-      }
-      
-      final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.TRACKING_LOCATION_UPDATE}');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
+      final response = await DioClient.instance.dio.post(
+        ApiConstants.TRACKING_LOCATION_UPDATE,
+        data: {
           'latitude': position.latitude,
           'longitude': position.longitude,
           'accuracy': position.accuracy,
           'timestamp': DateTime.now().toIso8601String(),
           'is_final': isFinal,
-        }),
-      ).timeout(const Duration(seconds: 10));
+        },
+      );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
         _lastUpdateTime = DateTime.now();
-        debugPrint('📤 Location sent: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}');
+        if (kDebugMode) debugPrint('📤 Location sent: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}');
         return true;
       } else {
-        debugPrint('❌ Location update failed: ${response.statusCode}');
+        if (kDebugMode) debugPrint('❌ Location update failed: ${response.statusCode}');
         return false;
       }
+    } on DioException catch (e) {
+      if (kDebugMode) debugPrint('❌ _sendLocationUpdate error: ${e.message}');
+      return false;
     } catch (e) {
-      debugPrint('❌ _sendLocationUpdate error: $e');
+      if (kDebugMode) debugPrint('❌ _sendLocationUpdate error: $e');
       return false;
     }
   }
@@ -235,7 +223,7 @@ class LiveTrackingService extends ChangeNotifier {
   /// Pause tracking (app in background)
   void pauseTracking() {
     if (!_isTracking) return;
-    debugPrint('⏸️ Pausing tracking (app backgrounded)');
+    if (kDebugMode) debugPrint('⏸️ Pausing tracking (app backgrounded)');
     _trackingTimer?.cancel();
     _trackingTimer = null;
   }
@@ -245,7 +233,7 @@ class LiveTrackingService extends ChangeNotifier {
     if (!_isTracking) return;
     if (_trackingTimer != null) return;
     
-    debugPrint('▶️ Resuming tracking');
+    if (kDebugMode) debugPrint('▶️ Resuming tracking');
     _trackingTimer = Timer.periodic(
       Duration(seconds: _trackingIntervalSeconds),
       (_) => _onTrackingTick(),

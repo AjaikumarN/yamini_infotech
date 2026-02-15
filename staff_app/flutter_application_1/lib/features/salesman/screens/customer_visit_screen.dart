@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'dart:convert';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/widgets/performance_widgets.dart';
 import '../services/live_tracking_service.dart';
 import '../widgets/salesman_ui_components.dart';
 import 'create_enquiry_screen.dart';
@@ -320,7 +322,7 @@ class _CustomerVisitScreenState extends State<CustomerVisitScreen>
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerDashboard(cardCount: 3)
           : _error != null
           ? _buildErrorState()
           : RefreshIndicator(
@@ -1013,22 +1015,24 @@ class _VisitDetailsSheetState extends State<_VisitDetailsSheet> {
         }
       }
     } catch (e) {
-      print('⚠️ Geocoding package failed: $e');
+      if (kDebugMode) print('⚠️ Geocoding package failed: $e');
     }
 
     // Fallback to OpenStreetMap Nominatim API
     try {
-      final url = Uri.parse(
-        'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18&addressdetails=1'
-      );
+      final url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng&zoom=18&addressdetails=1';
       
-      final response = await http.get(
+      final dio = Dio();
+      final response = await dio.get(
         url,
-        headers: {'User-Agent': 'YaminiInfotechApp/1.0'},
-      ).timeout(const Duration(seconds: 10));
+        options: Options(
+          headers: {'User-Agent': 'YaminiInfotechApp/1.0'},
+          receiveTimeout: const Duration(seconds: 10),
+        ),
+      );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data is Map ? response.data : json.decode(response.data.toString());
         final address = data['display_name'] as String?;
         
         if (address != null && address.isNotEmpty) {
@@ -1038,7 +1042,7 @@ class _VisitDetailsSheetState extends State<_VisitDetailsSheet> {
         }
       }
     } catch (e) {
-      print('⚠️ Nominatim API failed: $e');
+      if (kDebugMode) print('⚠️ Nominatim API failed: $e');
     }
 
     // Final fallback: return coordinates
@@ -1046,17 +1050,11 @@ class _VisitDetailsSheetState extends State<_VisitDetailsSheet> {
   }
 
   Future<void> _loadAddresses() async {
-    // Debug: Print visit data
-    print('🔍 Visit data: ${widget.visit}');
-    
     final checkInLat = widget.visit['checkin_latitude'];
     final checkInLng = widget.visit['checkin_longitude'];
     final checkOutLat = widget.visit['checkout_latitude'];
     final checkOutLng = widget.visit['checkout_longitude'];
     final isActive = widget.visit['status'] == 'active';
-
-    print('📍 Check-in coords: lat=$checkInLat, lng=$checkInLng');
-    print('📍 Check-out coords: lat=$checkOutLat, lng=$checkOutLng');
 
     // Load check-in address
     if (checkInLat != null && checkInLng != null) {
@@ -1073,7 +1071,7 @@ class _VisitDetailsSheetState extends State<_VisitDetailsSheet> {
           });
         }
       } catch (e) {
-        print('❌ Error processing check-in location: $e');
+        if (kDebugMode) print('❌ Error processing check-in location: $e');
         if (mounted) {
           setState(() {
             checkInAddress = 'Location data error';
@@ -1105,7 +1103,7 @@ class _VisitDetailsSheetState extends State<_VisitDetailsSheet> {
           });
         }
       } catch (e) {
-        print('❌ Error processing check-out location: $e');
+        if (kDebugMode) print('❌ Error processing check-out location: $e');
         if (mounted) {
           setState(() {
             checkOutAddress = 'Location data error';
@@ -1160,8 +1158,6 @@ class _VisitDetailsSheetState extends State<_VisitDetailsSheet> {
     final checkInTime = widget.visit['checkintime'];
     final checkOutTime = widget.visit['checkouttime'];
 
-    print('📝 Purpose: $purpose');
-    print('⏰ Check-in: $checkInTime, Check-out: $checkOutTime');
     final isActive = widget.visit['status'] == 'active';
 
     return DraggableScrollableSheet(

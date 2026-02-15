@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'dart:async';
@@ -100,7 +101,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
         isLoadingRoute = false;
       });
     } catch (e) {
-      debugPrint('❌ Route fetch error: $e');
+      if (kDebugMode) debugPrint('❌ Route fetch error: $e');
       setState(() {
         selectedRoute = null;
         isLoadingRoute = false;

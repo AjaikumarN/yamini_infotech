@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import '../constants/api_constants.dart';
 import '../models/app_notification.dart';
 import 'secure_storage_service.dart';
 import 'storage_service.dart';
 import 'auth_service.dart';
+import 'dio_client.dart';
 import 'navigation_service.dart';
 
 /// Firebase Cloud Messaging Service
@@ -81,11 +82,11 @@ class NotificationService extends ChangeNotifier {
       );
       
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        debugPrint('✅ Notification permission granted');
+        if (kDebugMode) debugPrint('✅ Notification permission granted');
       } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-        debugPrint('⚠️ Notification permission granted (provisional)');
+        if (kDebugMode) debugPrint('⚠️ Notification permission granted (provisional)');
       } else {
-        debugPrint('❌ Notification permission denied');
+        if (kDebugMode) debugPrint('❌ Notification permission denied');
         return;
       }
       
@@ -93,7 +94,7 @@ class NotificationService extends ChangeNotifier {
       _fcmToken = await _messaging!.getToken();
       
       if (_fcmToken != null) {
-        debugPrint('🔔 FCM Token: $_fcmToken');
+        if (kDebugMode) debugPrint('🔔 FCM Token: $_fcmToken');
         await _secureStorage.saveFcmToken(_fcmToken!);
         
         // Register token with backend (if user is logged in)
@@ -113,10 +114,10 @@ class NotificationService extends ChangeNotifier {
       // Set up message handlers
       _setupMessageHandlers();
       
-      debugPrint('✅ FCM initialized successfully');
+      if (kDebugMode) debugPrint('✅ FCM initialized successfully');
     } catch (e) {
       _firebaseAvailable = false;
-      debugPrint('❌ FCM initialization error: $e');
+      if (kDebugMode) debugPrint('❌ FCM initialization error: $e');
     }
   }
   
@@ -140,10 +141,10 @@ class NotificationService extends ChangeNotifier {
   
   /// Handle notification when app is in FOREGROUND
   void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('📨 Foreground notification received');
-    debugPrint('Title: ${message.notification?.title}');
-    debugPrint('Body: ${message.notification?.body}');
-    debugPrint('Data: ${message.data}');
+    if (kDebugMode) debugPrint('📨 Foreground notification received');
+    if (kDebugMode) debugPrint('Title: ${message.notification?.title}');
+    if (kDebugMode) debugPrint('Body: ${message.notification?.body}');
+    if (kDebugMode) debugPrint('Data: ${message.data}');
     
     // Convert to AppNotification
     final notification = AppNotification.fromFcmPayload(message.data);
@@ -158,13 +159,13 @@ class NotificationService extends ChangeNotifier {
   
   /// Handle notification TAP (background or terminated)
   void _handleNotificationTap(RemoteMessage message) {
-    debugPrint('👆 Notification tapped');
-    debugPrint('Data: ${message.data}');
+    if (kDebugMode) debugPrint('👆 Notification tapped');
+    if (kDebugMode) debugPrint('Data: ${message.data}');
     
     final route = message.data['route'] as String?;
     
     if (route == null || route.isEmpty) {
-      debugPrint('⚠️ No route in notification payload');
+      if (kDebugMode) debugPrint('⚠️ No route in notification payload');
       return;
     }
     
@@ -177,13 +178,13 @@ class NotificationService extends ChangeNotifier {
     } else {
       // Save route for post-login navigation
       _pendingRoute = route;
-      debugPrint('💾 Route saved for post-login navigation: $route');
+      if (kDebugMode) debugPrint('💾 Route saved for post-login navigation: $route');
     }
   }
   
   /// Navigate to route using GoRouter
   void _navigateToRoute(String route) {
-    debugPrint('🧭 Navigating to: $route');
+    if (kDebugMode) debugPrint('🧭 Navigating to: $route');
     NavigationService.instance.navigateTo(route);
   }
   
@@ -196,7 +197,7 @@ class NotificationService extends ChangeNotifier {
     try {
       final user = AuthService.instance.currentUser;
       if (user == null) {
-        debugPrint('⚠️ Cannot register FCM token: user not logged in');
+        if (kDebugMode) debugPrint('⚠️ Cannot register FCM token: user not logged in');
         return;
       }
       
@@ -204,34 +205,27 @@ class NotificationService extends ChangeNotifier {
                          _storage.getToken();
       
       if (accessToken == null) {
-        debugPrint('⚠️ Cannot register FCM token: no access token');
+        if (kDebugMode) debugPrint('⚠️ Cannot register FCM token: no access token');
         return;
       }
       
       // Call backend API to register FCM token
-      final uri = Uri.parse('${ApiConstants.BASE_URL}/api/notifications/register-token');
-      
-      final response = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode({
+      final response = await DioClient.instance.dio.post(
+        '/api/notifications/register-token',
+        data: {
           'fcm_token': token,
           'user_id': user.id,
           'role': user.role.value,
-        }),
-      ).timeout(ApiConstants.TIMEOUT_DURATION);
+        },
+      );
       
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        debugPrint('✅ FCM token registered with backend');
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        if (kDebugMode) debugPrint('✅ FCM token registered with backend');
       } else {
-        debugPrint('❌ Failed to register FCM token: ${response.statusCode}');
+        if (kDebugMode) debugPrint('❌ Failed to register FCM token: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('❌ Error registering FCM token: $e');
+      if (kDebugMode) debugPrint('❌ Error registering FCM token: $e');
     }
   }
   
@@ -242,22 +236,16 @@ class NotificationService extends ChangeNotifier {
                          _storage.getToken();
       
       if (accessToken == null) {
-        debugPrint('⚠️ Cannot fetch notifications: no access token');
+        if (kDebugMode) debugPrint('⚠️ Cannot fetch notifications: no access token');
         return [];
       }
       
-      final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.NOTIFICATIONS}');
+      final response = await DioClient.instance.dio.get(
+        ApiConstants.NOTIFICATIONS,
+      );
       
-      final response = await http.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Accept': 'application/json',
-        },
-      ).timeout(ApiConstants.TIMEOUT_DURATION);
-      
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final List<dynamic> data = jsonDecode(response.body);
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+        final List<dynamic> data = response.data is List ? response.data : jsonDecode(response.data.toString());
         final notifications = data
             .map((json) => AppNotification.fromJson(json))
             .toList();
@@ -266,14 +254,14 @@ class NotificationService extends ChangeNotifier {
         _notifications.addAll(notifications);
         notifyListeners();
         
-        debugPrint('✅ Fetched ${notifications.length} notifications');
+        if (kDebugMode) debugPrint('✅ Fetched ${notifications.length} notifications');
         return notifications;
       } else {
-        debugPrint('❌ Failed to fetch notifications: ${response.statusCode}');
+        if (kDebugMode) debugPrint('❌ Failed to fetch notifications: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      debugPrint('❌ Error fetching notifications: $e');
+      if (kDebugMode) debugPrint('❌ Error fetching notifications: $e');
       return [];
     }
   }
@@ -286,17 +274,11 @@ class NotificationService extends ChangeNotifier {
       
       if (accessToken == null) return false;
       
-      final uri = Uri.parse('${ApiConstants.BASE_URL}${ApiConstants.NOTIFICATIONS}/$notificationId/read');
+      final response = await DioClient.instance.dio.patch(
+        '${ApiConstants.NOTIFICATIONS}/$notificationId/read',
+      );
       
-      final response = await http.patch(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Accept': 'application/json',
-        },
-      ).timeout(ApiConstants.TIMEOUT_DURATION);
-      
-      if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
         // Update local notification
         final index = _notifications.indexWhere((n) => n.id == notificationId);
         if (index != -1) {
@@ -307,7 +289,7 @@ class NotificationService extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      debugPrint('❌ Error marking notification as read: $e');
+      if (kDebugMode) debugPrint('❌ Error marking notification as read: $e');
       return false;
     }
   }
@@ -333,9 +315,9 @@ class NotificationService extends ChangeNotifier {
 /// Called by Firebase before app starts
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('📨 Background notification received (terminated state)');
-  debugPrint('Title: ${message.notification?.title}');
-  debugPrint('Data: ${message.data}');
+  if (kDebugMode) debugPrint('📨 Background notification received (terminated state)');
+  if (kDebugMode) debugPrint('Title: ${message.notification?.title}');
+  if (kDebugMode) debugPrint('Data: ${message.data}');
   
   // Note: You can't navigate here, only process data
   // Navigation happens when user taps notification

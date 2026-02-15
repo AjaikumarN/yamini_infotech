@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/widgets/performance_widgets.dart';
 import '../widgets/salesman_ui_components.dart';
 
 /// Location Sharing Screen
@@ -90,7 +91,7 @@ class _LocationSharingScreenState extends State<LocationSharingScreen> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerDashboard(cardCount: 2)
           : error != null
           ? _buildErrorState()
           : RefreshIndicator(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/widgets/performance_widgets.dart';
 
 /// Daily Report Screen - Salesman End-of-Day Report
 ///
@@ -193,7 +194,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const ShimmerDashboard(cardCount: 3)
           : error != null
               ? _buildErrorState()
               : _buildContent(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
@@ -76,20 +77,49 @@ class _SiteCheckinScreenState extends State<SiteCheckinScreen> {
         return;
       }
 
-      Position position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 15),
-        ),
-      );
+      // Try last known position first for faster response
+      Position? position = await Geolocator.getLastKnownPosition();
 
-      setState(() {
-        currentPosition = position;
-        isCapturingLocation = false;
-      });
+      // Always try to get a fresh position
+      try {
+        position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            timeLimit: Duration(seconds: 20),
+          ),
+        );
+      } catch (timeoutErr) {
+        // If fresh position fails but we have a last-known, use it
+        if (position == null) {
+          // Try with lower accuracy as final fallback
+          try {
+            position = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.medium,
+                timeLimit: Duration(seconds: 15),
+              ),
+            );
+          } catch (_) {
+            // Will be handled below
+          }
+        }
+      }
+
+      if (position != null) {
+        setState(() {
+          currentPosition = position;
+          isCapturingLocation = false;
+        });
+      } else {
+        setState(() {
+          locationError = 'Could not determine location. Please ensure GPS is on and try again.';
+          isCapturingLocation = false;
+        });
+      }
     } catch (e) {
+      if (kDebugMode) debugPrint('Location error: $e');
       setState(() {
-        locationError = 'Failed to get location. Please try again.';
+        locationError = 'Failed to get location: ${e.toString().length > 80 ? e.toString().substring(0, 80) : e}';
         isCapturingLocation = false;
       });
     }
@@ -114,7 +144,7 @@ class _SiteCheckinScreenState extends State<SiteCheckinScreen> {
 
       if (response.success) {
         HapticFeedback.heavyImpact();
-        debugPrint('✅ Check-in successful! Showing success screen...');
+        if (kDebugMode) debugPrint('✅ Check-in successful! Showing success screen...');
         setState(() {
           isSuccess = true;
           checkinTime = DateTime.now();
@@ -124,7 +154,7 @@ class _SiteCheckinScreenState extends State<SiteCheckinScreen> {
         // Auto-close after showing success
         await Future.delayed(const Duration(seconds: 2));
         if (mounted) {
-          debugPrint('🔙 Popping back with result=true');
+          if (kDebugMode) debugPrint('🔙 Popping back with result=true');
           Navigator.pop(context, true);
         }
       } else {

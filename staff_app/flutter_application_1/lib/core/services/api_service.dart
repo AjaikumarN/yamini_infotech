@@ -1,105 +1,119 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import '../constants/api_constants.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../models/api_response.dart';
+import 'dio_client.dart';
 import 'storage_service.dart';
 import 'secure_storage_service.dart';
 
-/// API Service
-/// 
-/// Centralized HTTP client for all API communications
-/// Handles authentication headers, error handling, and response parsing
-/// 
-/// Features:
-/// - Automatic token injection
-/// - Request/Response logging (debug mode)
-/// - Error handling and parsing
-/// - Timeout configuration
-/// - Retry logic (TODO)
+/// API Service - now powered by DioClient
+///
+/// Same interface as before (ApiResponse<T>) but uses Dio underneath:
+/// - 10s connect / 15s receive timeouts
+/// - Automatic retry (2x) on network errors
+/// - Response caching for dashboards, lists
+/// - Request deduplication
+/// - Gzip compression
+/// - Keep-alive connections
+/// - Timing logs for every request
 class ApiService {
   static ApiService? _instance;
-  final http.Client _client = http.Client();
+  final DioClient _dio = DioClient.instance;
   final StorageService _storage = StorageService.instance;
   final SecureStorageService _secureStorage = SecureStorageService.instance;
-  
+
   // Cached token for sync access (updated when token changes)
   String? _cachedToken;
-  
+
+  // Future cache - prevents repeated API calls in initState loops
+  final Map<String, _FutureCacheEntry> _futureCache = {};
+
   ApiService._();
-  
+
   /// Singleton instance
   static ApiService get instance {
     _instance ??= ApiService._();
     return _instance!;
   }
-  
-  /// Initialize API service - call after auth service init to cache token
+
+  /// Initialize API service
   Future<void> init() async {
     await _refreshCachedToken();
+    await _dio.init();
   }
-  
-  /// Refresh the cached token from storage
+
   Future<void> _refreshCachedToken() async {
-    // Try secure storage first (for "Keep Me Logged In")
     _cachedToken = await _secureStorage.getAccessToken();
-    // Fall back to regular storage
     _cachedToken ??= _storage.getToken();
   }
-  
+
   /// Update cached token (call after login)
   void updateToken(String? token) {
     _cachedToken = token;
+    _dio.updateToken(token);
   }
-  
-  /// Get common headers with authentication
-  Map<String, String> _getHeaders({bool includeAuth = true}) {
-    final headers = {
-      ApiConstants.HEADER_CONTENT_TYPE: ApiConstants.CONTENT_TYPE_JSON,
-      ApiConstants.HEADER_ACCEPT: ApiConstants.CONTENT_TYPE_JSON,
-    };
-    
-    if (includeAuth) {
-      // Use cached token (from either secure or regular storage)
-      final token = _cachedToken ?? _storage.getToken();
-      if (token != null) {
-        headers[ApiConstants.HEADER_AUTHORIZATION] = 
-            ApiConstants.getAuthHeader(token);
-      }
-    }
-    
-    return headers;
-  }
-  
-  /// GET request
+
+  /// GET request with optional response caching
+  ///
+  /// [cacheDuration] - if set, caches response for this duration
+  /// Use for: dashboard, product lists, employee lists etc.
   Future<ApiResponse<T>> get<T>(
     String endpoint, {
     Map<String, dynamic>? queryParams,
     T Function(dynamic)? fromJson,
     bool requiresAuth = true,
+    Duration? cacheDuration,
   }) async {
     try {
-      var uri = Uri.parse('${ApiConstants.BASE_URL}$endpoint');
-      
-      if (queryParams != null && queryParams.isNotEmpty) {
-        uri = uri.replace(queryParameters: queryParams);
+      final response = await _dio.get(
+        endpoint,
+        queryParameters: queryParams,
+        cacheDuration: cacheDuration,
+      );
+
+      return _handleDioResponse<T>(response, fromJson);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        return ApiResponse.error('Request cancelled');
       }
-      
-      print('🌐 GET $uri');
-      print('🔑 Auth: ${requiresAuth ? "Yes" : "No"}');
-      
-      final response = await _client
-          .get(uri, headers: _getHeaders(includeAuth: requiresAuth))
-          .timeout(ApiConstants.TIMEOUT_DURATION);
-      
-      print('📨 Status: ${response.statusCode}, Body length: ${response.body.length}');
-      
-      return _handleResponse<T>(response, fromJson);
+      return ApiResponse.error(_handleDioError(e));
     } catch (e) {
-      print('❌ GET Exception: $e');
-      return ApiResponse.error(_handleError(e));
+      return ApiResponse.error('An unexpected error occurred');
     }
   }
-  
+
+  /// GET with Future caching - prevents duplicate calls in initState
+  ///
+  /// Same API call within [dedupWindow] returns the same Future
+  Future<ApiResponse<T>> getCached<T>(
+    String endpoint, {
+    Map<String, dynamic>? queryParams,
+    T Function(dynamic)? fromJson,
+    Duration dedupWindow = const Duration(seconds: 5),
+    Duration? cacheDuration,
+  }) async {
+    final key = '$endpoint${queryParams ?? ''}';
+    final existing = _futureCache[key];
+
+    if (existing != null && !existing.isExpired) {
+      if (kDebugMode) debugPrint('🔄 DEDUP: $endpoint (reusing in-flight)');
+      return existing.future as Future<ApiResponse<T>>;
+    }
+
+    final future = get<T>(
+      endpoint,
+      queryParams: queryParams,
+      fromJson: fromJson,
+      cacheDuration: cacheDuration,
+    );
+
+    _futureCache[key] = _FutureCacheEntry(
+      future: future,
+      expiry: DateTime.now().add(dedupWindow),
+    );
+
+    return future;
+  }
+
   /// POST request
   Future<ApiResponse<T>> post<T>(
     String endpoint, {
@@ -108,22 +122,17 @@ class ApiService {
     bool requiresAuth = true,
   }) async {
     try {
-      final uri = Uri.parse('${ApiConstants.BASE_URL}$endpoint');
-      
-      final response = await _client
-          .post(
-            uri,
-            headers: _getHeaders(includeAuth: requiresAuth),
-            body: body != null ? jsonEncode(body) : null,
-          )
-          .timeout(ApiConstants.TIMEOUT_DURATION);
-      
-      return _handleResponse<T>(response, fromJson);
+      final response = await _dio.post(endpoint, data: body);
+      // Invalidate related caches after mutation
+      _dio.invalidateCache(endpoint.split('/').take(3).join('/'));
+      return _handleDioResponse<T>(response, fromJson);
+    } on DioException catch (e) {
+      return ApiResponse.error(_handleDioError(e));
     } catch (e) {
-      return ApiResponse.error(_handleError(e));
+      return ApiResponse.error('An unexpected error occurred');
     }
   }
-  
+
   /// PUT request
   Future<ApiResponse<T>> put<T>(
     String endpoint, {
@@ -132,22 +141,16 @@ class ApiService {
     bool requiresAuth = true,
   }) async {
     try {
-      final uri = Uri.parse('${ApiConstants.BASE_URL}$endpoint');
-      
-      final response = await _client
-          .put(
-            uri,
-            headers: _getHeaders(includeAuth: requiresAuth),
-            body: body != null ? jsonEncode(body) : null,
-          )
-          .timeout(ApiConstants.TIMEOUT_DURATION);
-      
-      return _handleResponse<T>(response, fromJson);
+      final response = await _dio.put(endpoint, data: body);
+      _dio.invalidateCache(endpoint.split('/').take(3).join('/'));
+      return _handleDioResponse<T>(response, fromJson);
+    } on DioException catch (e) {
+      return ApiResponse.error(_handleDioError(e));
     } catch (e) {
-      return ApiResponse.error(_handleError(e));
+      return ApiResponse.error('An unexpected error occurred');
     }
   }
-  
+
   /// DELETE request
   Future<ApiResponse<T>> delete<T>(
     String endpoint, {
@@ -155,75 +158,83 @@ class ApiService {
     bool requiresAuth = true,
   }) async {
     try {
-      final uri = Uri.parse('${ApiConstants.BASE_URL}$endpoint');
-      
-      final response = await _client
-          .delete(uri, headers: _getHeaders(includeAuth: requiresAuth))
-          .timeout(ApiConstants.TIMEOUT_DURATION);
-      
-      return _handleResponse<T>(response, fromJson);
+      final response = await _dio.delete(endpoint);
+      _dio.invalidateCache(endpoint.split('/').take(3).join('/'));
+      return _handleDioResponse<T>(response, fromJson);
+    } on DioException catch (e) {
+      return ApiResponse.error(_handleDioError(e));
     } catch (e) {
-      return ApiResponse.error(_handleError(e));
+      return ApiResponse.error('An unexpected error occurred');
     }
   }
-  
-  /// Handle HTTP response
-  /// Note: Backend returns data directly, not wrapped in {success, data} format
-  ApiResponse<T> _handleResponse<T>(
-    http.Response response,
+
+  /// Handle Dio response → ApiResponse
+  ApiResponse<T> _handleDioResponse<T>(
+    Response response,
     T Function(dynamic)? fromJson,
   ) {
-    final statusCode = response.statusCode;
-    
-    try {
-      // Backend returns data directly (list or object), not wrapped
-      final dynamic responseData = jsonDecode(response.body);
-      
-      if (statusCode >= 200 && statusCode < 300) {
-        // Success - parse the direct response
-        if (fromJson != null) {
-          return ApiResponse.success(fromJson(responseData), statusCode: statusCode);
-        } else {
-          return ApiResponse.success(responseData as T, statusCode: statusCode);
-        }
+    final statusCode = response.statusCode ?? 500;
+    final responseData = response.data;
+
+    if (statusCode >= 200 && statusCode < 300) {
+      if (fromJson != null && responseData != null) {
+        return ApiResponse.success(fromJson(responseData),
+            statusCode: statusCode);
       } else {
-        // Error response - backend returns {detail: "error message"}
-        String errorMessage = 'Request failed';
-        if (responseData is Map) {
-          errorMessage = responseData['detail'] ?? responseData['message'] ?? 'Request failed';
-        }
-        return ApiResponse.error(
-          errorMessage,
-          statusCode: statusCode,
-        );
+        return ApiResponse.success(responseData as T,
+            statusCode: statusCode);
       }
-    } catch (e) {
-      // If response is not JSON or parsing fails
-      if (statusCode >= 200 && statusCode < 300) {
-        // For empty successful responses (like null from /attendance/today)
-        return ApiResponse.success(null as T, statusCode: statusCode);
-      } else {
-        return ApiResponse.error(
-          'Server error: ${response.reasonPhrase}',
-          statusCode: statusCode,
-        );
-      }
-    }
-  }
-  
-  /// Handle errors
-  String _handleError(dynamic error) {
-    if (error.toString().contains('SocketException')) {
-      return 'No internet connection';
-    } else if (error.toString().contains('TimeoutException')) {
-      return 'Request timeout. Please try again.';
     } else {
-      return 'An unexpected error occurred';
+      String errorMessage = 'Request failed';
+      if (responseData is Map) {
+        errorMessage = responseData['detail'] ??
+            responseData['message'] ??
+            'Request failed';
+      }
+      return ApiResponse.error(errorMessage, statusCode: statusCode);
     }
   }
-  
+
+  /// Handle Dio errors
+  String _handleDioError(DioException error) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'Request timeout. Please try again.';
+      case DioExceptionType.connectionError:
+        return 'No internet connection';
+      case DioExceptionType.badResponse:
+        final data = error.response?.data;
+        if (data is Map) {
+          return data['detail'] ?? data['message'] ?? 'Server error';
+        }
+        return 'Server error: ${error.response?.statusCode}';
+      case DioExceptionType.cancel:
+        return 'Request cancelled';
+      default:
+        return 'An unexpected error occurred';
+    }
+  }
+
+  /// Clear all caches (call on logout)
+  void clearCaches() {
+    _futureCache.clear();
+    _dio.clearCache();
+  }
+
   /// Dispose client
   void dispose() {
-    _client.close();
+    _dio.dispose();
   }
+}
+
+/// Internal future cache entry
+class _FutureCacheEntry {
+  final Future future;
+  final DateTime expiry;
+
+  _FutureCacheEntry({required this.future, required this.expiry});
+
+  bool get isExpired => DateTime.now().isAfter(expiry);
 }

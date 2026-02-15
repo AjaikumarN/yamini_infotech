@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/constants/salesman_animation_constants.dart';
 import '../../../core/services/api_service.dart';
@@ -37,9 +38,9 @@ class _EnquiriesScreenState extends State<EnquiriesScreen> {
 
     try {
       // Use correct endpoint: /api/enquiries
-      print('📞 Fetching enquiries from ${ApiConstants.ENQUIRIES}');
+      if (kDebugMode) print('📞 Fetching enquiries from ${ApiConstants.ENQUIRIES}');
       final response = await ApiService.instance.get(ApiConstants.ENQUIRIES);
-      print(
+      if (kDebugMode) print(
         '📥 Response: success=${response.success}, data type=${response.data.runtimeType}',
       );
 
@@ -47,16 +48,16 @@ class _EnquiriesScreenState extends State<EnquiriesScreen> {
         setState(() {
           if (response.data is List) {
             enquiries = response.data as List<dynamic>;
-            print('✅ Loaded ${enquiries.length} enquiries');
+            if (kDebugMode) print('✅ Loaded ${enquiries.length} enquiries');
           } else {
             enquiries = [];
-            print('⚠️ Data is not a list: ${response.data}');
+            if (kDebugMode) print('⚠️ Data is not a list: ${response.data}');
           }
           isLoading = false;
         });
       } else {
         final errorMsg = response.message ?? 'Failed to load enquiries';
-        print('❌ Enquiries error: $errorMsg');
+        if (kDebugMode) print('❌ Enquiries error: $errorMsg');
         setState(() {
           error = errorMsg;
           enquiries = [];
@@ -64,7 +65,7 @@ class _EnquiriesScreenState extends State<EnquiriesScreen> {
         });
       }
     } catch (e) {
-      print('❌ Enquiries exception: $e');
+      if (kDebugMode) print('❌ Enquiries exception: $e');
       setState(() {
         error = e.toString();
         enquiries = [];
