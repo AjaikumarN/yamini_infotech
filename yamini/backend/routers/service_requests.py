@@ -15,7 +15,8 @@ import models
 import auth
 from database import get_db
 from notification_service import NotificationService
-from services.whatsapp_service import WhatsAppService
+from services.whatsapp_service import WhatsAppMessageTemplates
+from services.communication_queue import queue_customer_whatsapp, queue_staff_notification
 
 router = APIRouter(prefix="/api/service-requests", tags=["Service Requests"])
 
@@ -202,13 +203,35 @@ async def assign_engineer_to_service(
         db, service, engineer_id
     )
     
-    # Send WhatsApp notification to customer (idempotent - only once)
+    # Queue WhatsApp notification to customer (worker sends it)
     try:
-        whatsapp = WhatsAppService()
-        whatsapp.send_engineer_assigned(db, service, engineer.full_name)
+        if getattr(service, 'phone', None):
+            msg = WhatsAppMessageTemplates.engineer_assigned(
+                customer_name=service.customer_name or "Customer",
+                ticket_id=service.ticket_no or f"SRV-{service.id}",
+                engineer_name=engineer.full_name or "Our Engineer",
+            )
+            queue_customer_whatsapp(
+                db=db, event_type="ENGINEER_ASSIGNED",
+                phone=service.phone, message=msg,
+                reference_table="complaints", reference_id=service.id,
+                customer_name=service.customer_name,
+            )
     except Exception as e:
-        logging.error(f"Failed to send WhatsApp for engineer assignment: {e}")
-    
+        logging.error(f"Failed to queue WhatsApp for engineer assignment: {e}")
+
+    # Staff notification → assigned engineer
+    try:
+        queue_staff_notification(
+            db=db, user_id=engineer_id,
+            title="New Service Assigned",
+            message=f"Ticket {service.ticket_no or service.id} — {service.customer_name or 'Customer'}",
+            module="complaints", entity_type="complaint", entity_id=service.id,
+            priority="HIGH", action_url="/service-engineer",
+        )
+    except Exception:
+        pass
+
     return service
 
 @router.get("/my-services")

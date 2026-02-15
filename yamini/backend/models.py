@@ -1155,3 +1155,45 @@ class DeviceStatusLog(Base):
     is_online = Column(Boolean)
     network_type = Column(String(20))
     logged_at = Column(DateTime, default=datetime.utcnow)
+
+
+# ============= COMMUNICATION QUEUE & STAFF NOTIFICATIONS =============
+
+class CommunicationQueue(Base):
+    __tablename__ = "communication_queue"
+
+    id = Column(Integer, primary_key=True, index=True)
+    channel = Column(String(20), nullable=False, default="WHATSAPP")       # WHATSAPP / SMS / EMAIL
+    recipient_type = Column(String(20), nullable=False, default="CUSTOMER") # CUSTOMER / STAFF
+    recipient_phone = Column(String(30))
+    recipient_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    event_type = Column(String(80), nullable=False)
+    reference_table = Column(String(80))
+    reference_id = Column(Integer)
+    message_payload_json = Column(Text)                                     # JSON blob
+    status = Column(String(20), nullable=False, default="QUEUED")           # QUEUED / PROCESSING / SENT / FAILED
+    retry_count = Column(Integer, nullable=False, default=0)
+    last_error = Column(Text)
+    idempotency_key = Column(String(200), unique=True, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    processed_at = Column(DateTime, nullable=True)
+    next_retry_at = Column(DateTime, nullable=True)
+
+
+class StaffNotification(Base):
+    __tablename__ = "staff_notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    module = Column(String(80))
+    entity_type = Column(String(80))
+    entity_id = Column(Integer)
+    priority = Column(String(20), nullable=False, default="NORMAL")         # LOW / NORMAL / HIGH / URGENT
+    is_read = Column(Boolean, nullable=False, default=False)
+    action_url = Column(String(500))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    read_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", foreign_keys=[user_id])

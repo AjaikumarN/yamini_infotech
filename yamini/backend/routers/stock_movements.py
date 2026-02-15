@@ -27,7 +27,8 @@ from services.stock_service import (
     mark_paid,
     reject_movement,
 )
-from services.whatsapp_service import WhatsAppService
+from services.whatsapp_service import WhatsAppMessageTemplates
+from services.communication_queue import queue_customer_whatsapp, notify_roles
 
 import logging
 
@@ -304,19 +305,44 @@ def update_delivery_status(
     if not movement:
         raise HTTPException(404, "Stock movement not found")
     movement.delivery_status = data.delivery_status
-    whatsapp_sent = False
+    whatsapp_queued = False
     if data.delivery_status in ("FAILED", "REATTEMPT") and data.customer_phone:
         try:
-            wa = WhatsAppService()
+            cname = data.customer_name or "Customer"
             if data.delivery_status == "FAILED":
-                wa.send_delivery_failed(db=db, stock_movement=movement, customer_phone=data.customer_phone, customer_name=data.customer_name or "Customer")
+                msg = WhatsAppMessageTemplates.delivery_failed(
+                    customer_name=cname,
+                    reference_id=movement.reference_id or f"DEL-{movement.id}",
+                    item_name=getattr(movement, 'item_name', 'Item') or "Item",
+                )
+                evt = "DELIVERY_FAILED"
             else:
-                wa.send_delivery_reattempt(db=db, stock_movement=movement, customer_phone=data.customer_phone, customer_name=data.customer_name or "Customer")
-            whatsapp_sent = True
+                msg = WhatsAppMessageTemplates.delivery_reattempt(customer_name=cname)
+                evt = "DELIVERY_REATTEMPT"
+            queue_customer_whatsapp(
+                db=db, event_type=evt,
+                phone=data.customer_phone, message=msg,
+                reference_table="stock_movements", reference_id=movement.id,
+                customer_name=cname,
+            )
+            whatsapp_queued = True
         except Exception as e:
-            logger.error("WhatsApp delivery notification failed: %s", e)
+            logger.error("WhatsApp delivery queue failed: %s", e)
+
+    # Staff notification → Admin
+    try:
+        notify_roles(
+            db=db, roles=["ADMIN"],
+            title=f"Delivery {data.delivery_status}",
+            message=f"Stock movement #{movement.id} marked {data.delivery_status}",
+            module="stock_movements", entity_type="stock_movement", entity_id=movement.id,
+            priority="HIGH" if data.delivery_status == "FAILED" else "NORMAL",
+        )
+    except Exception:
+        pass
+
     db.commit()
-    return {"message": f"Delivery status updated to {data.delivery_status}", "whatsapp_sent": whatsapp_sent}
+    return {"message": f"Delivery status updated to {data.delivery_status}", "whatsapp_queued": whatsapp_queued}
 
 
 # === ANALYTICS / DASHBOARD (Admin only) ===

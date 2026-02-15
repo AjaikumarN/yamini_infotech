@@ -15,7 +15,8 @@ import models
 import auth
 from database import get_db
 from notification_service import NotificationService
-from services.whatsapp_service import WhatsAppService
+from services.whatsapp_service import WhatsAppMessageTemplates
+from services.communication_queue import queue_customer_whatsapp, notify_roles
 
 router = APIRouter(prefix="/api/service-engineer", tags=["Service Engineer"])
 
@@ -360,13 +361,40 @@ async def complete_job(
         db, job, current_user.full_name
     )
     
-    # Send WhatsApp notification to customer with feedback link (idempotent)
+    # Queue WhatsApp notification to customer (worker sends it)
     try:
-        whatsapp = WhatsAppService()
-        whatsapp.send_service_completed(db, job, feedback_url)
+        if getattr(job, 'phone', None):
+            from datetime import datetime as _dt
+            completed_date = _dt.utcnow().strftime("%d/%m/%Y")
+            if hasattr(job, 'completed_at') and job.completed_at:
+                completed_date = job.completed_at.strftime("%d/%m/%Y")
+            msg = WhatsAppMessageTemplates.service_completed(
+                customer_name=job.customer_name or "Customer",
+                ticket_id=job.ticket_no or f"SRV-{job.id}",
+                completed_date=completed_date,
+                feedback_link=feedback_url,
+            )
+            queue_customer_whatsapp(
+                db=db, event_type="SERVICE_COMPLETED",
+                phone=job.phone, message=msg,
+                reference_table="complaints", reference_id=job.id,
+                customer_name=job.customer_name,
+            )
     except Exception as e:
-        logging.error(f"Failed to send WhatsApp for service completion: {e}")
-    
+        logging.error(f"Failed to queue WhatsApp for service completion: {e}")
+
+    # Staff notification → Admin + Reception
+    try:
+        notify_roles(
+            db=db, roles=["ADMIN", "RECEPTION"],
+            title="Job Completed",
+            message=f"Ticket {job.ticket_no or job.id} completed by {current_user.full_name}",
+            module="complaints", entity_type="complaint", entity_id=job.id,
+            priority="NORMAL", action_url="/service",
+        )
+    except Exception:
+        pass
+
     return {
         "message": "Job completed successfully",
         "feedback_url": feedback_url,

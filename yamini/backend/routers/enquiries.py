@@ -8,7 +8,8 @@ import models
 import auth
 from database import get_db
 from notification_service import NotificationService
-from services.whatsapp_service import WhatsAppService
+from services.whatsapp_service import WhatsAppMessageTemplates
+from services.communication_queue import queue_customer_whatsapp, notify_roles
 
 router = APIRouter(prefix="/api/enquiries", tags=["Enquiries"])
 
@@ -45,14 +46,36 @@ def create_enquiry(
         import logging
         logging.error(f"Failed to send enquiry notifications: {e}")
     
-    # Send WhatsApp notification to customer (idempotent - only once)
+    # Queue WhatsApp notification to customer (worker sends it)
     try:
-        whatsapp = WhatsAppService()
-        whatsapp.send_enquiry_created(db, new_enquiry)
+        if getattr(new_enquiry, 'phone', None):
+            msg = WhatsAppMessageTemplates.enquiry_created(
+                customer_name=new_enquiry.customer_name or "Customer",
+                enquiry_id=new_enquiry.enquiry_id or f"ENQ-{new_enquiry.id}",
+                subject=new_enquiry.product_interest or "Product Enquiry",
+            )
+            queue_customer_whatsapp(
+                db=db, event_type="ENQUIRY_CREATED",
+                phone=new_enquiry.phone, message=msg,
+                reference_table="enquiries", reference_id=new_enquiry.id,
+                customer_name=new_enquiry.customer_name,
+            )
     except Exception as e:
         import logging
-        logging.error(f"Failed to send WhatsApp notification: {e}")
-    
+        logging.error(f"Failed to queue WhatsApp notification: {e}")
+
+    # Staff notification → Admin + Reception
+    try:
+        notify_roles(
+            db=db, roles=["ADMIN", "RECEPTION"],
+            title="New Enquiry Created",
+            message=f"Enquiry {new_enquiry.enquiry_id or new_enquiry.id} from {new_enquiry.customer_name or 'Website'}",
+            module="enquiries", entity_type="enquiry", entity_id=new_enquiry.id,
+            priority="HIGH", action_url="/reception",
+        )
+    except Exception:
+        pass
+
     return new_enquiry
 
 @router.get("", response_model=List[schemas.Enquiry])

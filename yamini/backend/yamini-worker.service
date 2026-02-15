@@ -1,0 +1,19 @@
+[Unit]
+Description=Yamini Communication Worker (Queue Processor)
+After=network.target postgresql.service yamini-backend.service
+Wants=yamini-backend.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/yamini_infotech/yamini/backend
+Environment="PATH=/home/ubuntu/yamini_infotech/yamini/backend/venv/bin:/usr/local/bin:/usr/bin"
+ExecStart=/home/ubuntu/yamini_infotech/yamini/backend/venv/bin/python services/communication_worker.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

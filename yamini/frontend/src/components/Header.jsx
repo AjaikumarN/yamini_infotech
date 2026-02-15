@@ -37,18 +37,25 @@ export default function Header({ showNotificationPanel, setShowNotificationPanel
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchNotifications()
-      // Poll every 60 seconds
-      const interval = setInterval(fetchNotifications, 60000)
+      // Poll every 20 seconds
+      const interval = setInterval(fetchNotifications, 20000)
       return () => clearInterval(interval)
     }
   }, [isAuthenticated, user])
 
   const fetchNotifications = async () => {
     try {
-      const allNotifs = await apiRequest('/api/notifications/my-notifications')
+      // Use new staff_notifications endpoint (falls back to old one)
+      let allNotifs = []
+      try {
+        allNotifs = await apiRequest('/api/notifications/my?limit=50')
+      } catch {
+        // Fallback to old endpoint if new one not deployed yet
+        allNotifs = await apiRequest('/api/notifications/my-notifications')
+      }
       
-      // Filter unread on frontend since API parameter might not work
-      const unreadNotifs = (allNotifs || []).filter(n => !n.read_status)
+      // Filter unread
+      const unreadNotifs = (allNotifs || []).filter(n => !n.is_read && !n.read_status)
       
       setNotifications(unreadNotifs)
       setAllNotifications(allNotifs || [])
