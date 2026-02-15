@@ -11,6 +11,7 @@ import base64
 import os
 import uuid
 from pathlib import Path
+from s3_service import upload_bytes as s3_upload_bytes
 
 import models
 import auth
@@ -175,20 +176,12 @@ def save_face_image(base64_image: str, employee_id: int) -> str:
         # Decode base64
         image_data = base64.b64decode(base64_image)
         
-        # Create directory
-        upload_dir = Path("uploads/attendance/faces")
-        upload_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Generate filename
+        # Upload to S3
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"face_{employee_id}_{timestamp}_{uuid.uuid4().hex[:8]}.jpg"
-        file_path = upload_dir / filename
+        s3_url = s3_upload_bytes(image_data, filename, "image/jpeg", "attendance/faces")
         
-        # Save file
-        with open(file_path, "wb") as f:
-            f.write(image_data)
-        
-        return str(file_path)
+        return s3_url
         
     except Exception as e:
         print(f"Error saving face image: {e}")

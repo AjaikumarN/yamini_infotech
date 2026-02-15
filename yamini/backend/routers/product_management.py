@@ -5,6 +5,7 @@ import shutil
 import os
 from pathlib import Path
 from datetime import datetime
+from s3_service import upload_file as s3_upload
 from pydantic import BaseModel
 from database import get_db
 from models import Product, User, UserRole
@@ -280,25 +281,11 @@ async def upload_product_image(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    # Create upload directory - save inside backend/uploads/products (served by nginx /uploads/)
-    backend_dir = Path(__file__).resolve().parent.parent
-    upload_dir = backend_dir / "uploads" / "products"
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Save file
-    file_ext = os.path.splitext(file.filename)[1]
-    timestamp = int(datetime.now().timestamp())
-    file_name = f"product_{product_id}_{timestamp}{file_ext}"
-    file_path = upload_dir / file_name
-    
+    # Upload to S3
     try:
-        with file_path.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        image_url = s3_upload(file, "products")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
-    
-    # URL served by nginx /uploads/ location block
-    image_url = f"/uploads/products/{file_name}"
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
     product.image_url = image_url
     db.commit()
     

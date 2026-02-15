@@ -16,6 +16,7 @@ import os
 import shutil
 from pathlib import Path
 import requests
+from s3_service import upload_file as s3_upload
 
 router = APIRouter(prefix="/api/attendance", tags=["attendance"])
 
@@ -143,13 +144,8 @@ async def check_in_with_photo(
             detail="Already checked in today"
         )
     
-    # Save uploaded photo
-    file_extension = os.path.splitext(photo.filename)[1]
-    photo_filename = f"{current_user.id}_{now_ist.strftime('%Y%m%d_%H%M%S')}{file_extension}"
-    photo_path = UPLOAD_DIR / photo_filename
-    
-    with photo_path.open("wb") as buffer:
-        shutil.copyfileobj(photo.file, buffer)
+    # Upload photo to S3
+    photo_url = s3_upload(photo, "attendance")
     
     # 📘 DISCIPLINE: Check cutoff time (9:30 AM IST)
     cutoff_time = now_ist.replace(hour=9, minute=30, second=0, microsecond=0)
@@ -165,7 +161,8 @@ async def check_in_with_photo(
         location=location,
         latitude=latitude,
         longitude=longitude,
-        photo_path=str(photo_path),
+        photo_path=photo_url,
+        photo_url=photo_url,
         status=status_text
     )
     
@@ -699,12 +696,8 @@ async def simple_check_in(
             detail="Attendance already marked for today"
         )
     
-    # Save photo
-    photo_filename = f"attendance_{current_user.id}_{today_ist.strftime('%Y%m%d')}_{now_ist.strftime('%H%M%S')}.jpg"
-    photo_path = UPLOAD_DIR / photo_filename
-    
-    with photo_path.open("wb") as buffer:
-        shutil.copyfileobj(photo.file, buffer)
+    # Upload photo to S3
+    photo_url = s3_upload(photo, "attendance")
     
     # Reverse geocode to get human-readable address
     address = reverse_geocode(latitude, longitude)
@@ -721,8 +714,8 @@ async def simple_check_in(
         check_in_lat=latitude,
         check_in_lng=longitude,
         location=address,  # Human-readable address
-        photo_path=str(photo_path),
-        photo_url=f"/uploads/attendance/{photo_filename}",
+        photo_path=photo_url,
+        photo_url=photo_url,
         status="PRESENT"
     )
     
@@ -739,6 +732,6 @@ async def simple_check_in(
         "attendance_id": attendance.id,
         "status": "PRESENT",
         "check_in_time": check_in_time_str,
-        "photo_url": f"/uploads/attendance/{photo_filename}",
+        "photo_url": photo_url,
         "date": today_ist.isoformat()
     }

@@ -9,6 +9,7 @@ from typing import List
 import os
 from pathlib import Path
 import uuid
+from s3_service import upload_file as s3_upload
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -186,22 +187,10 @@ async def upload_employee_photo(
     current_user: models.User = Depends(auth.get_current_user)
 ):
     """Upload employee photograph"""
-    # Use standardized upload directory
-    upload_dir = Path(UPLOAD_EMPLOYEE_DIR)
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    # Upload to S3
+    s3_url = s3_upload(file, "employee-profiles")
     
-    # Generate unique filename
-    file_extension = os.path.splitext(file.filename)[1]
-    unique_filename = f"{uuid.uuid4()}{file_extension}"
-    file_path = upload_dir / unique_filename
-    
-    # Save file
-    with open(file_path, "wb") as buffer:
-        content = await file.read()
-        buffer.write(content)
-    
-    # Return relative path — never store absolute localhost URLs
     return {
-        "file_path": f"/uploads/employees/{unique_filename}",
-        "url": f"/uploads/employees/{unique_filename}"
+        "file_path": s3_url,
+        "url": s3_url
     }

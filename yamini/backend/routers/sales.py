@@ -11,6 +11,7 @@ from database import get_db
 import os
 import shutil
 from pathlib import Path
+from s3_service import upload_file as s3_upload
 
 router = APIRouter(prefix="/api/sales", tags=["Sales"])
 
@@ -138,19 +139,9 @@ async def mark_attendance(
 ):
     """Mark attendance with photo upload"""
     
-    # Create uploads directory if it doesn't exist
-    upload_dir = Path("uploads/attendance")
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Generate unique filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_extension = os.path.splitext(photo.filename)[1]
-    filename = f"{current_user.id}_{timestamp}{file_extension}"
-    file_path = upload_dir / filename
-    
-    # Save uploaded file
-    with file_path.open("wb") as buffer:
-        shutil.copyfileobj(photo.file, buffer)
+    # Upload photo to S3
+    s3_url = s3_upload(photo, "attendance")
+    file_path = s3_url
     
     # Create attendance record
     attendance_data = schemas.AttendanceCreate(
