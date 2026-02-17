@@ -18,6 +18,7 @@ from typing import Optional
 from datetime import datetime, date
 import logging
 import time
+import pytz
 
 from database import get_db
 from auth import get_current_user
@@ -144,6 +145,20 @@ def _check_visit_rate(user_id: int):
 
 # ============= HELPER =============
 
+INDIA_TZ = pytz.timezone("Asia/Kolkata")
+TRACKING_CUTOFF_HOUR = 18  # 6:00 PM IST
+
+
+def _check_tracking_hours():
+    """Reject tracking operations after 6:00 PM IST."""
+    now = datetime.now(INDIA_TZ)
+    if now.hour >= TRACKING_CUTOFF_HOUR:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Tracking is disabled after {TRACKING_CUTOFF_HOUR}:00 IST. Current time: {now.strftime('%I:%M %p IST')}"
+        )
+
+
 def _require_field_role(user):
     """Ensure user is SALESMAN or SERVICE_ENGINEER."""
     role = get_user_role_str(user)
@@ -264,6 +279,7 @@ async def gps_update(
     Rate limited: max 6 per minute.
     """
     _require_field_role(current_user)
+    _check_tracking_hours()
     _check_gps_rate(current_user.id)
     session = _require_active_session(db, current_user.id)
 
@@ -296,6 +312,7 @@ async def visit_check_in(
     Sequence number is auto-calculated atomically.
     """
     _require_field_role(current_user)
+    _check_tracking_hours()
     _check_visit_rate(current_user.id)
     session = _require_active_session(db, current_user.id)
 

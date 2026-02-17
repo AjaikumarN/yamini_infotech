@@ -392,7 +392,7 @@ class _SimpleAttendanceScreenState extends State<SimpleAttendanceScreen> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.network(
-                '${ApiConstants.BASE_URL}$_photoUrl',
+                ApiConstants.resolveImageUrl(_photoUrl),
                 height: 200,
                 width: 200,
                 fit: BoxFit.cover,

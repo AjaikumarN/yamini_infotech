@@ -52,6 +52,22 @@ export default function HomePage() {
             <button className="btn btn-secondary btn-lg" onClick={() => navigate('/services')}>
               Book Service
             </button>
+            <a
+              href="https://yamini-infotech-erp-files.s3.ap-south-1.amazonaws.com/apps/app-release.apk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-lg"
+              style={{
+                background: '#4CAF50',
+                color: 'white',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              📱 Download Staff App
+            </a>
           </div>
         </div>
         <div className="pub-hero-image reveal-scale">

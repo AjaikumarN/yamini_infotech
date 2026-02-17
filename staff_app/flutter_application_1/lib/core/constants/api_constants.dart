@@ -113,4 +113,11 @@ class ApiConstants {
   
   /// Get authorization header value
   static String getAuthHeader(String token) => 'Bearer $token';
+
+  /// Resolve image URL — handles both S3 (absolute) and local (relative) paths
+  static String resolveImageUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    return '$BASE_URL$url';
+  }
 }

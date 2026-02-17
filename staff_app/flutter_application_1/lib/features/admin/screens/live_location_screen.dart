@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'dart:async';
 import '../../../core/services/tracking_service.dart';
 import '../../../core/theme/admin_theme.dart';
+import '../../../core/constants/api_constants.dart';
 
 /// Live Location Map Screen
 ///
@@ -1087,7 +1088,7 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
               radius: 22,
               backgroundColor: Colors.grey[200],
               backgroundImage: member.photoUrl != null
-                  ? NetworkImage(member.photoUrl!)
+                  ? NetworkImage(ApiConstants.resolveImageUrl(member.photoUrl))
                   : null,
               child: member.photoUrl == null
                   ? Text(
