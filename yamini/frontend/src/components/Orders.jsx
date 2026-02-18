@@ -52,6 +52,8 @@ export default function Orders({ mode = 'staff' }) {
   const loadOrders = async () => {
     try {
       setLoading(true);
+      // Mark orders as viewed to clear badge count
+      apiRequest('/api/notifications/mark-viewed/orders', { method: 'PUT' }).catch(() => {});
       const data = await apiRequest('/api/orders/');
       
       // Filter based on selection

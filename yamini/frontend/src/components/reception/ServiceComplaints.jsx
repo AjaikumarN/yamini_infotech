@@ -37,6 +37,8 @@ const ServiceComplaints = ({ mode = 'staff' }) => {
 
   const fetchData = async () => {
     try {
+      // Mark complaints as viewed to clear badge count
+      apiRequest('/api/notifications/mark-viewed/complaints', { method: 'PUT' }).catch(() => {});
       const [complaintsData, engineersData, customersData] = await Promise.all([
         apiRequest('/api/service-requests/'),
         apiRequest('/api/users?role=SERVICE_ENGINEER'),

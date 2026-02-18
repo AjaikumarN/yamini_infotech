@@ -45,6 +45,8 @@ const EnquiryBoard = ({ mode = 'staff' }) => {
       ]);
       setEnquiries(enquiriesData || []);
       setSalesmen(salesmenData || []);
+      // Mark enquiries as viewed to clear badge count
+      apiRequest('/api/notifications/mark-viewed/enquiries', { method: 'PUT' }).catch(() => {});
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
