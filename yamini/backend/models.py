@@ -48,6 +48,10 @@ class User(Base):
     account_number = Column(String)
     bank_account = Column(String)  # Alias for account_number
     
+    # Push Notifications
+    fcm_token = Column(String, nullable=True)  # Firebase Cloud Messaging token
+    fcm_updated_at = Column(DateTime, nullable=True)  # Last token update
+    
     # Relationships
     enquiries = relationship("Enquiry", back_populates="assigned_user", foreign_keys="Enquiry.assigned_to")
     complaints = relationship("Complaint", back_populates="assigned_engineer")

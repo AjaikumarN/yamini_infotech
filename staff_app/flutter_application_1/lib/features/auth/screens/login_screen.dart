@@ -54,6 +54,20 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       
       if (result.success && authService.currentUser != null) {
+        // Register FCM token with backend after successful login
+        try {
+          final fcmToken = NotificationService.instance.fcmToken;
+          if (fcmToken != null) {
+            await NotificationService.instance.registerTokenWithBackend(fcmToken);
+            if (kDebugMode) debugPrint('🔔 FCM token registered after login');
+          }
+        } catch (e) {
+          if (kDebugMode) debugPrint('⚠️ FCM token registration failed: $e');
+        }
+
+        // Start polling for notifications while logged in
+        NotificationService.instance.startPolling();
+
         // Check for pending notification route (from deep link)
         final pendingRoute = NotificationService.instance.getPendingRouteAndClear();
         

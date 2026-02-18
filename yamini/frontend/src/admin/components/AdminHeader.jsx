@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { apiRequest } from '../../utils/api';
@@ -8,6 +8,96 @@ import { getEmployeePhotoUrl as getPhotoUrl } from '../../config';
  * AdminHeader - Single admin dashboard header component
  * Rendered ONLY by AdminLayout - never imported by pages
  */
+
+// Notification type → icon + color mapping
+const NOTIF_META = {
+  enquiry:   { icon: '📋', color: '#3b82f6', bg: '#eff6ff', label: 'Enquiry' },
+  order:     { icon: '🛒', color: '#8b5cf6', bg: '#f5f3ff', label: 'Order' },
+  complaint: { icon: '🔧', color: '#f59e0b', bg: '#fffbeb', label: 'Service' },
+  service:   { icon: '🔧', color: '#f59e0b', bg: '#fffbeb', label: 'Service' },
+  attendance:{ icon: '📍', color: '#10b981', bg: '#ecfdf5', label: 'Attendance' },
+  stock:     { icon: '📦', color: '#ef4444', bg: '#fef2f2', label: 'Stock' },
+  reminder:  { icon: '⏰', color: '#6366f1', bg: '#eef2ff', label: 'Reminder' },
+  system:    { icon: '⚙️', color: '#64748b', bg: '#f8fafc', label: 'System' },
+  default:   { icon: '🔔', color: '#6366f1', bg: '#eef2ff', label: 'Notification' },
+};
+
+const getNotifMeta = (type) => NOTIF_META[type] || NOTIF_META.default;
+
+const timeAgo = (dateStr) => {
+  if (!dateStr) return '';
+  const now = new Date();
+  const date = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
+  const diffMs = now - date;
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+};
+
+// Construct redirect URL based on notification metadata
+const getRedirectUrl = (notif, role) => {
+  if (notif.redirect_url) return notif.redirect_url;
+  if (notif.action_url) return notif.action_url;
+  
+  const upperRole = role?.toUpperCase();
+  const basePath = upperRole === 'ADMIN' ? '/admin' :
+                  upperRole === 'SALESMAN' ? '/salesman' :
+                  upperRole === 'RECEPTION' ? '/reception' :
+                  upperRole === 'SERVICE_ENGINEER' ? '/service-engineer' : '/admin';
+  
+  const type = (notif.notification_type || notif.module || '').toLowerCase();
+  const msg = (notif.message || '').toLowerCase();
+  const title = (notif.title || '').toLowerCase();
+  const entityId = notif.entity_id;
+  
+  // Enquiry related
+  if (type.includes('enquir') || title.includes('enquir') || msg.includes('enq-')) {
+    if (entityId && upperRole === 'ADMIN') return `/admin/enquiries/${entityId}`;
+    if (upperRole === 'ADMIN') return '/admin/enquiries';
+    if (upperRole === 'RECEPTION') return '/reception/enquiries';
+    if (upperRole === 'SALESMAN') return '/salesman/enquiries';
+    return `${basePath}/enquiries`;
+  }
+  
+  // Service / Complaint related
+  if (type.includes('service') || type.includes('complaint') || title.includes('service') || msg.includes('srv-')) {
+    if (upperRole === 'ADMIN') return '/admin/service/requests';
+    if (upperRole === 'RECEPTION') return '/reception/service-complaints';
+    if (upperRole === 'SERVICE_ENGINEER') return '/service-engineer/jobs';
+    return `${basePath}/service`;
+  }
+  
+  // Order related
+  if (type.includes('order') || title.includes('order') || msg.includes('ord-')) {
+    if (upperRole === 'ADMIN') return '/admin/orders';
+    if (upperRole === 'SALESMAN') return '/salesman/orders';
+    return `${basePath}/orders`;
+  }
+  
+  // Attendance related
+  if (type.includes('attendance') || title.includes('attendance')) {
+    if (upperRole === 'ADMIN') return '/admin/attendance';
+    return `${basePath}/attendance`;
+  }
+  
+  // Stock related
+  if (type.includes('stock') || title.includes('stock')) {
+    return '/admin/stock';
+  }
+  
+  // SLA related
+  if (type.includes('sla') || title.includes('sla')) {
+    return '/admin/service/sla';
+  }
+  
+  return `${basePath}/dashboard`;
+};
+
 export default function AdminHeader({ onMenuToggle, role }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -18,6 +108,8 @@ export default function AdminHeader({ onMenuToggle, role }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifTab, setNotifTab] = useState('unread');
+  const [markingAll, setMarkingAll] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const searchRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -54,32 +146,28 @@ export default function AdminHeader({ onMenuToggle, role }) {
   }, []);
 
   // Fetch notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await apiRequest('/api/notifications/my-notifications');
-        
-        // Handle both formats: direct array or {data: array}
-        const notificationsData = response?.data || response;
-        
-        if (Array.isArray(notificationsData)) {
-          // Get more notifications (up to 20 for split view)
-          setNotifications(notificationsData.slice(0, 20));
-          setUnreadCount(notificationsData.filter(n => !n.is_read).length);
-        } else {
-          setNotifications([]);
-          setUnreadCount(0);
-        }
-      } catch (error) {
-        // Silently handle notification errors
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const response = await apiRequest('/api/notifications/my?limit=30');
+      const notificationsData = response?.data || response;
+      if (Array.isArray(notificationsData)) {
+        setNotifications(notificationsData);
+        setUnreadCount(notificationsData.filter(n => !n.is_read).length);
+      } else {
         setNotifications([]);
         setUnreadCount(0);
       }
-    };
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchNotifications]);
 
   // Search with debounce - Role-based search
   useEffect(() => {
@@ -216,56 +304,25 @@ export default function AdminHeader({ onMenuToggle, role }) {
 
   const markNotificationRead = async (notif) => {
     try {
-      // Mark as read
       await apiRequest(`/api/notifications/${notif.id}/read`, { method: 'PUT' });
       setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-      
-      // Navigate based on redirect_url or construct from role and notification type
-      setShowNotifications(false);
-      
-      if (notif.redirect_url) {
-        navigate(notif.redirect_url);
-      } else {
-        // Construct URL based on role and notification type
-        const upperRole = role?.toUpperCase();
-        const basePath = upperRole === 'ADMIN' ? '/admin' :
-                        upperRole === 'SALESMAN' ? '/salesman' :
-                        upperRole === 'RECEPTION' ? '/reception' :
-                        upperRole === 'SERVICE_ENGINEER' ? '/engineer' : '/admin';
-        
-        // Try to extract entity type and ID from notification
-        const message = notif.message?.toLowerCase() || '';
-        const title = notif.title?.toLowerCase() || '';
-        
-        if (title.includes('enquiry') || message.includes('enq-')) {
-          const match = message.match(/enq-(\d+)/i);
-          if (match) navigate(`${basePath}/enquiries/${match[1]}`);
-          else navigate(`${basePath}/enquiries`);
-        } else if (title.includes('service') || message.includes('srv-') || message.includes('service request')) {
-          const match = message.match(/srv-(\d+)|#(\d+)/i);
-          const id = match ? (match[1] || match[2]) : null;
-          
-          // For reception role, redirect to service-complaints
-          if (upperRole === 'RECEPTION') {
-            navigate(`${basePath}/service-complaints`);
-          } else {
-            // For other roles, use service route
-            if (id) navigate(`${basePath}/service/${id}`);
-            else navigate(`${basePath}/service`);
-          }
-        } else if (title.includes('order') || message.includes('ord-')) {
-          const match = message.match(/ord-(\d+)/i);
-          if (match) navigate(`${basePath}/orders/${match[1]}`);
-          else navigate(`${basePath}/orders`);
-        } else {
-          // Default to dashboard
-          navigate(`${basePath}/dashboard`);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-    }
+    } catch {}
+    
+    // Navigate to the correct page
+    setShowNotifications(false);
+    const url = getRedirectUrl(notif, role);
+    navigate(url);
+  };
+
+  const markAllRead = async () => {
+    setMarkingAll(true);
+    try {
+      await apiRequest('/api/notifications/read-all', { method: 'PUT' });
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    } catch {}
+    setMarkingAll(false);
   };
 
   return (
@@ -273,6 +330,10 @@ export default function AdminHeader({ onMenuToggle, role }) {
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
         }
       `}</style>
       <header style={styles.header}>
@@ -397,99 +458,156 @@ export default function AdminHeader({ onMenuToggle, role }) {
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
                 <path d="M18 8A6 6 0 106 8c0 7-3 9-3 9h18s-3-2-3-9zM13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              {unreadCount > 0 && <span style={styles.badge}>{unreadCount}</span>}
+              {unreadCount > 0 && (
+                <span style={styles.bellBadge}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </button>
 
             {showNotifications && (
-              <div style={styles.notificationDropdown}>
-                {/* Header with count badge */}
-                <div style={styles.notifHeader}>
-                  <h3 style={styles.notifHeaderTitle}>Notifications</h3>
-                  {unreadCount > 0 && (
-                    <span style={styles.notifCountBadge}>{unreadCount} new</span>
-                  )}
-                </div>
-                
-                {notifications.length === 0 ? (
-                  <div style={styles.emptyState}>No notifications</div>
-                ) : (
-                  <div style={styles.notifScrollContainer}>
-                    {/* NEW Section */}
-                    {notifications.filter(n => !n.is_read).length > 0 && (
-                      <>
-                        <div style={styles.notifSectionTitle}>
-                          NEW ({notifications.filter(n => !n.is_read).length})
-                        </div>
-                        {notifications
-                          .filter(n => !n.is_read)
-                          .slice(0, 10)
-                          .map((notif) => (
-                            <div
-                              key={notif.id}
-                              onClick={() => markNotificationRead(notif)}
-                              style={styles.notifCard}
-                              onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                              onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
-                            >
-                              <div style={styles.notifContent}>
-                                <div style={styles.notifTitleRow}>
-                                  <span style={styles.notifCardTitle}>{notif.title}</span>
-                                  <span style={styles.notifBlueDot}></span>
-                                </div>
-                                <div style={styles.notifCardMessage}>{notif.message}</div>
-                                <div style={styles.notifCardTime}>
-                                  {new Date(notif.created_at).toLocaleString('en-US', {
-                                    month: 'numeric',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </>
-                    )}
-                    
-                    {/* HISTORY Section */}
-                    {notifications.filter(n => n.is_read).length > 0 && (
-                      <>
-                        <div style={styles.notifSectionTitle}>
-                          HISTORY ({notifications.filter(n => n.is_read).length})
-                        </div>
-                        {notifications
-                          .filter(n => n.is_read)
-                          .slice(0, 10)
-                          .map((notif) => (
-                            <div
-                              key={notif.id}
-                              onClick={() => markNotificationRead(notif)}
-                              style={styles.notifCard}
-                              onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                              onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
-                            >
-                              <div style={styles.notifContent}>
-                                <div style={styles.notifCardTitle}>{notif.title}</div>
-                                <div style={styles.notifCardMessage}>{notif.message}</div>
-                                <div style={styles.notifCardTime}>
-                                  {new Date(notif.created_at).toLocaleString('en-US', {
-                                    month: 'numeric',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </>
+              <div style={styles.notifDropdown}>
+                {/* Header */}
+                <div style={styles.ndHeader}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '700', color: '#0f172a' }}>Notifications</h3>
+                    {unreadCount > 0 && (
+                      <span style={styles.ndBadge}>{unreadCount} new</span>
                     )}
                   </div>
-                )}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        disabled={markingAll}
+                        style={styles.ndMarkAll}
+                      >
+                        {markingAll ? '...' : '✓ Mark all read'}
+                      </button>
+                    )}
+                    <button onClick={() => setShowNotifications(false)} style={styles.ndClose}>✕</button>
+                  </div>
+                </div>
+
+                {/* Tabs */}
+                <div style={styles.ndTabs}>
+                  {['unread', 'all'].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setNotifTab(tab)}
+                      style={{
+                        ...styles.ndTab,
+                        ...(notifTab === tab ? styles.ndTabActive : {}),
+                      }}
+                    >
+                      {tab === 'unread' ? `Unread (${unreadCount})` : 'All'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Notification List */}
+                <div style={styles.ndList}>
+                  {(() => {
+                    const filtered = notifTab === 'unread'
+                      ? notifications.filter(n => !n.is_read)
+                      : notifications;
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div style={styles.ndEmpty}>
+                          <div style={{ fontSize: '48px', marginBottom: '12px' }}>
+                            {notifTab === 'unread' ? '🎉' : '📭'}
+                          </div>
+                          <div style={{ fontSize: '15px', fontWeight: '600', color: '#374151', marginBottom: '4px' }}>
+                            {notifTab === 'unread' ? 'All caught up!' : 'No notifications yet'}
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#9ca3af' }}>
+                            {notifTab === 'unread' ? 'No unread notifications' : 'Notifications will appear here'}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return filtered.slice(0, 20).map(notif => {
+                      const meta = getNotifMeta(notif.notification_type || notif.module);
+                      return (
+                        <div
+                          key={notif.id}
+                          onClick={() => markNotificationRead(notif)}
+                          style={{
+                            ...styles.ndItem,
+                            background: notif.is_read ? '#fff' : '#f8fafc',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#f1f5f9';
+                            e.currentTarget.style.transform = 'translateX(2px)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = notif.is_read ? '#fff' : '#f8fafc';
+                            e.currentTarget.style.transform = 'translateX(0)';
+                          }}
+                        >
+                          {/* Icon */}
+                          <div style={{
+                            ...styles.ndIcon,
+                            background: meta.bg,
+                            color: meta.color,
+                          }}>
+                            <span style={{ fontSize: '18px' }}>{meta.icon}</span>
+                          </div>
+
+                          {/* Content */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                              <span style={{
+                                fontSize: '14px',
+                                fontWeight: notif.is_read ? '500' : '600',
+                                color: '#0f172a',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                flex: 1,
+                              }}>
+                                {notif.title}
+                              </span>
+                              {!notif.is_read && <span style={styles.ndDot}></span>}
+                            </div>
+                            <div style={{
+                              fontSize: '13px',
+                              color: '#64748b',
+                              lineHeight: '1.4',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              {notif.message}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                              <span style={{
+                                ...styles.ndTag,
+                                background: meta.bg,
+                                color: meta.color,
+                              }}>
+                                {meta.label}
+                              </span>
+                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                                {timeAgo(notif.created_at)}
+                              </span>
+                              {notif.priority === 'HIGH' || notif.priority === 'URGENT' || notif.priority === 'critical' ? (
+                                <span style={styles.ndPriority}>!</span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {/* Arrow */}
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, color: '#cbd5e1' }}>
+                            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
               </div>
             )}
           </div>
@@ -748,6 +866,24 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  bellBadge: {
+    position: 'absolute',
+    top: '4px',
+    right: '2px',
+    minWidth: '20px',
+    height: '20px',
+    padding: '0 5px',
+    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+    color: '#ffffff',
+    fontSize: '11px',
+    fontWeight: '700',
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)',
+    animation: 'pulse 2s infinite',
+  },
   profileButton: {
     display: 'flex',
     alignItems: 'center',
@@ -781,81 +917,133 @@ const styles = {
     zIndex: 2000,
     overflow: 'hidden',
   },
-  notifHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '20px 24px',
-    borderBottom: '1px solid #e5e7eb',
-    background: '#fff',
-  },
-  notifHeaderTitle: {
-    fontSize: '20px',
-    fontWeight: '700',
-    color: '#0f172a',
-    margin: 0,
-  },
-  notifCountBadge: {
-    padding: '6px 14px',
-    background: '#dbeafe',
-    color: '#1e40af',
-    fontSize: '13px',
-    fontWeight: '600',
-    borderRadius: '20px',
-  },
-  notifScrollContainer: {
-    maxHeight: '520px',
-    overflowY: 'auto',
-  },
-  notifSectionTitle: {
-    padding: '16px 24px 12px',
-    fontSize: '11px',
-    fontWeight: '700',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    letterSpacing: '0.8px',
-    background: '#f8fafc',
-  },
-  notifCard: {
-    padding: '16px 24px',
-    borderBottom: '1px solid #f1f5f9',
-    cursor: 'pointer',
-    background: '#fff',
-    transition: 'background 0.15s',
-  },
-  notifContent: {
+  // New notification dropdown styles
+  notifDropdown: {
+    position: 'absolute',
+    top: 'calc(100% + 8px)',
+    right: 0,
+    width: '440px',
+    maxHeight: '620px',
+    background: '#ffffff',
+    borderRadius: '16px',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)',
+    zIndex: 2000,
+    overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    gap: '6px',
   },
-  notifTitleRow: {
+  ndHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    padding: '18px 20px 14px',
+    borderBottom: '1px solid #f1f5f9',
   },
-  notifCardTitle: {
-    fontSize: '15px',
+  ndBadge: {
+    padding: '3px 10px',
+    background: 'linear-gradient(135deg, #dbeafe, #eff6ff)',
+    color: '#1e40af',
+    fontSize: '12px',
+    fontWeight: '700',
+    borderRadius: '12px',
+  },
+  ndMarkAll: {
+    background: 'none',
+    border: '1px solid #e2e8f0',
+    borderRadius: '8px',
+    padding: '4px 10px',
+    fontSize: '12px',
     fontWeight: '600',
-    color: '#0f172a',
-    lineHeight: '1.4',
+    color: '#3b82f6',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
   },
-  notifBlueDot: {
-    width: '8px',
-    height: '8px',
-    background: '#3b82f6',
-    borderRadius: '50%',
+  ndClose: {
+    background: 'none',
+    border: 'none',
+    fontSize: '16px',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    padding: '4px 8px',
+    borderRadius: '6px',
+  },
+  ndTabs: {
+    display: 'flex',
+    padding: '0 20px',
+    borderBottom: '1px solid #f1f5f9',
+    gap: '4px',
+  },
+  ndTab: {
+    padding: '10px 16px',
+    background: 'none',
+    border: 'none',
+    borderBottom: '2px solid transparent',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#94a3b8',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  ndTabActive: {
+    color: '#3b82f6',
+    borderBottomColor: '#3b82f6',
+  },
+  ndList: {
+    flex: 1,
+    overflowY: 'auto',
+    maxHeight: '480px',
+  },
+  ndEmpty: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '48px 24px',
+    textAlign: 'center',
+  },
+  ndItem: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '12px',
+    padding: '14px 20px',
+    borderBottom: '1px solid #f8fafc',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
+  ndIcon: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
   },
-  notifCardMessage: {
-    fontSize: '14px',
-    fontWeight: '400',
-    color: '#64748b',
-    lineHeight: '1.5',
+  ndDot: {
+    width: '8px',
+    height: '8px',
+    borderRadius: '50%',
+    background: '#3b82f6',
+    flexShrink: 0,
+    boxShadow: '0 0 0 3px rgba(59,130,246,0.15)',
   },
-  notifCardTime: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    marginTop: '2px',
+  ndTag: {
+    fontSize: '11px',
+    fontWeight: '600',
+    padding: '2px 8px',
+    borderRadius: '6px',
+  },
+  ndPriority: {
+    width: '18px',
+    height: '18px',
+    borderRadius: '50%',
+    background: '#fef2f2',
+    color: '#ef4444',
+    fontSize: '11px',
+    fontWeight: '800',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dropdownHeader: {
     display: 'flex',

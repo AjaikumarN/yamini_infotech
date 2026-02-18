@@ -7,6 +7,7 @@ Staff notifications:
   GET  /api/notifications/unread-count — badge count
   PUT  /api/notifications/{id}/read    — mark single read
   PUT  /api/notifications/read-all     — mark all read
+  POST /api/notifications/register-token — register FCM push token
 
 Communication queue (admin only):
   GET  /api/communications/queue       — queue status overview
@@ -17,12 +18,42 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Optional
 from datetime import datetime
+from pydantic import BaseModel
 
 import models
 import auth
 from database import get_db
 
 router = APIRouter(tags=["Staff Notifications"])
+
+
+# =========================================================================
+# FCM TOKEN REGISTRATION
+# =========================================================================
+
+class FCMTokenRequest(BaseModel):
+    fcm_token: str
+    user_id: Optional[int] = None
+    role: Optional[str] = None
+
+
+@router.post("/api/notifications/register-token")
+def register_fcm_token(
+    body: FCMTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """Register or update FCM push notification token for current user."""
+    try:
+        db.execute(text("""
+            UPDATE users SET fcm_token = :token, fcm_updated_at = NOW()
+            WHERE id = :uid
+        """), {"token": body.fcm_token, "uid": current_user.id})
+        db.commit()
+        return {"status": "ok", "message": "FCM token registered"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Failed to register token: {str(e)}")
 
 
 # =========================================================================

@@ -40,6 +40,7 @@ class NotificationService extends ChangeNotifier {
   String? _fcmToken;
   String? _pendingRoute; // Saved route for post-login navigation
   final List<AppNotification> _notifications = [];
+  Timer? _pollTimer;
   
   NotificationService._();
   
@@ -306,6 +307,25 @@ class NotificationService extends ChangeNotifier {
     final route = _pendingRoute;
     _pendingRoute = null;
     return route;
+  }
+
+  /// Start polling for new notifications (call after login)
+  void startPolling({Duration interval = const Duration(seconds: 60)}) {
+    _pollTimer?.cancel();
+    // Initial fetch
+    fetchNotifications();
+    // Poll periodically
+    _pollTimer = Timer.periodic(interval, (_) => fetchNotifications());
+    if (kDebugMode) debugPrint('🔔 Notification polling started (every ${interval.inSeconds}s)');
+  }
+
+  /// Stop polling (call on logout)
+  void stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _notifications.clear();
+    notifyListeners();
+    if (kDebugMode) debugPrint('🔔 Notification polling stopped');
   }
 }
 
