@@ -185,12 +185,15 @@ export default function LiveMap() {
   // Helper functions
   const formatTime = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    // Ensure UTC timestamps from backend are parsed correctly
+    const utcDate = dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
+    return new Date(utcDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
   };
 
   const getTimeSinceUpdate = (dateString) => {
     if (!dateString) return 'Unknown';
-    const diffMins = Math.floor((new Date() - new Date(dateString)) / 60000);
+    const utcDate = dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
+    const diffMins = Math.floor((new Date() - new Date(utcDate)) / 60000);
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     return `${Math.floor(diffMins / 60)}h ${diffMins % 60}m ago`;
