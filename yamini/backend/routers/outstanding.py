@@ -65,9 +65,12 @@ def get_outstanding_invoices(
     db: Session = Depends(get_db),
     current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
-    """Get all outstanding invoices with filters"""
+    """Get all outstanding invoices with filters - EXCLUDES soft-deleted"""
     
-    query = db.query(models.Outstanding)
+    # Exclude soft-deleted records
+    query = db.query(models.Outstanding).filter(
+        models.Outstanding.is_deleted == False
+    )
     
     if status:
         query = query.filter(models.Outstanding.status == status)
@@ -261,7 +264,7 @@ def delete_outstanding_invoice(
     db: Session = Depends(get_db),
     current_user: Optional[models.User] = Depends(get_current_user_optional)
 ):
-    """Delete outstanding invoice record"""
+    """Soft-delete outstanding invoice record"""
     
     invoice = db.query(models.Outstanding).filter(
         models.Outstanding.id == invoice_id
@@ -274,7 +277,8 @@ def delete_outstanding_invoice(
         )
     
     invoice_no = invoice.invoice_no
-    db.delete(invoice)
+    # Soft-delete instead of hard delete
+    invoice.is_deleted = True
     db.commit()
     
     return {

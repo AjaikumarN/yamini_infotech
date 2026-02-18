@@ -144,6 +144,18 @@ export default function Orders({ mode = 'staff' }) {
     }
   };
 
+  const handleDelete = async (orderId) => {
+    if (!confirm('Are you sure you want to delete this order?')) return;
+    try {
+      await apiRequest(`/api/orders/${orderId}`, { method: 'DELETE' });
+      alert('✅ Order deleted successfully');
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+      alert('❌ Failed to delete order: ' + (error.message || ''));
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       'PENDING': { bg: '#FEF3C7', color: '#92400E', border: '#FCD34D' },
@@ -397,6 +409,29 @@ export default function Orders({ mode = 'staff' }) {
                                 📦 Mark Delivered
                               </button>
                             )}
+                            <button
+                              onClick={() => handleDelete(order.id)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                border: '1.5px solid #ef4444',
+                                background: 'white',
+                                color: '#ef4444',
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseOver={(e) => {
+                                e.target.style.background = '#fef2f2';
+                              }}
+                              onMouseOut={(e) => {
+                                e.target.style.background = 'white';
+                              }}
+                              title="Delete order"
+                            >
+                              🗑️
+                            </button>
                           </div>
                         </td>
                       )}

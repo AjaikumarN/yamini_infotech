@@ -103,6 +103,12 @@ class Enquiry(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     created_by = Column(String)
     
+    # Soft-delete and visibility tracking
+    is_deleted = Column(Boolean, default=False, index=True)
+    is_viewed = Column(Boolean, default=False, index=True)
+    created_by_role = Column(String)  # Role of creator (ADMIN, RECEPTION, SALESMAN, etc.)
+    assigned_role = Column(String)  # Target role for this enquiry (SALESMAN, SERVICE_ENGINEER)
+    
     # Enhanced fields for conversion tracking
     last_followup_at = Column(DateTime)  # Last follow-up timestamp
     converted_to_order = Column(Boolean, default=False)  # Conversion flag
@@ -157,6 +163,11 @@ class Complaint(Base):
     priority = Column(String, default="NORMAL")  # NORMAL, URGENT, CRITICAL
     status = Column(String, default="ASSIGNED")  # ASSIGNED, ON_THE_WAY, IN_PROGRESS, ON_HOLD, COMPLETED
     assigned_to = Column(Integer, ForeignKey("users.id"))
+    
+    # Soft-delete and visibility tracking
+    is_deleted = Column(Boolean, default=False, index=True)
+    is_viewed = Column(Boolean, default=False, index=True)
+    created_by_role = Column(String)  # Role of creator
     
     # SLA Fields
     sla_time = Column(DateTime)  # When SLA expires
@@ -467,6 +478,10 @@ class Order(Base):
     stock_deducted = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Soft-delete and visibility tracking
+    is_deleted = Column(Boolean, default=False, index=True)
+    is_viewed = Column(Boolean, default=False, index=True)
+    
     # Relationships
     enquiry = relationship("Enquiry", foreign_keys=[enquiry_id], back_populates="orders")
     source_enquiry = relationship("Enquiry", foreign_keys="Enquiry.order_id", back_populates="converted_order", uselist=False)
@@ -509,6 +524,9 @@ class DailyReport(Base):
     work_start_time = Column(DateTime)  # Day start time
     work_end_time = Column(DateTime)  # Day end time
     
+    # Soft-delete tracking
+    is_deleted = Column(Boolean, default=False, index=True)
+    
     # Relationships
     salesman = relationship("User", foreign_keys=[salesman_id])
     attendance = relationship("Attendance", foreign_keys=[attendance_id])
@@ -527,6 +545,9 @@ class Visitor(Base):
     date = Column(Date, default=date.today)
     logged_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Soft-delete tracking
+    is_deleted = Column(Boolean, default=False, index=True)
     
     logged_by_user = relationship("User", foreign_keys=[logged_by])
 
@@ -570,6 +591,9 @@ class StockMovement(Base):
     
     notes = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Soft-delete tracking
+    is_deleted = Column(Boolean, default=False, index=True)
     
     # Delivery tracking
     delivery_status = Column(String)  # PENDING, DELIVERED, FAILED, REATTEMPT
@@ -938,6 +962,9 @@ class Outstanding(Base):
     customer_email = Column(String)
     notes = Column(Text)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=True)
+    
+    # Soft-delete tracking
+    is_deleted = Column(Boolean, default=False, index=True)
     
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

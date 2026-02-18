@@ -77,6 +77,77 @@ def get_unread_count(
     return {"unread_count": count or 0}
 
 
+@router.get("/api/notifications/badge-counts")
+def get_badge_counts(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """
+    Return badge counts for sidebar navigation items.
+    Uses is_viewed field for role-based unread tracking.
+    - Admin/Reception: unviewed enquiries and complaints
+    - Salesman: their unviewed assigned enquiries
+    - Service Engineer: their unviewed assigned complaints
+    """
+    user_role = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
+    
+    # Enquiries badge - unviewed enquiries (not soft-deleted)
+    if user_role in ['ADMIN', 'RECEPTION']:
+        enquiry_count = db.execute(text("""
+            SELECT COUNT(*) FROM enquiries
+            WHERE is_deleted = FALSE AND is_viewed = FALSE
+        """)).scalar() or 0
+    elif user_role == 'SALESMAN':
+        enquiry_count = db.execute(text("""
+            SELECT COUNT(*) FROM enquiries
+            WHERE is_deleted = FALSE AND is_viewed = FALSE AND assigned_to = :uid
+        """), {"uid": current_user.id}).scalar() or 0
+    else:
+        enquiry_count = 0
+    
+    # Complaints/Service Requests badge - unviewed complaints
+    if user_role in ['ADMIN', 'RECEPTION']:
+        complaint_count = db.execute(text("""
+            SELECT COUNT(*) FROM complaints
+            WHERE is_deleted = FALSE AND is_viewed = FALSE
+        """)).scalar() or 0
+    elif user_role == 'SERVICE_ENGINEER':
+        complaint_count = db.execute(text("""
+            SELECT COUNT(*) FROM complaints
+            WHERE is_deleted = FALSE AND is_viewed = FALSE AND assigned_to = :uid
+        """), {"uid": current_user.id}).scalar() or 0
+    else:
+        complaint_count = 0
+    
+    # Orders badge - pending orders not viewed
+    if user_role in ['ADMIN', 'RECEPTION']:
+        order_count = db.execute(text("""
+            SELECT COUNT(*) FROM orders
+            WHERE is_deleted = FALSE AND is_viewed = FALSE AND status = 'PENDING'
+        """)).scalar() or 0
+    elif user_role == 'SALESMAN':
+        order_count = db.execute(text("""
+            SELECT COUNT(*) FROM orders
+            WHERE is_deleted = FALSE AND is_viewed = FALSE AND salesman_id = :uid
+        """), {"uid": current_user.id}).scalar() or 0
+    else:
+        order_count = 0
+    
+    # Staff notifications badge
+    notification_count = db.execute(text("""
+        SELECT COUNT(*) FROM staff_notifications
+        WHERE user_id = :uid AND is_read = FALSE
+    """), {"uid": current_user.id}).scalar() or 0
+    
+    return {
+        "enquiries": enquiry_count,
+        "complaints": complaint_count,
+        "orders": order_count,
+        "notifications": notification_count,
+        "total": enquiry_count + complaint_count + order_count + notification_count
+    }
+
+
 @router.put("/api/notifications/{notification_id}/read")
 def mark_notification_read(
     notification_id: int,
@@ -110,6 +181,70 @@ def mark_all_read(
     """), {"uid": current_user.id})
     db.commit()
     return {"status": "ok", "marked": result.rowcount}
+
+
+@router.put("/api/notifications/mark-viewed/{module}")
+def mark_module_items_viewed(
+    module: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    """
+    Mark all items in a module as viewed (for badge counter logic).
+    Module: enquiries | complaints | orders
+    
+    When user opens the Enquiry Board, Complaints page, or Orders page,
+    frontend should call this endpoint to clear the badge count.
+    """
+    user_role = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
+    marked = 0
+    
+    if module == 'enquiries':
+        if user_role in ['ADMIN', 'RECEPTION']:
+            result = db.execute(text("""
+                UPDATE enquiries SET is_viewed = TRUE
+                WHERE is_deleted = FALSE AND is_viewed = FALSE
+            """))
+            marked = result.rowcount
+        elif user_role == 'SALESMAN':
+            result = db.execute(text("""
+                UPDATE enquiries SET is_viewed = TRUE
+                WHERE is_deleted = FALSE AND is_viewed = FALSE AND assigned_to = :uid
+            """), {"uid": current_user.id})
+            marked = result.rowcount
+    
+    elif module == 'complaints':
+        if user_role in ['ADMIN', 'RECEPTION']:
+            result = db.execute(text("""
+                UPDATE complaints SET is_viewed = TRUE
+                WHERE is_deleted = FALSE AND is_viewed = FALSE
+            """))
+            marked = result.rowcount
+        elif user_role == 'SERVICE_ENGINEER':
+            result = db.execute(text("""
+                UPDATE complaints SET is_viewed = TRUE
+                WHERE is_deleted = FALSE AND is_viewed = FALSE AND assigned_to = :uid
+            """), {"uid": current_user.id})
+            marked = result.rowcount
+    
+    elif module == 'orders':
+        if user_role in ['ADMIN', 'RECEPTION']:
+            result = db.execute(text("""
+                UPDATE orders SET is_viewed = TRUE
+                WHERE is_deleted = FALSE AND is_viewed = FALSE
+            """))
+            marked = result.rowcount
+        elif user_role == 'SALESMAN':
+            result = db.execute(text("""
+                UPDATE orders SET is_viewed = TRUE
+                WHERE is_deleted = FALSE AND is_viewed = FALSE AND salesman_id = :uid
+            """), {"uid": current_user.id})
+            marked = result.rowcount
+    else:
+        raise HTTPException(400, "Invalid module. Use: enquiries, complaints, or orders")
+    
+    db.commit()
+    return {"status": "ok", "module": module, "marked_viewed": marked}
 
 
 # =========================================================================

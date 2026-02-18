@@ -93,3 +93,23 @@ def update_complaint_status(
     if not updated:
         raise HTTPException(status_code=404, detail="Complaint not found")
     return updated
+
+
+@router.delete("/{complaint_id}")
+def delete_complaint(
+    complaint_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Soft-delete complaint (Admin only)"""
+    if current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only admin can delete complaints")
+    
+    complaint = db.query(models.Complaint).filter(models.Complaint.id == complaint_id).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    
+    # Soft-delete instead of hard delete
+    complaint.is_deleted = True
+    db.commit()
+    return {"message": "Complaint deleted successfully", "id": complaint_id}

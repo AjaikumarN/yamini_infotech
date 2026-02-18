@@ -128,11 +128,14 @@ def create_complaint(db: Session, complaint: schemas.ComplaintCreate):
     return db_complaint
 
 def get_complaints(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Complaint).offset(skip).limit(limit).all()
+    return db.query(models.Complaint).filter(
+        models.Complaint.is_deleted == False
+    ).offset(skip).limit(limit).all()
 
 def get_complaints_by_engineer(db: Session, engineer_id: int):
     return db.query(models.Complaint).filter(
-        models.Complaint.assigned_to == engineer_id
+        models.Complaint.assigned_to == engineer_id,
+        models.Complaint.is_deleted == False
     ).all()
 
 def update_complaint_status(db: Session, complaint_id: int, status: str):

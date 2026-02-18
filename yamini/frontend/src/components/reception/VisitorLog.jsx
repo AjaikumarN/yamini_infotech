@@ -70,6 +70,17 @@ const VisitorLog = () => {
     }
   };
 
+  const deleteVisitor = async (visitorId) => {
+    if (!window.confirm('Are you sure you want to delete this visitor record?')) return;
+    try {
+      await apiRequest(`/api/visitors/${visitorId}`, { method: 'DELETE' });
+      fetchVisitors();
+      alert('✅ Visitor deleted successfully!');
+    } catch (error) {
+      alert('❌ Failed to delete visitor: ' + (error.message || ''));
+    }
+  };
+
   const filteredVisitors = visitors.filter(visitor => {
     if (filters.search) {
       const search = filters.search.toLowerCase();
@@ -253,6 +264,13 @@ const VisitorLog = () => {
                           Mark OUT
                         </button>
                       )}
+                      <button 
+                        className="btn-delete"
+                        onClick={() => deleteVisitor(visitor.id)}
+                        title="Delete visitor"
+                      >
+                        🗑️
+                      </button>
                     </td>
                   </tr>
                 );

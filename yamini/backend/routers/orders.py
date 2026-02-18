@@ -133,7 +133,10 @@ def get_orders(
 ):
     """Get orders - Role-based access"""
     
-    query = db.query(models.Order)
+    # Start with base query - EXCLUDE soft-deleted orders
+    query = db.query(models.Order).filter(
+        models.Order.is_deleted == False
+    )
     
     # Salesman can only see their own orders
     if current_user.role == models.UserRole.SALESMAN:
@@ -396,7 +399,7 @@ def delete_order(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.require_order_approval)  # Admin only
 ):
-    """Delete order - ADMIN ONLY (Backend enforced, only if PENDING)"""
+    """Soft-delete order - ADMIN ONLY (Backend enforced, only if PENDING)"""
     
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
     if not order:
@@ -405,7 +408,8 @@ def delete_order(
     if order.status != "PENDING":
         raise HTTPException(status_code=400, detail="Cannot delete approved/rejected orders")
     
-    db.delete(order)
+    # Soft-delete instead of hard delete
+    order.is_deleted = True
     db.commit()
     
-    return {"message": "Order deleted successfully"}
+    return {"message": "Order deleted successfully", "id": order_id}

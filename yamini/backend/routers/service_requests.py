@@ -559,7 +559,7 @@ def get_all_services(
     if not current_user or current_user.role not in [models.UserRole.ADMIN, models.UserRole.RECEPTION]:
         return []
     
-    query = db.query(models.Complaint)
+    query = db.query(models.Complaint).filter(models.Complaint.is_deleted == False)
     
     if status:
         query = query.filter(models.Complaint.status == status)
@@ -651,3 +651,22 @@ def get_service_feedback(
     ).all()
     
     return feedbacks
+
+
+@router.delete("/{service_id}")
+def delete_service_request(
+    service_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Soft-delete service request (Admin only)"""
+    if current_user.role != models.UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only admin can delete service requests")
+    
+    service = db.query(models.Complaint).filter(models.Complaint.id == service_id).first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service request not found")
+    
+    service.is_deleted = True
+    db.commit()
+    return {"message": "Service request deleted successfully", "id": service_id}

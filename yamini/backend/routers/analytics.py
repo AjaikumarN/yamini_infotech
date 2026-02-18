@@ -398,47 +398,85 @@ def get_admin_dashboard_analytics(
     db: Session = Depends(get_db)
 ):
     """
-    Get analytics for admin dashboard
+    Get analytics for admin dashboard using REAL SQL aggregation queries
     RBAC: ADMIN and RECEPTION
     """
     if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTION]:
         raise HTTPException(status_code=403, detail="Admin or Reception access required")
     
-    # Sales Analytics
-    from models import Enquiry, Order
-    enquiries = db.query(Enquiry).all()
-    orders = db.query(Order).all()
+    from models import Enquiry, Order, Complaint
+    
+    # Sales Analytics - Use SQL aggregation (not Python filtering)
+    total_enquiries = db.query(func.count(Enquiry.id)).filter(
+        Enquiry.is_deleted == False
+    ).scalar() or 0
+    
+    converted_enquiries = db.query(func.count(Enquiry.id)).filter(
+        Enquiry.is_deleted == False,
+        Enquiry.status == 'CONVERTED'
+    ).scalar() or 0
+    
+    pending_enquiries = db.query(func.count(Enquiry.id)).filter(
+        Enquiry.is_deleted == False,
+        Enquiry.status.in_(['NEW', 'PENDING', 'CONTACTED', 'QUALIFIED'])
+    ).scalar() or 0
     
     sales_analytics = {
-        "total_enquiries": len(enquiries),
-        "converted": len([e for e in enquiries if e.status == 'CONVERTED']),
-        "pending": len([e for e in enquiries if e.status in ['NEW', 'PENDING', 'CONTACTED', 'QUALIFIED']])
+        "total_enquiries": total_enquiries,
+        "converted": converted_enquiries,
+        "pending": pending_enquiries
     }
     
-    # Service Analytics
-    service_requests = db.query(Complaint).all()
+    # Service Analytics - Use SQL aggregation
+    total_service_requests = db.query(func.count(Complaint.id)).filter(
+        Complaint.is_deleted == False
+    ).scalar() or 0
+    
+    completed_service = db.query(func.count(Complaint.id)).filter(
+        Complaint.is_deleted == False,
+        Complaint.status == 'COMPLETED'
+    ).scalar() or 0
+    
+    pending_service = db.query(func.count(Complaint.id)).filter(
+        Complaint.is_deleted == False,
+        Complaint.status != 'COMPLETED'
+    ).scalar() or 0
+    
+    sla_breached = db.query(func.count(Complaint.id)).filter(
+        Complaint.is_deleted == False,
+        Complaint.sla_breach_sent == True
+    ).scalar() or 0
+    
     service_analytics = {
-        "total_requests": len(service_requests),
-        "completed": len([s for s in service_requests if s.status == 'COMPLETED']),
-        "pending": len([s for s in service_requests if s.status != 'COMPLETED']),
-        "sla_breached": len([s for s in service_requests if s.sla_breach_sent])
+        "total_requests": total_service_requests,
+        "completed": completed_service,
+        "pending": pending_service,
+        "sla_breached": sla_breached
     }
     
-    # Attendance Analytics
+    # Attendance Analytics - Real-time TODAY's attendance using SQL
     today = date.today()
-    attendance_records = db.query(Attendance).filter(
-        func.date(Attendance.date) == today
-    ).all()
     
-    total_staff = db.query(User).filter(
+    # Use attendance_date for accurate IST date filtering
+    present_today = db.query(func.count(Attendance.id)).filter(
+        Attendance.attendance_date == today,
+        Attendance.status.in_(['Present', 'On Time'])
+    ).scalar() or 0
+    
+    late_today = db.query(func.count(Attendance.id)).filter(
+        Attendance.attendance_date == today,
+        Attendance.status == 'Late'
+    ).scalar() or 0
+    
+    total_staff = db.query(func.count(User.id)).filter(
         User.is_active == True,
         User.role.in_([UserRole.SALESMAN, UserRole.SERVICE_ENGINEER, UserRole.RECEPTION])
-    ).count()
+    ).scalar() or 0
     
     attendance_analytics = {
         "total_staff": total_staff,
-        "present_today": len([a for a in attendance_records if a.status in ['Present', 'On Time']]),
-        "late_today": len([a for a in attendance_records if a.status == 'Late'])
+        "present_today": present_today,
+        "late_today": late_today
     }
     
     return {

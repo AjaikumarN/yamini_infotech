@@ -81,6 +81,17 @@ const ServiceComplaints = ({ mode = 'staff' }) => {
     }
   };
 
+  const deleteComplaint = async (complaintId) => {
+    if (!window.confirm('Are you sure you want to delete this service complaint?')) return;
+    try {
+      await apiRequest(`/api/service-requests/${complaintId}`, { method: 'DELETE' });
+      fetchData();
+      alert('✅ Service complaint deleted successfully!');
+    } catch (error) {
+      alert('❌ Failed to delete complaint: ' + (error.message || ''));
+    }
+  };
+
   const assignEngineer = async (complaintId, engineerId) => {
     try {
       await apiRequest(`/api/service-requests/${complaintId}/assign?engineer_id=${engineerId}`, {
@@ -311,6 +322,13 @@ const ServiceComplaints = ({ mode = 'staff' }) => {
                         onClick={() => setSelectedComplaint(comp)}
                       >
                         👁️
+                      </button>
+                      <button 
+                        className="btn-delete" 
+                        title="Delete complaint"
+                        onClick={() => deleteComplaint(comp.id)}
+                      >
+                        🗑️
                       </button>
                     </td>
                   </tr>

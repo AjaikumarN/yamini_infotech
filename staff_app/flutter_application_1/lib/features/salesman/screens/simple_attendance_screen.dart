@@ -385,7 +385,7 @@ class _SimpleAttendanceScreenState extends State<SimpleAttendanceScreen> {
   Widget _buildPresentCard() {
     return Column(
       children: [
-        // Photo (if available)
+        // Photo (if available) - Fixed: Added headers for S3 image loading
         if (_photoUrl != null)
           Container(
             margin: const EdgeInsets.only(bottom: 20),
@@ -396,7 +396,33 @@ class _SimpleAttendanceScreenState extends State<SimpleAttendanceScreen> {
                 height: 200,
                 width: 200,
                 fit: BoxFit.cover,
+                headers: const {
+                  'Accept': 'image/*',
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    height: 200,
+                    width: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  );
+                },
                 errorBuilder: (context, error, stackTrace) {
+                  if (kDebugMode) {
+                    debugPrint('❌ Attendance image error: $error');
+                  }
                   return Container(
                     height: 200,
                     width: 200,

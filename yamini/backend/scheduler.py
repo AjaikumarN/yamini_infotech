@@ -377,10 +377,10 @@ def start_scheduler():
         replace_existing=True
     )
 
-    # 5. Auto-stop tracking sessions at 6:00 PM IST (12:30 UTC)
+    # 5. Auto-stop tracking sessions at 6:30 PM IST (13:00 UTC)
     scheduler.add_job(
         auto_stop_tracking_sessions,
-        CronTrigger(hour=12, minute=30),  # 6:00 PM IST = 12:30 UTC
+        CronTrigger(hour=13, minute=0),  # 6:30 PM IST = 13:00 UTC
         id='tracking_auto_stop',
         name='Auto-Stop Tracking Sessions',
         replace_existing=True
@@ -393,7 +393,7 @@ def start_scheduler():
     logger.info("  - Daily Reports Check: 7 PM daily")
     logger.info("  - Service SLA Check: Every hour")
     logger.info("  - AMC Expiry Check: 1st of month, 9 AM")
-    logger.info("  - Tracking Auto-Stop: 6:00 PM IST daily")
+    logger.info("  - Tracking Auto-Stop: 6:30 PM IST daily")
 
     # Cleanup stale sessions from prior days on startup
     cleanup_stale_tracking_sessions()

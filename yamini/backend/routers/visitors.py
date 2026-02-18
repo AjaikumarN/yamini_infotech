@@ -96,10 +96,11 @@ def get_visitors(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get visitors (all or today only)"""
+    """Get visitors (all or today only) - EXCLUDES soft-deleted"""
     require_reception(current_user)
     
-    query = db.query(Visitor)
+    # Exclude soft-deleted visitors
+    query = db.query(Visitor).filter(Visitor.is_deleted == False)
     
     if today:
         query = query.filter(Visitor.date == date.today())
@@ -162,7 +163,7 @@ def delete_visitor(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Delete visitor entry (Admin only)"""
+    """Soft-delete visitor entry (Admin only)"""
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Only Admin can delete visitor entries")
     
@@ -171,7 +172,8 @@ def delete_visitor(
     if not visitor:
         raise HTTPException(status_code=404, detail="Visitor not found")
     
-    db.delete(visitor)
+    # Soft-delete instead of hard delete
+    visitor.is_deleted = True
     db.commit()
     
-    return {"message": "Visitor entry deleted successfully"}
+    return {"message": "Visitor entry deleted successfully", "id": visitor_id}

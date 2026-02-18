@@ -107,6 +107,17 @@ const EnquiryBoard = ({ mode = 'staff' }) => {
     setShowFollowUpModal(true);
   };
 
+  const deleteEnquiry = async (enquiryId) => {
+    if (!window.confirm('Are you sure you want to delete this enquiry?')) return;
+    try {
+      await apiRequest(`/api/enquiries/${enquiryId}`, { method: 'DELETE' });
+      fetchData();
+      alert('✅ Enquiry deleted successfully!');
+    } catch (error) {
+      alert('❌ Failed to delete enquiry: ' + (error.message || ''));
+    }
+  };
+
   const submitFollowUp = async () => {
     if (!followUpDate) {
       alert('❌ Please select a date');
@@ -290,6 +301,13 @@ const EnquiryBoard = ({ mode = 'staff' }) => {
                       title="Add follow-up note"
                     >
                       📝
+                    </button>
+                    <button 
+                      className="btn-action btn-delete" 
+                      onClick={() => deleteEnquiry(enq.id)}
+                      title="Delete enquiry"
+                    >
+                      🗑️
                     </button>
                   </td>
                 </tr>

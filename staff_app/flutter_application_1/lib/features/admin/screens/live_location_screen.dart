@@ -802,111 +802,125 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
               ),
             ],
           ),
-          child: Column(
-            children: [
-              // Drag handle
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              // Search bar
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: TextField(
-                  onChanged: (v) => setState(() => searchQuery = v),
-                  decoration: InputDecoration(
-                    hintText: 'Search team members...',
-                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: Colors.grey[400],
-                      size: 20,
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        Icons.filter_list,
-                        color: Colors.grey[500],
-                        size: 20,
-                      ),
-                      onPressed: () {},
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              // Stats row
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+          child: CustomScrollView(
+            controller: scrollController,
+            slivers: [
+              // Fixed header content (drag handle, search bar, stats)
+              SliverToBoxAdapter(
+                child: Column(
                   children: [
-                    _buildStatItem(
-                      icon: Icons.wifi,
-                      iconColor: const Color(0xFF22C55E),
-                      value: onlineCount.toString(),
-                      label: 'ONLINE',
+                    // Drag handle - enhanced for better dragging
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onVerticalDragUpdate: (_) {}, // Allow parent to handle drag
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 8),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
-                    _buildStatItem(
-                      icon: Icons.route,
-                      iconColor: const Color(0xFFF59E0B),
-                      value: routesCount.toString(),
-                      label: 'ROUTES',
+                    // Search bar - wrapped to allow vertical drag pass-through
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: TextField(
+                        onChanged: (v) => setState(() => searchQuery = v),
+                        decoration: InputDecoration(
+                          hintText: 'Search team members...',
+                          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: Colors.grey[400],
+                            size: 20,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              Icons.filter_list,
+                              color: Colors.grey[500],
+                              size: 20,
+                            ),
+                            onPressed: () {},
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
                     ),
-                    _buildStatItem(
-                      icon: Icons.visibility,
-                      iconColor: AdminTheme.primary,
-                      value: viewingCount.toString(),
-                      label: 'VIEWING',
+                    // Stats row
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildStatItem(
+                            icon: Icons.wifi,
+                            iconColor: const Color(0xFF22C55E),
+                            value: onlineCount.toString(),
+                            label: 'ONLINE',
+                          ),
+                          _buildStatItem(
+                            icon: Icons.route,
+                            iconColor: const Color(0xFFF59E0B),
+                            value: routesCount.toString(),
+                            label: 'ROUTES',
+                          ),
+                          _buildStatItem(
+                            icon: Icons.visibility,
+                            iconColor: AdminTheme.primary,
+                            value: viewingCount.toString(),
+                            label: 'VIEWING',
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    // Team members header
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'TEAM MEMBERS',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF6B7280),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            '${filteredLocations.length} found',
+                            style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Divider(height: 1),
-              // Team members header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'TEAM MEMBERS',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF6B7280),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    Text(
-                      '${filteredLocations.length} found',
-                      style: TextStyle(fontSize: 11, color: Colors.grey[400]),
-                    ),
-                  ],
-                ),
-              ),
-              // Member list
-              Expanded(
-                child: isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : error != null
-                    ? Center(
+              // Member list as sliver
+              isLoading
+                  ? const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  : error != null
+                  ? SliverFillRemaining(
+                      child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -926,9 +940,11 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
                             ),
                           ],
                         ),
-                      )
-                    : filteredLocations.isEmpty
-                    ? Center(
+                      ),
+                    )
+                  : filteredLocations.isEmpty
+                  ? SliverFillRemaining(
+                      child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -944,76 +960,20 @@ class _LiveLocationScreenState extends State<LiveLocationScreen> {
                             ),
                           ],
                         ),
-                      )
-                    : ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: filteredLocations.length,
-                        itemBuilder: (context, index) {
-                          return _buildMemberTile(filteredLocations[index]);
-                        },
                       ),
-              ),
-              // Bottom bar with refresh button
-              SafeArea(
-                top: false,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border(top: BorderSide(color: Colors.grey[200]!)),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 40,
-                          child: ElevatedButton.icon(
-                            onPressed: _fetchLocations,
-                            icon: const Icon(Icons.refresh, size: 18),
-                            label: const Text('Refresh'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AdminTheme.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
+                    )
+                  : SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            final loc = filteredLocations[index];
+                            return _buildMemberTile(loc);
+                          },
+                          childCount: filteredLocations.length,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'LAST SYNC',
-                            style: TextStyle(
-                              fontSize: 9,
-                              color: Colors.grey[400],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            lastRefresh != null
-                                ? _formatTime(lastRefresh!)
-                                : '--:--',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF374151),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                    ),
             ],
           ),
         );

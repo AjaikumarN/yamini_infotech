@@ -65,6 +65,17 @@ const OutstandingSummary = ({ mode = 'staff' }) => {
     }
   };
 
+  const deleteOutstanding = async (invoiceId) => {
+    if (!window.confirm('Are you sure you want to delete this outstanding record?')) return;
+    try {
+      await apiRequest(`/api/outstanding/${invoiceId}`, { method: 'DELETE' });
+      fetchOutstandingData();
+      alert('✅ Outstanding record deleted successfully!');
+    } catch (error) {
+      alert('❌ Failed to delete record: ' + (error.message || ''));
+    }
+  };
+
   const filteredData = outstandingData.filter(item => {
     if (filters.search) {
       const search = filters.search.toLowerCase();
@@ -338,10 +349,27 @@ const OutstandingSummary = ({ mode = 'staff' }) => {
                             borderRadius: '4px',
                             cursor: 'pointer',
                             fontSize: '13px',
-                            fontWeight: '600'
+                            fontWeight: '600',
+                            marginRight: '8px'
                           }}
                         >
                           Update
+                        </button>
+                        <button
+                          onClick={() => deleteOutstanding(item.id)}
+                          style={{
+                            padding: '6px 12px',
+                            background: '#EF4444',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: '600'
+                          }}
+                          title="Delete record"
+                        >
+                          🗑️
                         </button>
                       </td>
                     )}

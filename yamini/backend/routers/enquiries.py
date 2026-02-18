@@ -88,8 +88,10 @@ def get_enquiries(
 ):
     """Get enquiries (Backend enforced: Reception=all, Salesman=assigned only)"""
     
-    # Build base query
-    query = db.query(models.Enquiry)
+    # Build base query - EXCLUDE soft-deleted enquiries
+    query = db.query(models.Enquiry).filter(
+        models.Enquiry.is_deleted == False
+    )
     
     # Apply role-based filtering (Backend enforcement)
     query = auth.filter_enquiries_by_role(current_user, query)
@@ -161,14 +163,15 @@ def delete_enquiry(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.require_enquiry_write)  # Admin + Reception
 ):
-    """Delete enquiry (Admin + Reception only - Backend enforced)"""
+    """Soft-delete enquiry (Admin + Reception only - Backend enforced)"""
     enquiry = db.query(models.Enquiry).filter(models.Enquiry.id == enquiry_id).first()
     if not enquiry:
         raise HTTPException(status_code=404, detail="Enquiry not found")
     
-    db.delete(enquiry)
+    # Soft-delete instead of hard delete
+    enquiry.is_deleted = True
     db.commit()
-    return {"message": "Enquiry deleted successfully"}
+    return {"message": "Enquiry deleted successfully", "id": enquiry_id}
 
 # Follow-up endpoints
 @router.post("/followups", response_model=schemas.FollowUp)
