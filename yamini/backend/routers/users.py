@@ -29,9 +29,10 @@ def get_salesmen(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_optional)
 ):
-    """Get all salesmen (accessible to reception for enquiry assignment)"""
+    """Get all active salesmen (accessible to reception for enquiry assignment)"""
     salesmen = db.query(models.User).filter(
-        models.User.role == 'SALESMAN'
+        models.User.role == 'SALESMAN',
+        models.User.is_active == True
     ).all()
     return salesmen
 

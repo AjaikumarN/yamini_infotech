@@ -89,6 +89,7 @@ export default function LiveMap() {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [mapStyle, setMapStyle] = useState('street');
   
   const mapRef = useRef(null);
   const defaultCenter = [8.7139, 77.7567]; // Tirunelveli default
@@ -355,6 +356,14 @@ export default function LiveMap() {
             <Clock size={16} />
             <span>15s refresh</span>
           </div>
+          <div 
+            className="stat-pill" 
+            onClick={() => setMapStyle(prev => prev === 'street' ? 'satellite' : 'street')}
+            style={{ cursor: 'pointer', background: mapStyle === 'satellite' ? '#667eea' : undefined, color: mapStyle === 'satellite' ? 'white' : undefined }}
+          >
+            <MapPinned size={16} />
+            <span>{mapStyle === 'satellite' ? '🛰️ Satellite' : '🗺️ Street'}</span>
+          </div>
           <div className="stat-pill live">
             <span className="live-dot"></span>
             <span>LIVE</span>
@@ -376,10 +385,18 @@ export default function LiveMap() {
           ref={mapRef}
           zoomControl={false}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          />
+          {mapStyle === 'satellite' ? (
+            <TileLayer
+              attribution='&copy; Esri'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              maxZoom={19}
+            />
+          ) : (
+            <TileLayer
+              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            />
+          )}
           
           <MapController 
             locations={locations} 

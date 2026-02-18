@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { apiRequest } from '../../utils/api';
 
 /**
  * ADMIN SIDEBAR - Able Pro Style
@@ -7,6 +8,22 @@ import { NavLink, useLocation } from 'react-router-dom';
  */
 export default function AdminSidebar({ collapsed, onToggle }) {
   const location = useLocation();
+  const [badgeCounts, setBadgeCounts] = useState({ enquiries: 0, orders: 0, complaints: 0 });
+
+  useEffect(() => {
+    const fetchBadges = async () => {
+      try {
+        const data = await apiRequest('/api/notifications/badge-counts');
+        if (data) setBadgeCounts(data);
+      } catch (e) {
+        console.error('Badge fetch failed:', e);
+      }
+    };
+    fetchBadges();
+    const interval = setInterval(fetchBadges, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [expandedGroups, setExpandedGroups] = useState({
     employees: true,
     inventory: false,
@@ -61,8 +78,8 @@ export default function AdminSidebar({ collapsed, onToggle }) {
       icon: 'shopping_cart',
       expanded: expandedGroups.sales,
       items: [
-        { path: '/admin/enquiries', icon: 'contact_page', label: 'Enquiries', badge: 12 },
-        { path: '/admin/orders', icon: 'receipt_long', label: 'Orders', badge: 5 }
+        { path: '/admin/enquiries', icon: 'contact_page', label: 'Enquiries', badge: badgeCounts.enquiries || 0 },
+        { path: '/admin/orders', icon: 'receipt_long', label: 'Orders', badge: badgeCounts.orders || 0 }
       ]
     },
     {
@@ -81,7 +98,7 @@ export default function AdminSidebar({ collapsed, onToggle }) {
       icon: 'build',
       expanded: expandedGroups.service,
       items: [
-        { path: '/admin/service/requests', icon: 'assignment', label: 'Requests', badge: 8 },
+        { path: '/admin/service/requests', icon: 'assignment', label: 'Requests', badge: badgeCounts.complaints || 0 },
         { path: '/admin/service/sla', icon: 'schedule', label: 'SLA Monitor' },
         { path: '/admin/mif', icon: 'lock', label: 'MIF', confidential: true }
       ]
