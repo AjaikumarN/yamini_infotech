@@ -1218,6 +1218,7 @@ class StaffNotification(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
+    notification_type = Column(String(80))          # enquiry, order, complaint, attendance, stock, sla, reminder, system
     module = Column(String(80))
     entity_type = Column(String(80))
     entity_id = Column(Integer)

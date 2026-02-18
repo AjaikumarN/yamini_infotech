@@ -76,7 +76,8 @@ def get_my_notifications(
     rows = db.execute(text(f"""
         SELECT sn.id, sn.title, sn.message, sn.module,
                sn.entity_type, sn.entity_id, sn.priority,
-               sn.is_read, sn.action_url, sn.created_at, sn.read_at
+               sn.is_read, sn.action_url, sn.created_at, sn.read_at,
+               sn.notification_type
         FROM staff_notifications sn
         {where}
         ORDER BY sn.created_at DESC
@@ -90,6 +91,7 @@ def get_my_notifications(
             "is_read": r[7], "action_url": r[8],
             "created_at": r[9].isoformat() if r[9] else None,
             "read_at": r[10].isoformat() if r[10] else None,
+            "notification_type": r[11],
         }
         for r in rows
     ]

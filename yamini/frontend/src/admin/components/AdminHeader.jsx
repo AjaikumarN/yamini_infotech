@@ -11,18 +11,36 @@ import { getEmployeePhotoUrl as getPhotoUrl } from '../../config';
 
 // Notification type → icon + color mapping
 const NOTIF_META = {
-  enquiry:   { icon: '📋', color: '#3b82f6', bg: '#eff6ff', label: 'Enquiry' },
-  order:     { icon: '🛒', color: '#8b5cf6', bg: '#f5f3ff', label: 'Order' },
-  complaint: { icon: '🔧', color: '#f59e0b', bg: '#fffbeb', label: 'Service' },
-  service:   { icon: '🔧', color: '#f59e0b', bg: '#fffbeb', label: 'Service' },
-  attendance:{ icon: '📍', color: '#10b981', bg: '#ecfdf5', label: 'Attendance' },
-  stock:     { icon: '📦', color: '#ef4444', bg: '#fef2f2', label: 'Stock' },
-  reminder:  { icon: '⏰', color: '#6366f1', bg: '#eef2ff', label: 'Reminder' },
-  system:    { icon: '⚙️', color: '#64748b', bg: '#f8fafc', label: 'System' },
-  default:   { icon: '🔔', color: '#6366f1', bg: '#eef2ff', label: 'Notification' },
+  enquiry:    { icon: '📋', color: '#3b82f6', bg: '#eff6ff', label: 'Enquiry' },
+  order:      { icon: '🛒', color: '#8b5cf6', bg: '#f5f3ff', label: 'Order' },
+  complaint:  { icon: '🔧', color: '#f59e0b', bg: '#fffbeb', label: 'Service' },
+  service:    { icon: '🔧', color: '#f59e0b', bg: '#fffbeb', label: 'Service' },
+  attendance: { icon: '📍', color: '#10b981', bg: '#ecfdf5', label: 'Attendance' },
+  stock:      { icon: '📦', color: '#ef4444', bg: '#fef2f2', label: 'Stock' },
+  reminder:   { icon: '⏰', color: '#6366f1', bg: '#eef2ff', label: 'Reminder' },
+  system:     { icon: '⚙️', color: '#64748b', bg: '#f8fafc', label: 'System' },
+  default:    { icon: '🔔', color: '#6366f1', bg: '#eef2ff', label: 'Notification' },
 };
 
-const getNotifMeta = (type) => NOTIF_META[type] || NOTIF_META.default;
+// Normalize module/type strings (e.g. "enquiries" → "enquiry")
+const normalizeType = (t) => {
+  if (!t) return '';
+  const lower = t.toLowerCase().trim();
+  const MAP = {
+    enquiries: 'enquiry', enquiry: 'enquiry',
+    orders: 'order', order: 'order',
+    complaints: 'complaint', complaint: 'complaint',
+    services: 'service', service: 'service',
+    'service-complaint': 'complaint', 'service_complaint': 'complaint',
+    attendance: 'attendance',
+    stock: 'stock', stocks: 'stock', inventory: 'stock',
+    reminder: 'reminder', reminders: 'reminder',
+    system: 'system',
+  };
+  return MAP[lower] || lower;
+};
+
+const getNotifMeta = (type) => NOTIF_META[normalizeType(type)] || NOTIF_META.default;
 
 const timeAgo = (dateStr) => {
   if (!dateStr) return '';
@@ -39,62 +57,105 @@ const timeAgo = (dateStr) => {
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 };
 
-// Construct redirect URL based on notification metadata
+// Construct redirect URL based on notification metadata + user role
+// Routes per role:
+//   Admin:    /admin/enquiries, /admin/orders, /admin/service/requests, /admin/attendance, /admin/stock
+//   Reception: /reception/enquiries, /reception/service-complaints, /reception/delivery-log, /reception/outstanding
+//   Salesman:  /salesman/enquiries, /salesman/orders, /salesman/calls, /salesman/followups
+//   Engineer:  /service-engineer/jobs, /service-engineer/attendance, /service-engineer/sla-tracker
 const getRedirectUrl = (notif, role) => {
-  if (notif.redirect_url) return notif.redirect_url;
-  if (notif.action_url) return notif.action_url;
-  
-  const upperRole = role?.toUpperCase();
+  const upperRole = (role || '').toUpperCase();
   const basePath = upperRole === 'ADMIN' ? '/admin' :
-                  upperRole === 'SALESMAN' ? '/salesman' :
-                  upperRole === 'RECEPTION' ? '/reception' :
-                  upperRole === 'SERVICE_ENGINEER' ? '/service-engineer' : '/admin';
-  
-  const type = (notif.notification_type || notif.module || '').toLowerCase();
-  const msg = (notif.message || '').toLowerCase();
+                   upperRole === 'SALESMAN' ? '/salesman' :
+                   upperRole === 'RECEPTION' ? '/reception' :
+                   upperRole === 'SERVICE_ENGINEER' ? '/service-engineer' : '/admin';
+
+  // If the backend set an action_url that starts with '/', rewrite it with the correct role base
+  if (notif.action_url) {
+    const au = notif.action_url;
+    // Absolute role-agnostic paths like /enquiries/123 → prefix with basePath
+    if (au.startsWith('/enquiries')) return `${basePath === '/service-engineer' ? '/admin' : basePath}${au.replace('/enquiries', '/enquiries')}`;
+    if (au.startsWith('/orders'))    return `${basePath}/orders`;
+    if (au.startsWith('/service'))   return upperRole === 'ADMIN' ? '/admin/service/requests' :
+                                            upperRole === 'RECEPTION' ? '/reception/service-complaints' :
+                                            upperRole === 'SERVICE_ENGINEER' ? '/service-engineer/jobs' : `${basePath}/service`;
+    // Already has a role prefix
+    if (au.startsWith('/admin') || au.startsWith('/reception') || au.startsWith('/salesman') || au.startsWith('/service-engineer')) return au;
+    return `${basePath}${au.startsWith('/') ? au : '/' + au}`;
+  }
+
+  const type = normalizeType(notif.notification_type || notif.module || '');
+  const msg  = (notif.message || '').toLowerCase();
   const title = (notif.title || '').toLowerCase();
   const entityId = notif.entity_id;
-  
+
   // Enquiry related
-  if (type.includes('enquir') || title.includes('enquir') || msg.includes('enq-')) {
-    if (entityId && upperRole === 'ADMIN') return `/admin/enquiries/${entityId}`;
-    if (upperRole === 'ADMIN') return '/admin/enquiries';
-    if (upperRole === 'RECEPTION') return '/reception/enquiries';
-    if (upperRole === 'SALESMAN') return '/salesman/enquiries';
-    return `${basePath}/enquiries`;
+  if (type === 'enquiry' || title.includes('enquir') || msg.includes('enquir') || msg.includes('enq')) {
+    switch (upperRole) {
+      case 'ADMIN':      return entityId ? `/admin/enquiries/${entityId}` : '/admin/enquiries';
+      case 'RECEPTION':  return '/reception/enquiries';
+      case 'SALESMAN':   return '/salesman/enquiries';
+      default:           return `${basePath}/enquiries`;
+    }
   }
-  
+
   // Service / Complaint related
-  if (type.includes('service') || type.includes('complaint') || title.includes('service') || msg.includes('srv-')) {
-    if (upperRole === 'ADMIN') return '/admin/service/requests';
-    if (upperRole === 'RECEPTION') return '/reception/service-complaints';
-    if (upperRole === 'SERVICE_ENGINEER') return '/service-engineer/jobs';
-    return `${basePath}/service`;
+  if (type === 'complaint' || type === 'service' || title.includes('service') || title.includes('complaint') || msg.includes('srv')) {
+    switch (upperRole) {
+      case 'ADMIN':            return '/admin/service/requests';
+      case 'RECEPTION':        return '/reception/service-complaints';
+      case 'SERVICE_ENGINEER': return '/service-engineer/jobs';
+      default:                 return `${basePath}/service`;
+    }
   }
-  
+
   // Order related
-  if (type.includes('order') || title.includes('order') || msg.includes('ord-')) {
-    if (upperRole === 'ADMIN') return '/admin/orders';
-    if (upperRole === 'SALESMAN') return '/salesman/orders';
-    return `${basePath}/orders`;
+  if (type === 'order' || title.includes('order') || msg.includes('order')) {
+    switch (upperRole) {
+      case 'ADMIN':    return '/admin/orders';
+      case 'SALESMAN': return '/salesman/orders';
+      case 'RECEPTION': return '/reception/outstanding';
+      default:         return `${basePath}/orders`;
+    }
   }
-  
+
   // Attendance related
-  if (type.includes('attendance') || title.includes('attendance')) {
-    if (upperRole === 'ADMIN') return '/admin/attendance';
-    return `${basePath}/attendance`;
+  if (type === 'attendance' || title.includes('attendance')) {
+    switch (upperRole) {
+      case 'ADMIN':            return '/admin/attendance';
+      case 'SERVICE_ENGINEER': return '/service-engineer/attendance';
+      case 'SALESMAN':         return '/salesman/attendance';
+      default:                 return `${basePath}/attendance`;
+    }
   }
-  
+
   // Stock related
-  if (type.includes('stock') || title.includes('stock')) {
-    return '/admin/stock';
+  if (type === 'stock' || title.includes('stock') || title.includes('inventory')) {
+    switch (upperRole) {
+      case 'ADMIN':            return '/admin/stock';
+      case 'SERVICE_ENGINEER': return '/service-engineer/stock-usage';
+      default:                 return '/admin/stock';
+    }
   }
-  
+
   // SLA related
-  if (type.includes('sla') || title.includes('sla')) {
-    return '/admin/service/sla';
+  if (type === 'sla' || title.includes('sla')) {
+    switch (upperRole) {
+      case 'ADMIN':            return '/admin/service/sla';
+      case 'SERVICE_ENGINEER': return '/service-engineer/sla-tracker';
+      default:                 return '/admin/service/sla';
+    }
   }
-  
+
+  // Reminder / Follow-up
+  if (type === 'reminder' || title.includes('follow') || title.includes('reminder')) {
+    switch (upperRole) {
+      case 'SALESMAN':  return '/salesman/followups';
+      case 'RECEPTION': return '/reception/calls';
+      default:          return `${basePath}/dashboard`;
+    }
+  }
+
   return `${basePath}/dashboard`;
 };
 

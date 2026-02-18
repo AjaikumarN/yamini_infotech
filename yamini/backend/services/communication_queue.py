@@ -126,6 +126,7 @@ def queue_staff_notification(
     entity_id: int = None,
     priority: str = "NORMAL",
     action_url: str = None,
+    notification_type: str = None,
 ) -> Optional[int]:
     """
     Insert into staff_notifications.
@@ -135,10 +136,10 @@ def queue_staff_notification(
         result = db.execute(text("""
             INSERT INTO staff_notifications
                 (user_id, title, message, module, entity_type, entity_id,
-                 priority, is_read, action_url, created_at)
+                 priority, is_read, action_url, notification_type, created_at)
             VALUES
                 (:uid, :title, :msg, :module, :etype, :eid,
-                 :priority, FALSE, :url, NOW())
+                 :priority, FALSE, :url, :ntype, NOW())
             RETURNING id
         """), {
             "uid": user_id,
@@ -149,6 +150,7 @@ def queue_staff_notification(
             "eid": entity_id,
             "priority": priority,
             "url": action_url,
+            "ntype": notification_type or module,
         })
         db.commit()
         row = result.fetchone()
