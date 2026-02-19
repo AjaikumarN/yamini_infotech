@@ -122,6 +122,14 @@ def delete_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    db.delete(product)
-    db.commit()
+    try:
+        # Nullify FK references in enquiries and orders before deleting
+        db.query(models.Enquiry).filter(models.Enquiry.product_id == product_id).update({"product_id": None})
+        db.query(models.Order).filter(models.Order.product_id == product_id).update({"product_id": None})
+        db.delete(product)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Cannot delete product: {str(e)}")
+    
     return {"message": "Product deleted successfully"}

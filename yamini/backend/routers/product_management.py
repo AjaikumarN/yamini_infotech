@@ -231,13 +231,21 @@ async def delete_product(
     db: Session = Depends(get_db)
 ):
     """Delete a product (Admin only)"""
+    from models import Enquiry, Order
     
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     
-    db.delete(product)
-    db.commit()
+    try:
+        # Nullify FK references before deleting
+        db.query(Enquiry).filter(Enquiry.product_id == product_id).update({"product_id": None})
+        db.query(Order).filter(Order.product_id == product_id).update({"product_id": None})
+        db.delete(product)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Cannot delete product: {str(e)}")
     
     return {"message": "Product deleted successfully"}
 
