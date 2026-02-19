@@ -67,11 +67,31 @@ def get_my_calls(
     else:
         raise HTTPException(status_code=403, detail="Only salesmen can access this")
     
-    date = None
+    filter_date = None
     if today_only:
-        date = datetime.utcnow().replace(hour=0, minute=0, second=0)
+        filter_date = datetime.utcnow().replace(hour=0, minute=0, second=0)
     
-    return crud.get_sales_calls_by_salesman(db, salesman_id=target_user_id, date=date)
+    calls = crud.get_sales_calls_by_salesman(db, salesman_id=target_user_id, date=filter_date)
+    
+    # Return with created_at mapped from call_date for frontend compatibility
+    return [
+        {
+            "id": call.id,
+            "salesman_id": call.salesman_id,
+            "customer_name": call.customer_name,
+            "phone": call.phone,
+            "call_type": call.call_type,
+            "outcome": call.outcome,
+            "notes": call.notes,
+            "call_date": call.call_date,
+            "created_at": call.call_date,  # Frontend expects created_at
+            "call_outcome": call.call_outcome,
+            "next_action_date": call.next_action_date,
+            "voice_note_text": call.voice_note_text,
+            "enquiry_id": call.enquiry_id,
+        }
+        for call in calls
+    ]
 
 @router.get("/calls")
 def get_all_calls(
@@ -90,7 +110,28 @@ def get_all_calls(
         query = query.filter(func.date(models.SalesCall.call_date) == today_date)
     
     calls = query.order_by(models.SalesCall.call_date.desc()).all()
-    return calls
+    
+    # Return with salesman_name and created_at for frontend compatibility
+    result = []
+    for call in calls:
+        salesman = db.query(models.User).filter(models.User.id == call.salesman_id).first() if call.salesman_id else None
+        result.append({
+            "id": call.id,
+            "salesman_id": call.salesman_id,
+            "salesman_name": salesman.full_name if salesman else None,
+            "customer_name": call.customer_name,
+            "phone": call.phone,
+            "call_type": call.call_type,
+            "outcome": call.outcome,
+            "notes": call.notes,
+            "call_date": call.call_date,
+            "created_at": call.call_date,  # Frontend expects created_at
+            "call_outcome": call.call_outcome,
+            "next_action_date": call.next_action_date,
+            "voice_note_text": call.voice_note_text,
+            "enquiry_id": call.enquiry_id,
+        })
+    return result
 
 @router.put("/calls/{call_id}/complete")
 def mark_call_completed(
@@ -127,6 +168,39 @@ def get_my_visits(
     if current_user.role != models.UserRole.SALESMAN:
         raise HTTPException(status_code=403, detail="Only salesmen can access this")
     
+    visits = db.query(models.ShopVisit).filter(
+        models.ShopVisit.salesman_id == current_user.id
+    ).order_by(models.ShopVisit.visit_date.desc()).limit(limit).all()
+    
+    result = []
+    for v in visits:
+        result.append({
+            "id": v.id,
+            "salesman_id": v.salesman_id,
+            "customer_name": v.customer_name or "N/A",
+            "shop_name": v.shop_name or "N/A",
+            "shop_address": v.shop_address,
+            "customer_contact": v.customer_contact,
+            "location": v.location,
+            "requirements": v.requirements,
+            "requirement_details": v.requirement_details,
+            "product_interest": v.product_interest,
+            "expected_closing": v.expected_closing.isoformat() if v.expected_closing else None,
+            "follow_up_date": v.follow_up_date.isoformat() if v.follow_up_date else None,
+            "follow_up_required": v.follow_up_required,
+            "visit_type": v.visit_type or "New",
+            "notes": v.notes,
+            "visit_date": v.visit_date.isoformat() if v.visit_date else None,
+            "created_at": v.created_at.isoformat() if v.created_at else None,
+            "gps_lat": v.gps_lat,
+            "gps_lng": v.gps_lng,
+            "photo_url": v.photo_url,
+            "voice_note_text": v.voice_note_text,
+            "enquiry_id": v.enquiry_id,
+        })
+    return result
+
+@router.post("/attendance")
 async def mark_attendance(
     time: str = Form(...),
     location: str = Form(...),

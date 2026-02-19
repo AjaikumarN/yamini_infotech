@@ -94,13 +94,20 @@ def get_mif_pdf(
     if not mif:
         raise HTTPException(status_code=404, detail="MIF record not found")
     
+    # Derive customer contact from linked customer
+    customer_contact = ""
+    if mif.customer_id:
+        customer = db.query(models.Customer).filter(models.Customer.id == mif.customer_id).first()
+        if customer:
+            customer_contact = customer.phone or customer.email or "N/A"
+    
     # Return HTML view of MIF (for now)
     # In production, generate actual PDF
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Machine Installation Form - {mif.machine_serial_number}</title>
+        <title>Machine Installation Form - {mif.serial_number or 'N/A'}</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 40px; }}
             h1 {{ color: #333; }}
@@ -111,36 +118,44 @@ def get_mif_pdf(
     <body>
         <h1>MACHINE INSTALLATION FORM (MIF)</h1>
         <div class="section">
+            <div class="label">MIF ID:</div>
+            <div>{mif.mif_id or 'N/A'}</div>
+        </div>
+        <div class="section">
             <div class="label">Machine Serial Number:</div>
-            <div>{mif.machine_serial_number}</div>
+            <div>{mif.serial_number or 'N/A'}</div>
         </div>
         <div class="section">
             <div class="label">Machine Model:</div>
-            <div>{mif.machine_model}</div>
+            <div>{mif.machine_model or 'N/A'}</div>
         </div>
         <div class="section">
             <div class="label">Installation Date:</div>
-            <div>{mif.installation_date}</div>
+            <div>{mif.installation_date.strftime('%d/%m/%Y') if mif.installation_date else 'N/A'}</div>
         </div>
         <div class="section">
             <div class="label">Customer Name:</div>
-            <div>{mif.customer_name}</div>
+            <div>{mif.customer_name or 'N/A'}</div>
         </div>
         <div class="section">
             <div class="label">Customer Contact:</div>
-            <div>{mif.customer_contact}</div>
+            <div>{customer_contact}</div>
         </div>
         <div class="section">
             <div class="label">Installation Address:</div>
-            <div>{mif.installation_address}</div>
+            <div>{mif.location or 'N/A'}</div>
         </div>
         <div class="section">
-            <div class="label">Installed By:</div>
-            <div>{mif.installed_by_name}</div>
+            <div class="label">Machine Value:</div>
+            <div>{'₹{:,.2f}'.format(mif.machine_value) if mif.machine_value else 'N/A'}</div>
         </div>
         <div class="section">
-            <div class="label">Verification:</div>
-            <div>Verified: {mif.customer_verified}</div>
+            <div class="label">AMC Status:</div>
+            <div>{mif.amc_status or 'N/A'}</div>
+        </div>
+        <div class="section">
+            <div class="label">Status:</div>
+            <div>{mif.status or 'Active'}</div>
         </div>
     </body>
     </html>

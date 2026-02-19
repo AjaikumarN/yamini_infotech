@@ -318,7 +318,7 @@ export default function ServiceRequestsTable() {
                       </td>
                       <td style={tdStyle}>
                         <div style={{ fontSize: '13px', color: '#475569', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {request.description || 'N/A'}
+                          {request.fault_description || request.description || 'N/A'}
                         </div>
                       </td>
                       <td style={tdStyle}>
@@ -447,7 +447,7 @@ export default function ServiceRequestsTable() {
               <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
                 <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Machine Model</label>
                 <p style={{ margin: '8px 0 0 0', fontSize: '16px', fontWeight: '600', color: '#1e293b' }}>
-                  {selectedRequest.machine_model}
+                  {selectedRequest.machine_model || 'N/A'}
                 </p>
               </div>
 
@@ -455,7 +455,7 @@ export default function ServiceRequestsTable() {
               <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
                 <label style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Issue Description</label>
                 <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#334155', lineHeight: '1.5' }}>
-                  {selectedRequest.description || 'No description provided'}
+                  {selectedRequest.fault_description || selectedRequest.description || 'No description provided'}
                 </p>
               </div>
 

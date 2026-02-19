@@ -33,8 +33,7 @@ const ServiceEngineerNav = ({ isOpen, onClose, initialCompact = false }) => {
       title: 'Main',
       items: [
         { icon: 'home', label: 'Dashboard', path: '/service-engineer/dashboard' },
-        { icon: 'access_time', label: 'Daily Start', path: '/service-engineer/attendance' },
-        { icon: 'route', label: 'Job Route', path: '/service-engineer/job-route' }
+        { icon: 'access_time', label: 'Daily Start', path: '/service-engineer/attendance' }
       ]
     },
     {

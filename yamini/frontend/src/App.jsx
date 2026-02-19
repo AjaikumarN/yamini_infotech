@@ -55,7 +55,6 @@ import SLATracker from './components/service-engineer/SLATracker.jsx'
 import CustomerFeedback from './components/service-engineer/CustomerFeedback.jsx'
 import DailyUpdate from './components/service-engineer/DailyUpdate.jsx'
 import ServiceEngineerSettingsPage from './components/service-engineer/ServiceEngineerSettingsPage.jsx'
-import EngineerJobRoute from './components/service-engineer/JobRoute.jsx'
 import EngineerMyStockUsage from './service-engineer/MyStockUsage.jsx'
 import AdminDashboard from './components/AdminDashboard.jsx'
 import AdminSalesPerformance from './components/AdminSalesPerformance.jsx'
@@ -251,7 +250,6 @@ function App() {
                 <Route path="daily-report" element={<DailyUpdate />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<ServiceEngineerSettingsPage />} />
-                <Route path="job-route" element={<EngineerJobRoute />} />
                 <Route path="stock-usage" element={<EngineerMyStockUsage />} />
               </Route>
               
@@ -298,7 +296,6 @@ function App() {
                 <Route path="daily-report" element={<DailyUpdate />} />
                 <Route path="profile" element={<ProfilePage />} />
                 <Route path="settings" element={<ServiceEngineerSettingsPage />} />
-                <Route path="job-route" element={<EngineerJobRoute />} />
               </Route>
               
               <Route 

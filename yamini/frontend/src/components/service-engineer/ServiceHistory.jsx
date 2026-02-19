@@ -78,7 +78,7 @@ const ServiceHistory = () => {
       return [
         service.ticket_no || '-',
         service.customer_name || '-',
-        (service.issue_description || service.description || '-').substring(0, 30) + '...',
+        (service.fault_description || service.issue_description || service.description || '-').substring(0, 30) + '...',
         service.status || '-',
         service.priority || 'NORMAL',
         created.toLocaleDateString(),
@@ -221,7 +221,7 @@ const ServiceHistory = () => {
                       </div>
                     </td>
                     <td className="td-issue">
-                      {service.issue_description || service.description}
+                      {service.fault_description || service.issue_description || service.description || 'N/A'}
                     </td>
                     <td>
                       <span 

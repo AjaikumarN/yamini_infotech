@@ -191,7 +191,7 @@ async def assign_engineer_to_service(
     
     # Update assignment
     service.assigned_to = engineer_id
-    if service.status == "PENDING":
+    if service.status in ("PENDING", "NEW"):
         service.status = "ASSIGNED"
     
     db.commit()

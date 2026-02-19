@@ -68,7 +68,7 @@ class _EngineerDashboardScreenState extends State<EngineerDashboardScreen> {
           final status = (service['status'] ?? '').toString().toUpperCase();
           final serviceMap = service as Map<String, dynamic>;
           
-          if (status == 'PENDING' || status == 'ASSIGNED') {
+          if (status == 'PENDING' || status == 'ASSIGNED' || status == 'NEW') {
             pending++;
             todaysActiveJobs.add(serviceMap);
           } else if (status == 'IN_PROGRESS') {

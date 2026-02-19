@@ -157,7 +157,8 @@ const EnquiryBoard = ({ mode = 'staff' }) => {
       const search = filters.search.toLowerCase();
       return (
         enq.customer_name.toLowerCase().includes(search) ||
-        enq.phone.includes(search) ||
+        (enq.phone || '').includes(search) ||
+        (enq.email || '').toLowerCase().includes(search) ||
         (enq.product_interest || '').toLowerCase().includes(search)
       );
     }
@@ -256,7 +257,7 @@ const EnquiryBoard = ({ mode = 'staff' }) => {
                 <tr key={enq.id}>
                   <td><span className="id-badge">{enq.enquiry_id || `ENQ-${enq.id}`}</span></td>
                   <td><strong>{enq.customer_name}</strong></td>
-                  <td>{enq.phone}</td>
+                  <td>{enq.phone || 'N/A'}</td>
                   <td>{enq.product_interest || 'Not specified'}</td>
                   <td>
                     <span className={`source-badge ${enq.source}`}>

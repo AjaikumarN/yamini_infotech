@@ -101,7 +101,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
   Future<void> _createEnquiry() async {
     final response = await ApiService.instance.post(
-      '/api/enquiries/',
+      '/api/enquiries',
       body: {
         'customer_name': _customerNameController.text.trim(),
         'phone': _phoneController.text.trim(),
@@ -122,7 +122,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
   Future<void> _createServiceRequest() async {
     final response = await ApiService.instance.post(
-      '/api/service-requests/',
+      '/api/service-requests',
       body: {
         'customer_name': _customerNameController.text.trim(),
         'phone': _phoneController.text.trim(),

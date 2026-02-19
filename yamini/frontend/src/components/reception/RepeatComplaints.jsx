@@ -26,7 +26,7 @@ const RepeatComplaints = () => {
       (complaints || []).forEach(c => {
         const complaintDate = new Date(c.created_at);
         if (complaintDate >= cutoffDate) {
-          const key = `${c.customer_name}_${c.machine_model}`;
+          const key = `${(c.customer_name || 'Unknown').trim().toLowerCase()}_${(c.machine_model || 'Unknown').trim().toLowerCase()}`;
           if (!grouped[key]) {
             grouped[key] = [];
           }
@@ -65,7 +65,7 @@ const RepeatComplaints = () => {
       const search = filters.search.toLowerCase();
       return (
         item.customer_name.toLowerCase().includes(search) ||
-        item.machine_model.toLowerCase().includes(search) ||
+        (item.machine_model || '').toLowerCase().includes(search) ||
         (item.phone || '').includes(search)
       );
     }

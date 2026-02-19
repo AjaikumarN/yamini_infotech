@@ -37,18 +37,22 @@ const AdminDashboard = () => {
       // Calculate revenue
       const totalRevenue = salesData.reduce((sum, sale) => sum + (sale.amount || 0), 0);
 
-      // Active complaints
-      const activeComplaints = complaintsData.filter(c => c.status !== 'Resolved').length;
+      // Active complaints (not completed/cancelled)
+      const activeComplaints = complaintsData.filter(c => 
+        !['COMPLETED', 'CANCELLED', 'Resolved'].includes(c.status)
+      ).length;
 
-      // Team performance (salesmen)
-      const salesmen = usersData.filter(u => u.role === 'salesman');
+      // Team performance (salesmen) - role is uppercase from backend
+      const salesmen = usersData.filter(u => 
+        (u.role || '').toUpperCase() === 'SALESMAN'
+      );
       const teamPerformance = salesmen.map(salesman => {
         const assignedEnquiries = enquiriesData.filter(e => e.assigned_to === salesman.id);
         const convertedSales = salesData.filter(s => s.enquiry?.assigned_to === salesman.id);
         
         return {
           id: salesman.id,
-          name: salesman.name,
+          name: salesman.full_name || salesman.username || 'N/A',
           assignedEnquiries: assignedEnquiries.length,
           convertedSales: convertedSales.length,
           revenue: convertedSales.reduce((sum, s) => sum + (s.amount || 0), 0)

@@ -242,7 +242,7 @@ def get_summary_stats(db: Session) -> dict:
 def get_engineer_analytics(
     db: Session, period: str = "week"
 ) -> dict:
-    """Engineer-wise stock usage — APPROVED movements only."""
+    """Engineer-wise stock usage — all non-rejected movements."""
     today = date.today()
     start = today - timedelta(days=7 if period == "week" else 30)
 
@@ -250,7 +250,7 @@ def get_engineer_analytics(
         db.query(StockMovement)
         .filter(
             StockMovement.movement_type == "OUT",
-            StockMovement.approval_status == "APPROVED",
+            StockMovement.approval_status != "REJECTED",
             StockMovement.date >= start,
             StockMovement.engineer_id.isnot(None),
         )

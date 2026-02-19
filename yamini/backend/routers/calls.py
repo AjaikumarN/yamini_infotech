@@ -241,12 +241,16 @@ async def get_call_stats(
     
     today = date.today()
     
-    # Get today's calls for this reception user (exclude follow-up calls)
-    today_calls = db.query(ReceptionCall).filter(
-        ReceptionCall.reception_user_id == current_user.id,
+    # Get today's calls (exclude follow-up calls)
+    # Admin sees all calls; Reception sees only their own
+    query = db.query(ReceptionCall).filter(
         ReceptionCall.call_date == today,
         ReceptionCall.is_followup_call == False  # Only count original calls, not follow-ups
-    ).all()
+    )
+    if current_user.role != UserRole.ADMIN:
+        query = query.filter(ReceptionCall.reception_user_id == current_user.id)
+    
+    today_calls = query.all()
     
     total_today = len(today_calls)
     not_interested = len([c for c in today_calls if c.call_outcome == CallOutcome.NOT_INTERESTED])
@@ -307,13 +311,15 @@ async def get_monthly_followups(
     
     # Get the latest call for each customer phone number that requires follow-up
     # We want unique customers, not all follow-up calls
-    subquery = db.query(
+    followup_query = db.query(
         ReceptionCall.phone,
         func.max(ReceptionCall.id).label('max_id')
     ).filter(
-        ReceptionCall.reception_user_id == current_user.id,
         ReceptionCall.requires_monthly_followup == True
-    ).group_by(ReceptionCall.phone).subquery()
+    )
+    if current_user.role != UserRole.ADMIN:
+        followup_query = followup_query.filter(ReceptionCall.reception_user_id == current_user.id)
+    subquery = followup_query.group_by(ReceptionCall.phone).subquery()
     
     followups = db.query(ReceptionCall).join(
         subquery,
@@ -334,14 +340,16 @@ async def get_todays_followups(
     today = date.today()
     
     # Get the latest call for each customer that needs follow-up today
-    subquery = db.query(
+    followup_query = db.query(
         ReceptionCall.phone,
         func.max(ReceptionCall.id).label('max_id')
     ).filter(
-        ReceptionCall.reception_user_id == current_user.id,
         ReceptionCall.requires_monthly_followup == True,
         ReceptionCall.next_followup_date <= today
-    ).group_by(ReceptionCall.phone).subquery()
+    )
+    if current_user.role != UserRole.ADMIN:
+        followup_query = followup_query.filter(ReceptionCall.reception_user_id == current_user.id)
+    subquery = followup_query.group_by(ReceptionCall.phone).subquery()
     
     followups = db.query(ReceptionCall).join(
         subquery,
@@ -359,14 +367,16 @@ async def get_purchased_followups(
     if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTION]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    subquery = db.query(
+    followup_query = db.query(
         ReceptionCall.phone,
         func.max(ReceptionCall.id).label('max_id')
     ).filter(
-        ReceptionCall.reception_user_id == current_user.id,
         ReceptionCall.call_outcome == CallOutcome.PURCHASED,
         ReceptionCall.requires_monthly_followup == True
-    ).group_by(ReceptionCall.phone).subquery()
+    )
+    if current_user.role != UserRole.ADMIN:
+        followup_query = followup_query.filter(ReceptionCall.reception_user_id == current_user.id)
+    subquery = followup_query.group_by(ReceptionCall.phone).subquery()
     
     followups = db.query(ReceptionCall).join(
         subquery,
@@ -384,14 +394,16 @@ async def get_interested_followups(
     if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTION]:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    subquery = db.query(
+    followup_query = db.query(
         ReceptionCall.phone,
         func.max(ReceptionCall.id).label('max_id')
     ).filter(
-        ReceptionCall.reception_user_id == current_user.id,
         ReceptionCall.call_outcome == CallOutcome.INTERESTED_BUY_LATER,
         ReceptionCall.requires_monthly_followup == True
-    ).group_by(ReceptionCall.phone).subquery()
+    )
+    if current_user.role != UserRole.ADMIN:
+        followup_query = followup_query.filter(ReceptionCall.reception_user_id == current_user.id)
+    subquery = followup_query.group_by(ReceptionCall.phone).subquery()
     
     followups = db.query(ReceptionCall).join(
         subquery,
@@ -412,11 +424,15 @@ async def get_today_calls(
     today = date.today()
     
     # Get only original calls made today (exclude follow-up calls)
-    calls = db.query(ReceptionCall).filter(
-        ReceptionCall.reception_user_id == current_user.id,
+    # Admin sees all calls; Reception sees only their own
+    query = db.query(ReceptionCall).filter(
         ReceptionCall.call_date == today,
         ReceptionCall.is_followup_call == False  # Only original calls, not follow-ups
-    ).order_by(ReceptionCall.call_time.desc()).all()
+    )
+    if current_user.role != UserRole.ADMIN:
+        query = query.filter(ReceptionCall.reception_user_id == current_user.id)
+    
+    calls = query.order_by(ReceptionCall.call_time.desc()).all()
     
     return calls
 
@@ -431,10 +447,10 @@ async def get_followup_history(
         raise HTTPException(status_code=403, detail="Not authorized")
     
     # Get the parent call
-    parent_call = db.query(ReceptionCall).filter(
-        ReceptionCall.id == call_id,
-        ReceptionCall.reception_user_id == current_user.id
-    ).first()
+    parent_query = db.query(ReceptionCall).filter(ReceptionCall.id == call_id)
+    if current_user.role != UserRole.ADMIN:
+        parent_query = parent_query.filter(ReceptionCall.reception_user_id == current_user.id)
+    parent_call = parent_query.first()
     
     if not parent_call:
         raise HTTPException(status_code=404, detail="Call not found")

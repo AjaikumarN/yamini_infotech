@@ -184,14 +184,14 @@ export default function LiveMap() {
 
   // Helper functions
   const formatTime = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString || typeof dateString !== 'string') return 'N/A';
     // Ensure UTC timestamps from backend are parsed correctly
     const utcDate = dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
     return new Date(utcDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
   };
 
   const getTimeSinceUpdate = (dateString) => {
-    if (!dateString) return 'Unknown';
+    if (!dateString || typeof dateString !== 'string') return 'Unknown';
     const utcDate = dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
     const diffMins = Math.floor((new Date() - new Date(utcDate)) / 60000);
     if (diffMins < 1) return 'Just now';
@@ -200,7 +200,7 @@ export default function LiveMap() {
   };
 
   const getPhotoUrl = (photo) => {
-    if (!photo) return null;
+    if (!photo || typeof photo !== 'string') return null;
     if (photo.startsWith('data:') || photo.startsWith('http')) return photo;
     return `${API_BASE_URL}/uploads/employees/${photo}`;
   };

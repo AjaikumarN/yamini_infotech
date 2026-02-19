@@ -126,7 +126,7 @@ def _build_response(m: StockMovement, db: Session) -> StockMovementResponse:
         quantity=m.quantity,
         unit_cost=m.unit_cost or 0,
         reference_type=m.reference_type,
-        reference_id=m.reference_id,
+        reference_id=m.reference_id or f"STK-{'IN' if m.movement_type == 'IN' else 'OUT'}-{m.id}",
         date=m.date,
         logged_by=m.logged_by,
         logged_by_name=logged.full_name if logged else None,

@@ -48,7 +48,7 @@ class _ServiceRequestsListScreenState extends State<ServiceRequestsListScreen> {
     });
 
     try {
-      final response = await ApiService.instance.get('/api/service-requests/');
+      final response = await ApiService.instance.get('/api/service-requests');
 
       if (response.success && response.data != null) {
         final data = response.data is List

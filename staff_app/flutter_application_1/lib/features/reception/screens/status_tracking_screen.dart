@@ -71,7 +71,7 @@ class _StatusTrackingScreenState extends State<StatusTrackingScreen>
     setState(() => isLoadingEnquiries = true);
 
     try {
-      final response = await ApiService.instance.get('/api/enquiries/');
+      final response = await ApiService.instance.get('/api/enquiries');
 
       if (response.success && response.data != null) {
         final data = response.data is List
@@ -96,7 +96,7 @@ class _StatusTrackingScreenState extends State<StatusTrackingScreen>
     setState(() => isLoadingServiceRequests = true);
 
     try {
-      final response = await ApiService.instance.get('/api/service-requests/');
+      final response = await ApiService.instance.get('/api/service-requests');
 
       if (response.success && response.data != null) {
         final data = response.data is List

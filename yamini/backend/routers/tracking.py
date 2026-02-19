@@ -271,6 +271,7 @@ async def get_visit_history(
         for row in result:
             visits.append({
                 "id": row[0],
+                "customer_name": row[1],
                 "customername": row[1],
                 "notes": row[2],
                 "checkintime": row[3].isoformat() if row[3] else None,
@@ -279,10 +280,19 @@ async def get_visit_history(
                 "checkin_longitude": row[6],
                 "checkout_latitude": row[7],
                 "checkout_longitude": row[8],
+                "lat": row[5],
+                "lng": row[6],
                 "status": "completed" if row[4] else "active"
             })
         
-        return {"visits": visits}
+        return {
+            "visits": visits,
+            "summary": {
+                "total_visits": len(visits),
+                "completed": sum(1 for v in visits if v["status"] == "completed"),
+                "active": sum(1 for v in visits if v["status"] == "active"),
+            }
+        }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get history: {str(e)}")

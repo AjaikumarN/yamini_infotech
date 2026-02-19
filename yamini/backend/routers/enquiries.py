@@ -103,7 +103,38 @@ def get_enquiries(
     
     # Execute with pagination
     enquiries = query.offset(skip).limit(limit).all()
-    return enquiries
+    
+    # Enrich enquiries with customer data (phone/email fallback) and product name
+    result = []
+    for enq in enquiries:
+        enq_dict = schemas.Enquiry.model_validate(enq).model_dump()
+        
+        # Fallback: use customer's phone/email if enquiry's own fields are null
+        if enq.customer_id and (not enq.phone or not enq.email):
+            customer = db.query(models.Customer).filter(models.Customer.id == enq.customer_id).first()
+            if customer:
+                if not enq.phone and customer.phone:
+                    enq_dict["phone"] = customer.phone
+                if not enq.email and customer.email:
+                    enq_dict["email"] = customer.email
+        
+        # Enrich with product name if product_id exists
+        if enq.product_id:
+            product = db.query(models.Product).filter(models.Product.id == enq.product_id).first()
+            if product:
+                enq_dict["product_name"] = product.name
+                if not enq_dict.get("product_interest"):
+                    enq_dict["product_interest"] = product.name
+        
+        # Enrich with assigned salesman name
+        if enq.assigned_to:
+            salesman = db.query(models.User).filter(models.User.id == enq.assigned_to).first()
+            if salesman:
+                enq_dict["assigned_salesman_name"] = salesman.full_name
+        
+        result.append(enq_dict)
+    
+    return result
 
 @router.get("/{enquiry_id}", response_model=schemas.Enquiry)
 def get_enquiry_by_id(
