@@ -14,7 +14,8 @@ export default function MIF() {
     location: '',
     machine_value: 0,
     amc_status: 'INACTIVE',
-    amc_expiry: null
+    amc_expiry: null,
+    engineer_name: ''
   });
 
   useEffect(() => {
@@ -243,7 +244,8 @@ export default function MIF() {
         location: '',
         machine_value: 0,
         amc_status: 'INACTIVE',
-        amc_expiry: null
+        amc_expiry: null,
+        engineer_name: ''
       });
       loadMIFs();
     } catch (error) {
@@ -616,6 +618,24 @@ export default function MIF() {
                     step="0.01"
                     value={formData.machine_value}
                     onChange={(e) => setFormData({ ...formData, machine_value: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '6px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>
+                    Installed By (Engineer Name)
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.engineer_name}
+                    onChange={(e) => setFormData({ ...formData, engineer_name: e.target.value })}
+                    placeholder="Enter the engineer/technician who installed"
                     style={{
                       width: '100%',
                       padding: '8px 12px',

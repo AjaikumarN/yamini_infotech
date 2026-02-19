@@ -251,8 +251,17 @@ const ReceptionDashboardNew = ({ userId = null, isAdminView = false }) => {
   const handleLogCall = async (e) => {
     e.preventDefault();
     try {
-      // Use centralized call service
+      // Log to BOTH old call system AND new CRM leads system
       await logCall(callForm);
+      // Also create/update lead in new CRM so it shows in Calls & Target page
+      try {
+        await apiRequest('/api/reception/calls/log', {
+          method: 'POST',
+          body: JSON.stringify(callForm)
+        });
+      } catch (crmErr) {
+        console.warn('CRM lead sync skipped:', crmErr);
+      }
       setShowCallForm(false);
       setCallForm({
         customer_name: '',
@@ -689,8 +698,8 @@ const ReceptionDashboardNew = ({ userId = null, isAdminView = false }) => {
                     <td><span className={`type-badge ${del.movement_type || del.type}`}>{del.movement_type || del.type}</span></td>
                     <td>{del.item_name}</td>
                     <td>{del.quantity}</td>
-                    <td>{del.reference || 'N/A'}</td>
-                    <td><span className={`status-badge ${del.status}`}>{del.status}</span></td>
+                    <td>{del.reference_id || del.reference || 'N/A'}</td>
+                    <td><span className={`status-badge ${del.approval_status || del.delivery_status || del.status || ''}`}>{del.approval_status || del.delivery_status || del.status || '—'}</span></td>
                   </tr>
                 ))
               )}

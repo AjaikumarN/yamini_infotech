@@ -140,6 +140,8 @@ class Enquiry(EnquiryBase):
     status: str
     assigned_to: Optional[int]
     product_id: Optional[int] = None
+    product_name: Optional[str] = None  # Enriched from product table
+    assigned_salesman_name: Optional[str] = None  # Enriched from user table
     source: Optional[str] = None
     next_follow_up: Optional[datetime]
     last_follow_up: Optional[datetime]
@@ -251,6 +253,7 @@ class MIFRecordBase(BaseModel):
     machine_value: float
     amc_status: Optional[str]
     amc_expiry: Optional[datetime]
+    engineer_name: Optional[str] = None
 
 class MIFRecordCreate(MIFRecordBase):
     customer_id: Optional[int] = None
@@ -267,6 +270,7 @@ class MIFRecordUpdate(BaseModel):
     last_service: Optional[datetime] = None
     next_service: Optional[datetime] = None
     status: Optional[str] = None
+    engineer_name: Optional[str] = None
 
 class MIFRecord(MIFRecordBase):
     id: int

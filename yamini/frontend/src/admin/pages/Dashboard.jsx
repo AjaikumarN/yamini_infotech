@@ -71,7 +71,7 @@ export default function AdminDashboard() {
           id: e.id,
           enquiryNumber: e.enquiry_number || `ENQ-${e.id}`,
           customer: e.customer_name,
-          product: e.product_name || 'N/A',
+          product: e.product_interest || e.product_name || 'N/A',
           priority: e.priority?.toLowerCase() || 'cold',
           assigned: e.assigned_to || 'Unassigned',
           date: new Date(e.created_at).toLocaleDateString(),
@@ -81,7 +81,7 @@ export default function AdminDashboard() {
           id: s.id,
           requestNumber: s.request_number || `SRV-${s.id}`,
           customer: s.customer_name,
-          machine: s.product_name || 'N/A',
+          machine: s.machine_model || 'N/A',
           issue: s.complaint,
           sla: '2h 15m', // TODO: Calculate from SLA
           engineer: s.assigned_to || 'Unassigned',

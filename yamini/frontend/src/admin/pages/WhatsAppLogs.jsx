@@ -108,13 +108,21 @@ export default function WhatsAppLogs() {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    if (!dateString) return 'N/A';
+    // Backend stores UTC timestamps — ensure JS interprets them as UTC
+    let str = String(dateString);
+    if (!str.endsWith('Z') && !str.includes('+') && !str.includes('-', 10)) {
+      str += 'Z';
+    }
+    const date = new Date(str);
+    if (isNaN(date.getTime())) return 'N/A';
     return date.toLocaleString('en-IN', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Asia/Kolkata'
     });
   };
 

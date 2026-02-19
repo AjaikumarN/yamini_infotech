@@ -323,6 +323,7 @@ class MIFRecord(Base):
     next_service = Column(DateTime)
     services_done = Column(Integer, default=0)
     status = Column(String, default="Active")
+    engineer_name = Column(String)  # Who installed the machine
     created_at = Column(DateTime, default=datetime.utcnow)
     
     customer = relationship("Customer", back_populates="mif_records")

@@ -79,6 +79,15 @@ const CallsHistoryProfessional = () => {
         method: 'POST',
         body: JSON.stringify(callForm)
       });
+      // Also sync to old call system for dashboard consistency
+      try {
+        await apiRequest('/api/calls/', {
+          method: 'POST',
+          body: JSON.stringify(callForm)
+        });
+      } catch (syncErr) {
+        console.warn('Old call system sync skipped:', syncErr);
+      }
       
       setCallForm({
         customer_name: '',
