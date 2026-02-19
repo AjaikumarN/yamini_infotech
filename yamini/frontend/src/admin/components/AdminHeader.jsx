@@ -44,17 +44,21 @@ const getNotifMeta = (type) => NOTIF_META[normalizeType(type)] || NOTIF_META.def
 
 const timeAgo = (dateStr) => {
   if (!dateStr) return '';
-  const now = new Date();
-  const date = new Date(dateStr.endsWith('Z') ? dateStr : dateStr + 'Z');
-  const diffMs = now - date;
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  try {
+    const now = new Date();
+    const str = typeof dateStr === 'string' ? dateStr : String(dateStr);
+    const date = new Date(str.endsWith('Z') || str.includes('+') ? str : str + 'Z');
+    if (isNaN(date.getTime())) return '';
+    const diffMs = now - date;
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  } catch { return ''; }
 };
 
 // Construct redirect URL based on notification metadata + user role
@@ -72,7 +76,7 @@ const getRedirectUrl = (notif, role) => {
 
   // If the backend set an action_url that starts with '/', rewrite it with the correct role base
   if (notif.action_url) {
-    const au = notif.action_url;
+    const au = String(notif.action_url);
     // Absolute role-agnostic paths like /enquiries/123 → prefix with basePath
     if (au.startsWith('/enquiries')) return `${basePath === '/service-engineer' ? '/admin' : basePath}${au.replace('/enquiries', '/enquiries')}`;
     if (au.startsWith('/orders'))    return `${basePath}/orders`;

@@ -16,7 +16,7 @@ import auth
 from database import get_db
 from notification_service import NotificationService
 from services.whatsapp_service import WhatsAppMessageTemplates
-from services.communication_queue import queue_customer_whatsapp, queue_staff_notification
+from services.communication_queue import queue_customer_whatsapp, queue_staff_notification, notify_roles
 
 router = APIRouter(prefix="/api/service-requests", tags=["Service Requests"])
 
@@ -109,15 +109,41 @@ async def create_public_service_request(
     db.commit()
     db.refresh(db_complaint)
     
-    # Notify reception about new request
-    # background_tasks.add_task(
-    #     NotificationService.notify_new_service_request,
-    #     db, db_complaint
-    # )
+    # Queue WhatsApp notification to customer for public service request
+    try:
+        if getattr(db_complaint, 'phone', None):
+            tracking_link = f"{FRONTEND_URL}/track/{db_complaint.ticket_no or db_complaint.id}"
+            msg = WhatsAppMessageTemplates.service_created(
+                customer_name=db_complaint.customer_name or "Customer",
+                ticket_id=db_complaint.ticket_no or f"SRV-{db_complaint.id}",
+                service_type=db_complaint.machine_model or "Service Request",
+                scheduled_date=db_complaint.sla_time.strftime("%d/%m/%Y") if db_complaint.sla_time else "To be scheduled",
+                tracking_link=tracking_link,
+            )
+            queue_customer_whatsapp(
+                db=db, event_type="SERVICE_CREATED",
+                phone=db_complaint.phone, message=msg,
+                reference_table="complaints", reference_id=db_complaint.id,
+                customer_name=db_complaint.customer_name,
+            )
+    except Exception as e:
+        logging.error(f"Failed to queue WhatsApp for public service creation: {e}")
+
+    # Staff notification → Admin + Reception about public service request
+    try:
+        notify_roles(
+            db=db, roles=["ADMIN", "RECEPTION"],
+            title="New Public Service Request",
+            message=f"Ticket {db_complaint.ticket_no or db_complaint.id} — {db_complaint.customer_name or 'Website Customer'}",
+            module="complaints", entity_type="complaint", entity_id=db_complaint.id,
+            priority="HIGH", action_url="/reception",
+        )
+    except Exception:
+        pass
     
     return db_complaint
 
-@router.post("/", response_model=schemas.Complaint)
+@router.post("", response_model=schemas.Complaint)
 async def create_service_request(
     complaint: schemas.ComplaintCreate,
     background_tasks: BackgroundTasks,
@@ -162,6 +188,38 @@ async def create_service_request(
             db, db_complaint, complaint.assigned_to
         )
     
+    # Queue WhatsApp notification to customer for service creation
+    try:
+        if getattr(db_complaint, 'phone', None):
+            tracking_link = f"{FRONTEND_URL}/track/{db_complaint.ticket_no or db_complaint.id}"
+            msg = WhatsAppMessageTemplates.service_created(
+                customer_name=db_complaint.customer_name or "Customer",
+                ticket_id=db_complaint.ticket_no or f"SRV-{db_complaint.id}",
+                service_type=db_complaint.machine_model or "Service Request",
+                scheduled_date=db_complaint.sla_time.strftime("%d/%m/%Y") if db_complaint.sla_time else "To be scheduled",
+                tracking_link=tracking_link,
+            )
+            queue_customer_whatsapp(
+                db=db, event_type="SERVICE_CREATED",
+                phone=db_complaint.phone, message=msg,
+                reference_table="complaints", reference_id=db_complaint.id,
+                customer_name=db_complaint.customer_name,
+            )
+    except Exception as e:
+        logging.error(f"Failed to queue WhatsApp for service creation: {e}")
+
+    # Staff notification → Admin + Reception
+    try:
+        notify_roles(
+            db=db, roles=["ADMIN", "RECEPTION"],
+            title="New Service Request",
+            message=f"Ticket {db_complaint.ticket_no or db_complaint.id} — {db_complaint.customer_name or 'Customer'}",
+            module="complaints", entity_type="complaint", entity_id=db_complaint.id,
+            priority="HIGH", action_url="/reception",
+        )
+    except Exception:
+        pass
+
     return db_complaint
 
 @router.put("/{service_id}/assign", response_model=schemas.Complaint)
@@ -544,9 +602,41 @@ async def complete_service(
             db, service
         )
     
+    # Queue WhatsApp notification to customer for service completion
+    try:
+        if getattr(service, 'phone', None):
+            feedback_link = service.feedback_url or f"{FRONTEND_URL}/feedback/{service.id}"
+            completed_date = service.completed_at.strftime("%d/%m/%Y") if service.completed_at else datetime.utcnow().strftime("%d/%m/%Y")
+            msg = WhatsAppMessageTemplates.service_completed(
+                customer_name=service.customer_name or "Customer",
+                ticket_id=service.ticket_no or f"SRV-{service.id}",
+                completed_date=completed_date,
+                feedback_link=feedback_link,
+            )
+            queue_customer_whatsapp(
+                db=db, event_type="SERVICE_COMPLETED",
+                phone=service.phone, message=msg,
+                reference_table="complaints", reference_id=service.id,
+                customer_name=service.customer_name,
+            )
+    except Exception as e:
+        logging.error(f"Failed to queue WhatsApp for service completion: {e}")
+
+    # Staff notification → Admin + Reception about completion
+    try:
+        notify_roles(
+            db=db, roles=["ADMIN", "RECEPTION"],
+            title="Service Completed",
+            message=f"Ticket {service.ticket_no or service.id} completed by {current_user.full_name}",
+            module="complaints", entity_type="complaint", entity_id=service.id,
+            priority="NORMAL", action_url=f"/admin/service/requests/{service.id}",
+        )
+    except Exception:
+        pass
+
     return service
 
-@router.get("/", response_model=List[schemas.Complaint])
+@router.get("", response_model=List[schemas.Complaint])
 def get_all_services(
     skip: int = 0,
     limit: int = 100,

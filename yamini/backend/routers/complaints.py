@@ -13,7 +13,7 @@ import os
 
 router = APIRouter(prefix="/api/complaints", tags=["Complaints"])
 
-@router.post("/", response_model=schemas.Complaint)
+@router.post("", response_model=schemas.Complaint)
 def create_complaint(
     complaint: schemas.ComplaintCreate,
     db: Session = Depends(get_db),
@@ -60,7 +60,7 @@ def create_complaint(
 
     return new_complaint
 
-@router.get("/", response_model=List[schemas.Complaint])
+@router.get("", response_model=List[schemas.Complaint])
 def get_complaints(
     skip: int = 0,
     limit: int = 100,
