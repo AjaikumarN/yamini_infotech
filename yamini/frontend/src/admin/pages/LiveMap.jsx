@@ -183,17 +183,30 @@ export default function LiveMap() {
   };
 
   // Helper functions
-  const formatTime = (dateString) => {
-    if (!dateString || typeof dateString !== 'string') return 'N/A';
+  const formatTime = (input) => {
+    if (!input) return 'N/A';
+    // Handle Date objects directly
+    if (input instanceof Date) {
+      return input.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
+    }
+    if (typeof input !== 'string') return 'N/A';
     // Ensure UTC timestamps from backend are parsed correctly
-    const utcDate = dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
+    const utcDate = input.endsWith('Z') || input.includes('+') ? input : input + 'Z';
     return new Date(utcDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'Asia/Kolkata' });
   };
 
-  const getTimeSinceUpdate = (dateString) => {
-    if (!dateString || typeof dateString !== 'string') return 'Unknown';
-    const utcDate = dateString.endsWith('Z') || dateString.includes('+') ? dateString : dateString + 'Z';
-    const diffMins = Math.floor((new Date() - new Date(utcDate)) / 60000);
+  const getTimeSinceUpdate = (input) => {
+    if (!input) return 'Unknown';
+    let dateObj;
+    if (input instanceof Date) {
+      dateObj = input;
+    } else if (typeof input === 'string') {
+      const utcDate = input.endsWith('Z') || input.includes('+') ? input : input + 'Z';
+      dateObj = new Date(utcDate);
+    } else {
+      return 'Unknown';
+    }
+    const diffMins = Math.floor((new Date() - dateObj) / 60000);
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     return `${Math.floor(diffMins / 60)}h ${diffMins % 60}m ago`;
