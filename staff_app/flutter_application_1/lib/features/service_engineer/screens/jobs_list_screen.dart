@@ -64,6 +64,13 @@ class _JobsListScreenState extends State<JobsListScreen> {
 
   List<ServiceJob> get _filteredJobs {
     if (_statusFilter == 'all') return jobs;
+    // Group related statuses together for better filtering
+    if (_statusFilter == 'PENDING') {
+      return jobs.where((j) {
+        final s = j.status.toUpperCase();
+        return s == 'PENDING' || s == 'ASSIGNED' || s == 'NEW';
+      }).toList();
+    }
     return jobs.where((j) => 
       j.status.toUpperCase() == _statusFilter.toUpperCase()
     ).toList();

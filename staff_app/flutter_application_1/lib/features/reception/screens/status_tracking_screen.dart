@@ -565,7 +565,7 @@ class _StatusTrackingScreenState extends State<StatusTrackingScreen>
       requestType: 'SALES',
       status: enquiry['status'] ?? 'NEW',
       subtitle: subtitle,
-      assignedTo: enquiry['salesman_name'],
+      assignedTo: enquiry['assigned_salesman_name'] ?? enquiry['salesman_name'],
       isMuted: isClosed,
       onTap: () => _showEnquiryDetails(enquiry),
     );

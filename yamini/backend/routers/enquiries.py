@@ -109,14 +109,16 @@ def get_enquiries(
     for enq in enquiries:
         enq_dict = schemas.Enquiry.model_validate(enq).model_dump()
         
-        # Fallback: use customer's phone/email if enquiry's own fields are null
-        if enq.customer_id and (not enq.phone or not enq.email):
+        # Fallback: use customer's phone/email/address if enquiry's own fields are null
+        if enq.customer_id:
             customer = db.query(models.Customer).filter(models.Customer.id == enq.customer_id).first()
             if customer:
                 if not enq.phone and customer.phone:
                     enq_dict["phone"] = customer.phone
                 if not enq.email and customer.email:
                     enq_dict["email"] = customer.email
+                if customer.address:
+                    enq_dict["address"] = customer.address
         
         # Enrich with product name if product_id exists
         if enq.product_id:

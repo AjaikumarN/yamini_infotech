@@ -250,7 +250,7 @@ class _EnquiriesListScreenState extends State<EnquiriesListScreen> {
 
   Widget _buildEnquiryCard(Map<String, dynamic> enquiry, int index) {
     final isAssigned = enquiry['assigned_to'] != null;
-    final status = isAssigned ? 'ASSIGNED' : 'NEW';
+    final status = enquiry['status'] ?? (isAssigned ? 'ASSIGNED' : 'NEW');
 
     return ReceptionRequestListItem(
       customerName: enquiry['customer_name'] ?? 'Unknown',
@@ -265,6 +265,11 @@ class _EnquiriesListScreenState extends State<EnquiriesListScreen> {
   }
 
   String? _getAssignedName(Map<String, dynamic> enquiry) {
+    // Backend returns assigned_salesman_name as enriched field
+    final salesmanName = enquiry['assigned_salesman_name'];
+    if (salesmanName != null && salesmanName.toString().isNotEmpty) {
+      return salesmanName.toString();
+    }
     final assignedTo = enquiry['assigned_to'];
     if (assignedTo == null) return null;
     if (assignedTo is Map) {
@@ -503,6 +508,10 @@ class _EnquiryDetailsSheet extends StatelessWidget {
   }
 
   String? _getAssignedName() {
+    final salesmanName = enquiry['assigned_salesman_name'];
+    if (salesmanName != null && salesmanName.toString().isNotEmpty) {
+      return salesmanName.toString();
+    }
     final assignedTo = enquiry['assigned_to'];
     if (assignedTo == null) return null;
     if (assignedTo is Map) {

@@ -130,7 +130,6 @@ export default function AdminSidebar({ collapsed, onToggle }) {
       items: [
         { path: '/admin/employees/new', icon: 'person_add', label: 'New Employee' },
         { path: '/admin/employees/all', icon: 'edit', label: 'Edit Employee' },
-        { path: '/admin/whatsapp-logs', icon: 'chat', label: 'WhatsApp Logs' },
         { path: '/admin/settings', icon: 'tune', label: 'Settings' }
       ]
     }

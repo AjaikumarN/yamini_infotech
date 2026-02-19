@@ -71,8 +71,7 @@ const ReceptionNav = ({ isOpen, onClose, initialCompact = false }) => {
       title: 'Reports',
       items: [
         { icon: 'currency_rupee', label: 'Outstanding', path: '/reception/outstanding' },
-        { icon: 'description', label: 'Missing Reports', path: '/reception/missing-reports' },
-        { icon: 'chat', label: 'WhatsApp Logs', path: '/reception/whatsapp-logs' }
+        { icon: 'description', label: 'Missing Reports', path: '/reception/missing-reports' }
       ]
     },
     {

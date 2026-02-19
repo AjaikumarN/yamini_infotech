@@ -142,6 +142,7 @@ class Enquiry(EnquiryBase):
     product_id: Optional[int] = None
     product_name: Optional[str] = None  # Enriched from product table
     assigned_salesman_name: Optional[str] = None  # Enriched from user table
+    address: Optional[str] = None  # Enriched from customer table
     source: Optional[str] = None
     next_follow_up: Optional[datetime]
     last_follow_up: Optional[datetime]

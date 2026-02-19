@@ -877,8 +877,8 @@ class _ServiceRequestsListScreenState extends State<ServiceRequestsListScreen> {
 
                 SizedBox(height: ReceptionAnimationConstants.spacingLg),
 
-                // Actions
-                if (!isClosed)
+                // Actions - only show assign button if no engineer assigned
+                if (!isClosed && request['engineer_id'] == null)
                   Row(
                     children: [
                       Expanded(
@@ -899,11 +899,7 @@ class _ServiceRequestsListScreenState extends State<ServiceRequestsListScreen> {
                             Icons.person_add_alt_1_outlined,
                             size: 18,
                           ),
-                          label: Text(
-                            request['engineer_id'] == null
-                                ? 'Assign Engineer'
-                                : 'Reassign',
-                          ),
+                          label: const Text('Assign Engineer'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor:
                                 ReceptionAnimationConstants.typeService,

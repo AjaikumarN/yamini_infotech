@@ -324,6 +324,13 @@ const ReceptionDashboardNew = ({ userId = null, isAdminView = false }) => {
     }
   };
 
+  const openServiceForm = () => {
+    // Auto-select first engineer if available
+    const autoEngineer = engineers.length > 0 ? engineers[0].id.toString() : '';
+    setServiceForm(prev => ({ ...prev, assigned_to: autoEngineer }));
+    setShowServiceForm(true);
+  };
+
   const createServiceRequest = async (e) => {
     e.preventDefault();
     try {
@@ -593,7 +600,7 @@ const ReceptionDashboardNew = ({ userId = null, isAdminView = false }) => {
       <div className="dashboard-section" style={{ display: 'none' }}>
         <div className="section-header">
           <h2>📦 Legacy Service Complaints ({pendingComplaints.length})</h2>
-          <button className="add-btn" onClick={() => setShowServiceForm(true)}>
+          <button className="add-btn" onClick={openServiceForm}>
             ➕ Add Service Request
           </button>
         </div>
@@ -645,7 +652,7 @@ const ReceptionDashboardNew = ({ userId = null, isAdminView = false }) => {
       <div className="dashboard-section alert-section">
         <div className="section-header">
           <h2>4️⃣ Repeat Complaint Alert ({repeatComplaints.length})</h2>
-          <button className="btn-primary btn-sm-action" onClick={() => setShowServiceForm(true)}>
+          <button className="btn-primary btn-sm-action" onClick={openServiceForm}>
             + Add Service Request
           </button>
         </div>
@@ -1088,8 +1095,9 @@ const ReceptionDashboardNew = ({ userId = null, isAdminView = false }) => {
                 </select>
               </div>
               <div className="form-group">
-                <label>Assign Engineer (Optional)</label>
+                <label>Assign Engineer *</label>
                 <select
+                  required
                   value={serviceForm.assigned_to}
                   onChange={(e) => setServiceForm({...serviceForm, assigned_to: e.target.value})}
                 >
