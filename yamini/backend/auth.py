@@ -74,6 +74,8 @@ def authenticate_user(db: Session, username: str, password: str):
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user:
         return False
+    if not getattr(user, 'is_active', True):
+        return False  # Deleted / deactivated employee
     if not verify_password(password, user.hashed_password):
         return False
     return user
@@ -99,6 +101,11 @@ async def get_current_user(
     user = db.query(models.User).filter(models.User.username == username).first()
     if user is None:
         raise credentials_exception
+    if not getattr(user, 'is_active', True):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account deactivated. Contact admin.",
+        )
     
     return user
 
