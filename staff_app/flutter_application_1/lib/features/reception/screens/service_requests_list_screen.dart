@@ -91,9 +91,9 @@ class _ServiceRequestsListScreenState extends State<ServiceRequestsListScreen> {
 
     // Sort: unassigned first, then by priority, then by date
     filtered.sort((a, b) {
-      // Unassigned first
-      final aUnassigned = a['engineer_id'] == null;
-      final bUnassigned = b['engineer_id'] == null;
+      // Use is_assigned flag (single source of truth)
+      final aUnassigned = a['is_assigned'] == false;
+      final bUnassigned = b['is_assigned'] == false;
       if (aUnassigned != bUnassigned) {
         return aUnassigned ? -1 : 1;
       }
@@ -137,7 +137,7 @@ class _ServiceRequestsListScreenState extends State<ServiceRequestsListScreen> {
   }
 
   int get _unassignedCount {
-    return serviceRequests.where((r) => r['engineer_id'] == null).length;
+    return serviceRequests.where((r) => r['is_assigned'] == false).length;
   }
 
   @override
@@ -486,7 +486,8 @@ class _ServiceRequestsListScreenState extends State<ServiceRequestsListScreen> {
   Widget _buildServiceRequestItem(Map<String, dynamic> request) {
     final isClosed =
         request['status'] == 'CLOSED' || request['status'] == 'COMPLETED';
-    final isUnassigned = request['engineer_id'] == null;
+    // Use is_assigned flag - single source of truth for assignment status
+    final isUnassigned = request['is_assigned'] == false;
     final isCritical = request['priority'] == 'CRITICAL';
     final isHigh = request['priority'] == 'HIGH';
 
@@ -628,8 +629,8 @@ class _ServiceRequestsListScreenState extends State<ServiceRequestsListScreen> {
               // Footer row
               Row(
                 children: [
-                  // Assignment status
-                  if (request['engineer_name'] != null)
+                  // Assignment status - use is_assigned flag as single source of truth
+                  if (request['is_assigned'] == true && request['engineer_name'] != null)
                     Row(
                       children: [
                         Icon(
@@ -647,7 +648,7 @@ class _ServiceRequestsListScreenState extends State<ServiceRequestsListScreen> {
                         ),
                       ],
                     )
-                  else if (!isClosed)
+                  else if (!isClosed && request['is_assigned'] == false)
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: ReceptionAnimationConstants.spacingSm,

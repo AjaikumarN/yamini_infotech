@@ -109,6 +109,9 @@ def get_enquiries(
     for enq in enquiries:
         enq_dict = schemas.Enquiry.model_validate(enq).model_dump()
         
+        # Address fallback: enquiry.address || customer.address || ''
+        address = enq.address or ''
+        
         # Fallback: use customer's phone/email/address if enquiry's own fields are null
         if enq.customer_id:
             customer = db.query(models.Customer).filter(models.Customer.id == enq.customer_id).first()
@@ -117,8 +120,24 @@ def get_enquiries(
                     enq_dict["phone"] = customer.phone
                 if not enq.email and customer.email:
                     enq_dict["email"] = customer.email
-                if customer.address:
-                    enq_dict["address"] = customer.address
+                # Use customer address as fallback if enquiry address is empty
+                if not address and customer.address:
+                    address = customer.address
+        
+        enq_dict["address"] = address
+        
+        # Extract customer message from notes (for display purposes)
+        # Notes may contain "Customer Message: ..." that we want to show separately
+        message = ''
+        if enq.notes:
+            if 'Customer Message:' in enq.notes:
+                # Extract the message part
+                parts = enq.notes.split('Customer Message:')
+                if len(parts) > 1:
+                    message = parts[1].strip()
+            else:
+                message = enq.notes
+        enq_dict["message"] = message
         
         # Enrich with product name if product_id exists
         if enq.product_id:
@@ -138,13 +157,13 @@ def get_enquiries(
     
     return result
 
-@router.get("/{enquiry_id}", response_model=schemas.Enquiry)
+@router.get("/{enquiry_id}")
 def get_enquiry_by_id(
     enquiry_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Get a specific enquiry by ID"""
+    """Get a specific enquiry by ID with enriched data"""
     enquiry = db.query(models.Enquiry).filter(models.Enquiry.id == enquiry_id).first()
     
     if not enquiry:
@@ -155,7 +174,52 @@ def get_enquiry_by_id(
         if enquiry.assigned_to != current_user.id:
             raise HTTPException(status_code=403, detail="You can only view enquiries assigned to you")
     
-    return enquiry
+    # Enrich the response
+    enq_dict = schemas.Enquiry.model_validate(enquiry).model_dump()
+    
+    # Address fallback: enquiry.address || customer.address || ''
+    address = enquiry.address or ''
+    
+    # Fallback: use customer's phone/email/address if enquiry's own fields are null
+    if enquiry.customer_id:
+        customer = db.query(models.Customer).filter(models.Customer.id == enquiry.customer_id).first()
+        if customer:
+            if not enquiry.phone and customer.phone:
+                enq_dict["phone"] = customer.phone
+            if not enquiry.email and customer.email:
+                enq_dict["email"] = customer.email
+            # Use customer address as fallback if enquiry address is empty
+            if not address and customer.address:
+                address = customer.address
+    
+    enq_dict["address"] = address
+    
+    # Extract customer message from notes
+    message = ''
+    if enquiry.notes:
+        if 'Customer Message:' in enquiry.notes:
+            parts = enquiry.notes.split('Customer Message:')
+            if len(parts) > 1:
+                message = parts[1].strip()
+        else:
+            message = enquiry.notes
+    enq_dict["message"] = message
+    
+    # Enrich with product name if product_id exists
+    if enquiry.product_id:
+        product = db.query(models.Product).filter(models.Product.id == enquiry.product_id).first()
+        if product:
+            enq_dict["product_name"] = product.name
+            if not enq_dict.get("product_interest"):
+                enq_dict["product_interest"] = product.name
+    
+    # Enrich with assigned salesman name
+    if enquiry.assigned_to:
+        salesman = db.query(models.User).filter(models.User.id == enquiry.assigned_to).first()
+        if salesman:
+            enq_dict["assigned_salesman_name"] = salesman.full_name
+    
+    return enq_dict
 
 @router.put("/{enquiry_id}", response_model=schemas.Enquiry)
 def update_enquiry(

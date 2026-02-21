@@ -117,6 +117,7 @@ class EnquiryBase(BaseModel):
     customer_name: str
     phone: Optional[str] = None
     email: Optional[str] = None
+    address: Optional[str] = ''  # Customer address - stored separately
     product_interest: Optional[str] = None
     priority: str = "WARM"
     notes: Optional[str] = None
@@ -142,12 +143,12 @@ class Enquiry(EnquiryBase):
     product_id: Optional[int] = None
     product_name: Optional[str] = None  # Enriched from product table
     assigned_salesman_name: Optional[str] = None  # Enriched from user table
-    address: Optional[str] = None  # Enriched from customer table
     source: Optional[str] = None
     next_follow_up: Optional[datetime]
     last_follow_up: Optional[datetime]
     created_at: datetime
     created_by: Optional[str] = None
+    message: Optional[str] = None  # Customer message from notes
     
     class Config:
         from_attributes = True
@@ -186,6 +187,8 @@ class Complaint(ComplaintBase):
     status: str
     assigned_to: Optional[int]
     engineer_name: Optional[str] = None  # Added for frontend display
+    engineer_id: Optional[int] = None  # Alias for assigned_to for consistency
+    is_assigned: bool = False  # True if assigned_to is not null - single source of truth
     sla_time: Optional[datetime]
     sla_warning_sent: bool
     sla_breach_sent: bool

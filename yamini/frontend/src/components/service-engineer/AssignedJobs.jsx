@@ -302,15 +302,15 @@ const AssignedJobs = () => {
                   <div className="job-details">
                     <div className="detail-item">
                       <span className="detail-icon">🏢</span>
-                      <span>{service.company || 'N/A'}</span>
+                      <span>{service.company || ''}</span>
                     </div>
                     <div className="detail-item">
                       <span className="detail-icon">📞</span>
-                      <span>{service.phone || 'N/A'}</span>
+                      <span>{service.phone || ''}</span>
                     </div>
                     <div className="detail-item">
                       <span className="detail-icon">📍</span>
-                      <span>{service.location || 'Not specified'}</span>
+                      <span>{service.location || service.address || ''}</span>
                     </div>
                     {service.sla_status && (
                       <div className="detail-item">

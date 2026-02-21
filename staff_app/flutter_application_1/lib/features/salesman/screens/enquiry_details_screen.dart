@@ -21,13 +21,15 @@ class EnquiryDetailsScreen extends StatelessWidget {
     final priority = enquiry['priority'] ?? 'normal';
     final followUpDate = enquiry['follow_up_date'] ?? '';
     final enquiryId = enquiry['id']?.toString() ?? '';
-    final phone = enquiry['phone'] ?? enquiry['contact_phone'] ?? 'N/A';
-    final email = enquiry['email'] ?? enquiry['contact_email'] ?? 'N/A';
-    final address = enquiry['address'] ?? 'N/A';
-    final notes = enquiry['notes'] ?? '';
+    // Use empty string instead of N/A for missing values
+    final phone = enquiry['phone'] ?? enquiry['contact_phone'] ?? '';
+    final email = enquiry['email'] ?? enquiry['contact_email'] ?? '';
+    final address = enquiry['address'] ?? '';
+    // Use message field from API, fallback to notes for backward compatibility
+    final message = enquiry['message'] ?? enquiry['notes'] ?? '';
     final createdAt = enquiry['created_at'] ?? enquiry['enquiry_date'] ?? '';
     final productInterest =
-        enquiry['product_interest'] ?? enquiry['product'] ?? 'N/A';
+        enquiry['product_interest'] ?? enquiry['product'] ?? '';
 
     final statusColor = SalesmanAnimationConstants.getEnquiryStatusColor(
       status,
@@ -107,14 +109,15 @@ class EnquiryDetailsScreen extends StatelessWidget {
                 icon: Icons.shopping_bag,
                 color: Colors.purple,
                 children: [
-                  _buildInfoRow('Product', productInterest, Icons.inventory),
+                  if (productInterest.isNotEmpty)
+                    _buildInfoRow('Product', productInterest, Icons.inventory),
                 ],
               ),
             ),
             const SizedBox(height: 16),
 
-            // Notes Card
-            if (notes.isNotEmpty)
+            // Notes Card - showing address and customer message
+            if (message.isNotEmpty || address.isNotEmpty)
               _EnquiryDetailSection(
                 staggerIndex: 3,
                 child: _buildSectionCard(
@@ -123,10 +126,16 @@ class EnquiryDetailsScreen extends StatelessWidget {
                   icon: Icons.notes,
                   color: Colors.teal,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(notes, style: const TextStyle(fontSize: 14)),
-                    ),
+                    if (address.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text('Address: $address', style: const TextStyle(fontSize: 14)),
+                      ),
+                    if (message.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Text('Customer Message: $message', style: const TextStyle(fontSize: 14)),
+                      ),
                   ],
                 ),
               ),

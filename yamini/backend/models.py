@@ -93,6 +93,7 @@ class Enquiry(Base):
     customer_name = Column(String, nullable=False)
     phone = Column(String)
     email = Column(String)
+    address = Column(Text, nullable=False, default='')  # Customer address - stored separately from notes
     product_interest = Column(String)  # Keep for backward compatibility
     priority = Column(String, default="WARM")  # HOT, WARM, COLD
     status = Column(String, default="NEW")

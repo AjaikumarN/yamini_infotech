@@ -83,7 +83,7 @@ export default function EnquiryDetail() {
   }
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
+    if (!dateString) return ''
     const date = new Date(dateString)
     return date.toLocaleString('en-US', {
       year: 'numeric',
@@ -172,19 +172,23 @@ export default function EnquiryDetail() {
               </div>
               <div className="info-row">
                 <label>Phone:</label>
-                <span>{enquiry.phone || 'N/A'}</span>
+                <span>{enquiry.phone || ''}</span>
               </div>
               <div className="info-row">
                 <label>Email:</label>
-                <span>{enquiry.email || 'N/A'}</span>
+                <span>{enquiry.email || ''}</span>
+              </div>
+              <div className="info-row">
+                <label>Address:</label>
+                <span>{enquiry.address || ''}</span>
               </div>
               <div className="info-row">
                 <label>Source:</label>
-                <span className="badge source-badge">{enquiry.source || 'N/A'}</span>
+                <span className="badge source-badge">{enquiry.source || ''}</span>
               </div>
               <div className="info-row">
                 <label>Created By:</label>
-                <span>{enquiry.created_by || 'N/A'}</span>
+                <span>{enquiry.created_by || ''}</span>
               </div>
               <div className="info-row">
                 <label>Created At:</label>

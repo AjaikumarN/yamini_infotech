@@ -332,7 +332,7 @@ def get_my_services(
         if service.assigned_to:
             engineer = db.query(models.User).filter(models.User.id == service.assigned_to).first()
             if engineer:
-                engineer_name = engineer.username
+                engineer_name = engineer.full_name or engineer.username
         
         # Convert to dict and add SLA fields
         service_dict = schemas.Complaint.model_validate(service).model_dump()
@@ -343,8 +343,15 @@ def get_my_services(
                 "total_seconds": total_seconds
             },
             "sla_remaining": sla_info["remaining_seconds"],
-            "engineer_name": engineer_name
+            "engineer_name": engineer_name,
+            "engineer_id": service.assigned_to,  # Alias for consistency
+            "is_assigned": service.assigned_to is not None  # Single source of truth
         })
+        
+        # Ensure address is not N/A - return empty string if null
+        if not service_dict.get("address"):
+            service_dict["address"] = ""
+            
         result.append(service_dict)
     
     return result
@@ -636,7 +643,7 @@ async def complete_service(
 
     return service
 
-@router.get("", response_model=List[schemas.Complaint])
+@router.get("")
 def get_all_services(
     skip: int = 0,
     limit: int = 100,
@@ -658,18 +665,33 @@ def get_all_services(
     
     services = query.offset(skip).limit(limit).all()
     
-    # Add SLA status and engineer name
+    # Build enriched response with is_assigned and engineer_id
+    result = []
     for service in services:
         sla_info = check_sla_status(service)
-        service.sla_status = sla_info  # Return complete dict
-        service.sla_remaining = sla_info["remaining_seconds"]
-        # Add engineer name if assigned
-        if service.assigned_to and service.assigned_engineer:
-            service.engineer_name = service.assigned_engineer.full_name
-        else:
-            service.engineer_name = None
+        
+        # Get engineer name if assigned
+        engineer_name = None
+        if service.assigned_to:
+            engineer = db.query(models.User).filter(models.User.id == service.assigned_to).first()
+            if engineer:
+                engineer_name = engineer.full_name
+        
+        # Build the response dict
+        service_dict = schemas.Complaint.model_validate(service).model_dump()
+        service_dict["sla_status"] = sla_info
+        service_dict["sla_remaining"] = sla_info["remaining_seconds"]
+        service_dict["engineer_name"] = engineer_name
+        service_dict["engineer_id"] = service.assigned_to  # Alias for consistency
+        service_dict["is_assigned"] = service.assigned_to is not None  # Single source of truth
+        
+        # Ensure address is not N/A - return empty string if null
+        if not service_dict.get("address"):
+            service_dict["address"] = ""
+        
+        result.append(service_dict)
     
-    return services
+    return result
 
 @router.get("/reception/call-stats")
 def get_call_stats(

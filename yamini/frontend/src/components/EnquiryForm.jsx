@@ -92,10 +92,11 @@ const EnquiryForm = () => {
         customer_name: formData.customer_name,
         phone: formData.phone,
         email: formData.email || null,
+        address: formData.address || '',  // Send address as separate field
         product_id: productId ? parseInt(productId) : null,
         product_interest: product ? product.name : null,
         description: formData.enquiry_details,
-        notes: formData.address ? `Address: ${formData.address}\nCompany: ${formData.company_name || 'N/A'}` : null,
+        notes: formData.company_name ? `Company: ${formData.company_name}` : null,  // Only company in notes
         source: 'website',
         priority: 'HOT' // New enquiries from website start as HOT
       };
