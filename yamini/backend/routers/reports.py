@@ -10,7 +10,7 @@ from datetime import date, datetime, timedelta
 from database import get_db
 from models import DailyReport, User, UserRole
 from auth import get_current_user, get_current_user_optional
-from audit_logger import log_create, log_view
+from audit_logger import log_create, log_view, log_update
 from pydantic import BaseModel
 
 router = APIRouter(
@@ -27,6 +27,15 @@ class DailyReportCreate(BaseModel):
     enquiries_generated: int = 0
     sales_closed: int = 0
     report_notes: str = ""
+
+
+class DailyReportAdminEdit(BaseModel):
+    """Admin can edit any field of a daily report."""
+    calls_made: int | None = None
+    shops_visited: int | None = None
+    enquiries_generated: int | None = None
+    sales_closed: int | None = None
+    report_notes: str | None = None
 
 
 class DailyReportResponse(BaseModel):
@@ -336,3 +345,63 @@ def get_report_stats(
         "avg_calls_per_day": round(total_calls / days, 2) if days > 0 else 0,
         "avg_shops_per_day": round(total_shops / days, 2) if days > 0 else 0
     }
+
+
+@router.patch("/daily/{report_id}")
+def admin_edit_daily_report(
+    report_id: int,
+    edits: DailyReportAdminEdit,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Edit a daily report (Admin only). Logs changes in audit trail."""
+
+    if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTION]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin/reception can edit reports"
+        )
+
+    report = db.query(DailyReport).filter(DailyReport.id == report_id).first()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    changes = {}
+    for field in ["calls_made", "shops_visited", "enquiries_generated", "sales_closed", "report_notes"]:
+        new_val = getattr(edits, field, None)
+        if new_val is not None:
+            old_val = getattr(report, field)
+            if old_val != new_val:
+                changes[field] = {"old": old_val, "new": new_val}
+                setattr(report, field, new_val)
+
+    if not changes:
+        return {"message": "No changes detected", "id": report.id}
+
+    db.commit()
+    db.refresh(report)
+
+    log_update(
+        db=db,
+        user_id=current_user.id,
+        username=current_user.username,
+        module="DailyReport",
+        record_id=str(report.id),
+        record_type="DailyReport",
+        changes=changes
+    )
+
+    salesman = db.query(User).filter(User.id == report.salesman_id).first()
+    return DailyReportResponse(
+        id=report.id,
+        salesman_id=report.salesman_id,
+        salesman_name=salesman.full_name or salesman.username if salesman else "Unknown",
+        report_date=report.report_date,
+        calls_made=report.calls_made,
+        shops_visited=report.shops_visited,
+        enquiries_generated=report.enquiries_generated,
+        sales_closed=report.sales_closed,
+        report_notes=report.report_notes or "",
+        report_submitted=report.report_submitted,
+        submission_time=report.submission_time
+    )

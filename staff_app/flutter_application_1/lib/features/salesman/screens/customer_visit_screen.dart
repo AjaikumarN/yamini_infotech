@@ -185,7 +185,7 @@ class _CustomerVisitScreenState extends State<CustomerVisitScreen>
     try {
       // Note: Photo upload would require multipart API support
       // For now, just send the location data
-      final response = await ApiService.instance.post(
+      var response = await ApiService.instance.post(
         ApiConstants.TRACKING_VISIT_CHECKIN,
         body: {
           'customername': _customerName,
@@ -196,6 +196,24 @@ class _CustomerVisitScreenState extends State<CustomerVisitScreen>
           'checkin_time': DateTime.now().toIso8601String(),
         },
       );
+
+      // If 409 (no active session), auto-start session and retry
+      if (!response.success && (response.message?.contains('tracking session') ?? false)) {
+        // Try to start a tracking session first
+        await ApiService.instance.post(ApiConstants.TRACKING_SESSION_START, body: {});
+        // Retry check-in
+        response = await ApiService.instance.post(
+          ApiConstants.TRACKING_VISIT_CHECKIN,
+          body: {
+            'customername': _customerName,
+            'notes': _visitPurpose,
+            'latitude': _currentPosition!.latitude,
+            'longitude': _currentPosition!.longitude,
+            'address': _currentAddress,
+            'checkin_time': DateTime.now().toIso8601String(),
+          },
+        );
+      }
 
       if (response.success) {
         _showSuccess('Visit check-in successful!');

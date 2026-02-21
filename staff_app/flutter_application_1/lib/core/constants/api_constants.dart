@@ -66,10 +66,12 @@ class ApiConstants {
   static const String SALES_MY_VISITS = '/api/sales/my-visits';
   static const String SALES_MY_ATTENDANCE = '/api/sales/my-attendance';
   static const String SALESMAN_ANALYTICS = '/api/sales/salesman/analytics/summary';
+  static const String DASHBOARD_STATS = '/api/sales/dashboard/stats';
   static const String SALESMAN_DAILY_REPORT = '/api/sales/salesman/daily-report';
   static const String SALESMAN_CALLS = '/api/sales/my-calls'; // Alias for follow-ups screen
   
   // ==================== TRACKING / LOCATION ====================
+  static const String TRACKING_SESSION_START = '/api/unified-tracking/session/start';
   static const String TRACKING_VISIT_CHECKIN = '/api/tracking/visits/check-in';
   static const String TRACKING_VISIT_CHECKOUT = '/api/tracking/visits/check-out';
   static const String TRACKING_LOCATION_UPDATE = '/api/tracking/location/update';

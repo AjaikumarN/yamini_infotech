@@ -158,6 +158,27 @@ export default function Orders({ mode = 'staff' }) {
     }
   };
 
+  const handleEditAmount = async (orderId, currentAmount) => {
+    const newAmount = prompt('Enter new amount (₹):', currentAmount || '0');
+    if (newAmount === null) return;
+    const parsed = parseFloat(newAmount);
+    if (isNaN(parsed) || parsed < 0) {
+      alert('❌ Invalid amount');
+      return;
+    }
+    try {
+      await apiRequest(`/api/orders/${orderId}/amount`, {
+        method: 'PATCH',
+        body: JSON.stringify({ total_amount: parsed })
+      });
+      alert('✅ Amount updated');
+      loadOrders();
+    } catch (error) {
+      console.error('Failed to update amount:', error);
+      alert('❌ Failed to update amount: ' + (error.message || ''));
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       'PENDING': { bg: '#FEF3C7', color: '#92400E', border: '#FCD34D' },
@@ -330,6 +351,22 @@ export default function Orders({ mode = 'staff' }) {
                       </td>
                       <td style={{ padding: '14px 20px', fontSize: '14px', color: '#374151', textAlign: 'right', fontWeight: '600' }}>
                         ₹{order.total_amount?.toLocaleString() || '0'}
+                        {isAdminMode && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEditAmount(order.id, order.total_amount); }}
+                            title="Edit amount"
+                            style={{
+                              marginLeft: '6px',
+                              padding: '2px 6px',
+                              border: '1px solid #d1d5db',
+                              borderRadius: '4px',
+                              background: 'white',
+                              cursor: 'pointer',
+                              fontSize: '11px',
+                              verticalAlign: 'middle'
+                            }}
+                          >✏️</button>
+                        )}
                       </td>
                       <td style={{ padding: '14px 20px' }}>
                         {getStatusBadge(order.status)}
@@ -499,7 +536,16 @@ export default function Orders({ mode = 'staff' }) {
                     </div>
                     <div>
                       <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px', fontWeight: '600', textTransform: 'uppercase' }}>Amount</div>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>₹{order.total_amount?.toLocaleString() || '0'}</div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>
+                        ₹{order.total_amount?.toLocaleString() || '0'}
+                        {isAdminMode && (
+                          <button
+                            onClick={() => handleEditAmount(order.id, order.total_amount)}
+                            title="Edit amount"
+                            style={{ marginLeft: '6px', padding: '2px 6px', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: 'pointer', fontSize: '11px' }}
+                          >✏️</button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   

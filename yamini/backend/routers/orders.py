@@ -8,6 +8,9 @@ import models
 import auth
 from database import get_db
 from notification_service import NotificationService
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/orders", tags=["Orders"])
 
@@ -20,6 +23,97 @@ def generate_invoice_number(db: Session) -> str:
     """Generate unique invoice number"""
     count = db.query(models.Order).filter(models.Order.invoice_generated == True).count()
     return f"INV-{datetime.now().strftime('%Y%m%d')}-{count + 1:04d}"
+
+
+def _hydrate_order(order: models.Order, db: Session) -> dict:
+    """
+    Enrich a flat Order model with customer, product, items, and payment details.
+    Returns a dict that the frontend can display without N/A values.
+    """
+    # Base fields
+    result = {
+        "id": order.id,
+        "order_id": order.order_id,
+        "enquiry_id": order.enquiry_id,
+        "salesman_id": order.salesman_id,
+        "customer_id": order.customer_id,
+        "product_id": order.product_id,
+        "customer_name": order.customer_name,
+        "product_name": order.product_name,
+        "quantity": order.quantity,
+        "unit_price": order.unit_price,
+        "discount_percent": order.discount_percent,
+        "discount_amount": order.discount_amount,
+        "total_amount": order.total_amount,
+        "expected_delivery_date": order.expected_delivery_date.isoformat() if order.expected_delivery_date else None,
+        "notes": order.notes,
+        "status": order.status,
+        "approved_by": order.approved_by,
+        "approved_at": order.approved_at.isoformat() if order.approved_at else None,
+        "rejection_reason": order.rejection_reason,
+        "invoice_number": order.invoice_number,
+        "invoice_generated": order.invoice_generated,
+        "stock_deducted": order.stock_deducted,
+        "created_at": order.created_at.isoformat() if order.created_at else None,
+    }
+
+    # Enrich with customer details
+    phone = ""
+    email = ""
+    address = ""
+    if order.customer_id:
+        customer = db.query(models.Customer).filter(models.Customer.id == order.customer_id).first()
+        if customer:
+            phone = customer.phone or ""
+            email = customer.email or ""
+            address = customer.address or ""
+    # Fallback: try from enquiry
+    if not phone and order.enquiry_id:
+        enquiry = db.query(models.Enquiry).filter(models.Enquiry.id == order.enquiry_id).first()
+        if enquiry:
+            phone = enquiry.phone or phone
+            email = enquiry.email or email
+            address = enquiry.address or address
+
+    result["phone"] = phone
+    result["email"] = email
+    result["address"] = address
+
+    # Build items array from the order itself (single product per order currently)
+    items = []
+    if order.product_name and order.quantity:
+        items.append({
+            "name": order.product_name,
+            "quantity": order.quantity,
+            "price": order.unit_price or 0,
+            "total": order.total_amount or 0,
+        })
+    result["items"] = items
+
+    # Payment info - derive from order status
+    payment_method = "Cash"  # Default
+    if order.invoice_generated:
+        payment_method = "Invoice"
+    result["payment_method"] = payment_method
+    result["payment_status"] = "PAID" if order.status == "DELIVERED" else "PENDING"
+
+    # Amount aliases for frontend
+    result["amount"] = order.total_amount or 0
+    result["total"] = order.total_amount or 0
+
+    # Salesman name
+    if order.salesman_id:
+        salesman = db.query(models.User).filter(models.User.id == order.salesman_id).first()
+        result["salesman_name"] = salesman.full_name if salesman else None
+    else:
+        result["salesman_name"] = None
+
+    return result
+
+
+def _hydrate_orders(orders, db: Session) -> list:
+    """Hydrate a list of orders."""
+    return [_hydrate_order(o, db) for o in orders]
 
 @router.post("/", response_model=schemas.Order)
 def create_order(
@@ -60,7 +154,7 @@ def create_order(
             existing_order.notes = order.notes
             db.commit()
             db.refresh(existing_order)
-            return existing_order
+            return _hydrate_order(existing_order, db)
         else:
             raise HTTPException(status_code=400, detail=f"Cannot modify order - status is {existing_order.status}")
     
@@ -123,15 +217,15 @@ def create_order(
         import logging
         logging.error(f"Failed to send order notifications: {e}")
     
-    return db_order
+    return _hydrate_order(db_order, db)
 
-@router.get("/", response_model=List[schemas.Order])
+@router.get("/")
 def get_orders(
     status: str = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Get orders - Role-based access"""
+    """Get orders - Role-based access. Returns fully hydrated orders with customer/product/payment."""
     
     # Start with base query - EXCLUDE soft-deleted orders
     query = db.query(models.Order).filter(
@@ -148,16 +242,16 @@ def get_orders(
     if status:
         query = query.filter(models.Order.status == status)
     
-    return query.order_by(models.Order.created_at.desc()).all()
+    orders = query.order_by(models.Order.created_at.desc()).all()
+    return _hydrate_orders(orders, db)
 
-@router.get("/my-orders", response_model=List[schemas.Order])
+@router.get("/my-orders")
 def get_my_orders(
     user_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Get orders for salesman (SALESMAN or ADMIN viewing)"""
-    # Allow admin to view any salesman's orders by passing user_id
+    """Get orders for salesman (SALESMAN or ADMIN viewing). Returns hydrated orders."""
     if current_user.role == models.UserRole.ADMIN and user_id:
         target_user_id = user_id
     elif current_user.role == models.UserRole.SALESMAN:
@@ -165,11 +259,12 @@ def get_my_orders(
     else:
         raise HTTPException(status_code=403, detail="Only salesmen can access this endpoint")
     
-    return db.query(models.Order).filter(
+    orders = db.query(models.Order).filter(
         models.Order.salesman_id == target_user_id
     ).order_by(models.Order.created_at.desc()).all()
+    return _hydrate_orders(orders, db)
 
-@router.get("/pending-approval", response_model=List[schemas.Order])
+@router.get("/pending-approval")
 def get_pending_orders(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
@@ -179,17 +274,18 @@ def get_pending_orders(
     if current_user.role not in [models.UserRole.ADMIN, models.UserRole.RECEPTION]:
         raise HTTPException(status_code=403, detail="Only admin and reception can view pending orders")
     
-    return db.query(models.Order).filter(
+    orders = db.query(models.Order).filter(
         models.Order.status == "PENDING"
     ).order_by(models.Order.created_at.desc()).all()
+    return _hydrate_orders(orders, db)
 
-@router.get("/{order_id}", response_model=schemas.Order)
+@router.get("/{order_id}")
 def get_order(
     order_id: int,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Get specific order"""
+    """Get specific order with full customer/product/payment hydration."""
     
     order = db.query(models.Order).filter(models.Order.id == order_id).first()
     if not order:
@@ -199,9 +295,41 @@ def get_order(
     if current_user.role == models.UserRole.SALESMAN and order.salesman_id != current_user.id:
         raise HTTPException(status_code=403, detail="You can only view your own orders")
     
-    return order
+    return _hydrate_order(order, db)
 
-@router.put("/{order_id}/approve", response_model=schemas.Order)
+@router.patch("/{order_id}/amount")
+def update_order_amount(
+    order_id: int,
+    body: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_admin)
+):
+    """Admin can manually set total amount (negotiated pricing)."""
+    order = db.query(models.Order).filter(models.Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    new_amount = body.get("total_amount")
+    if new_amount is None:
+        raise HTTPException(status_code=400, detail="total_amount is required")
+    
+    try:
+        new_amount = float(new_amount)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="total_amount must be a number")
+    
+    old_amount = order.total_amount
+    order.total_amount = new_amount
+    order.discount_amount = (order.unit_price * order.quantity) - new_amount if order.unit_price else 0
+    
+    db.commit()
+    db.refresh(order)
+    
+    logger.info(f"Admin {current_user.username} changed order {order_id} amount: {old_amount} -> {new_amount}")
+    
+    return _hydrate_order(order, db)
+
+@router.put("/{order_id}/approve")
 def approve_order(
     order_id: int,
     approval: schemas.OrderApprove,
@@ -275,13 +403,12 @@ def approve_order(
                 reason=approval.rejection_reason or "No reason provided"
             )
     except Exception as e:
-        import logging
-        logging.error(f"Failed to send order approval/rejection notifications: {e}")
+        logger.error(f"Failed to send order approval/rejection notifications: {e}")
     
-    return order
+    return _hydrate_order(order, db)
 
 
-@router.put("/{order_id}/reject", response_model=schemas.Order)
+@router.put("/{order_id}/reject")
 def reject_order(
     order_id: int,
     rejection: dict,
@@ -316,13 +443,12 @@ def reject_order(
             reason=reason
         )
     except Exception as e:
-        import logging
-        logging.error(f"Failed to send order rejection notification: {e}")
+        logger.error(f"Failed to send order rejection notification: {e}")
     
-    return order
+    return _hydrate_order(order, db)
 
 
-@router.put("/{order_id}", response_model=schemas.Order)
+@router.put("/{order_id}")
 def update_order(
     order_id: int,
     order_update: schemas.OrderUpdate,
@@ -363,7 +489,7 @@ def update_order(
     db.commit()
     db.refresh(order)
     
-    return order
+    return _hydrate_order(order, db)
 
 @router.put("/{order_id}/status")
 def update_order_status(
@@ -391,7 +517,7 @@ def update_order_status(
     db.commit()
     db.refresh(order)
     
-    return order
+    return _hydrate_order(order, db)
 
 @router.delete("/{order_id}")
 def delete_order(

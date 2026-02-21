@@ -24,7 +24,6 @@ import '../../features/salesman/screens/simple_attendance_screen.dart';
 import '../../features/salesman/screens/followups_screen.dart';
 import '../../features/salesman/screens/orders_screen.dart';
 import '../../features/salesman/screens/daily_report_screen.dart';
-import '../../features/salesman/screens/location_sharing_screen.dart';
 import '../../features/salesman/screens/customer_visit_screen.dart';
 import '../../features/salesman/screens/visit_overview_screen.dart';
 import '../../features/service/screens/service_dashboard_screen.dart';
@@ -196,12 +195,8 @@ class AppRouter {
         builder: (context, state) => const DailyReportScreen(),
       ),
 
-      GoRoute(
-        path: RouteConstants.SALESMAN_LOCATION,
-        name: 'salesman_location',
-        builder: (context, state) => const LocationSharingScreen(),
-      ),
-
+      // Location sharing screen removed — tracking is automatic on attendance
+      
       GoRoute(
         path: RouteConstants.SALESMAN_VISIT_OVERVIEW,
         name: 'salesman_visit_overview',

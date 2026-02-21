@@ -296,6 +296,82 @@ def get_my_attendance(
 
 # ENHANCED SALESMAN FEATURES
 
+@router.get("/dashboard/stats")
+def get_salesman_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Live dashboard stats for salesman app.
+    Returns: assigned_enquiries, today_calls, pending_followups, orders_this_month, today_visits
+    All based on salesman_id from JWT — no cached values.
+    """
+    if current_user.role not in [models.UserRole.SALESMAN, models.UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    uid = current_user.id
+    today = date.today()
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = today_start + timedelta(days=1)
+    first_of_month = today.replace(day=1)
+    
+    # Assigned enquiries (non-closed)
+    assigned_enquiries = db.query(models.Enquiry).filter(
+        models.Enquiry.assigned_to == uid,
+        models.Enquiry.is_deleted == False,
+    ).count()
+    
+    # Today's calls
+    today_calls = db.query(models.SalesCall).filter(
+        models.SalesCall.salesman_id == uid,
+        models.SalesCall.call_date >= today_start,
+        models.SalesCall.call_date < today_end
+    ).count()
+    
+    # Pending followups (SalesFollowUp table + SalesCall with non-completed outcome)
+    pending_followups_sf = db.query(models.SalesFollowUp).filter(
+        models.SalesFollowUp.salesman_id == uid,
+        models.SalesFollowUp.status == "Pending",
+    ).count()
+    pending_calls = db.query(models.SalesCall).filter(
+        models.SalesCall.salesman_id == uid,
+        func.coalesce(models.SalesCall.outcome, "Pending") != "completed",
+        models.SalesCall.next_action_date != None,
+        models.SalesCall.next_action_date <= datetime.utcnow() + timedelta(days=1)
+    ).count()
+    pending_followups = pending_followups_sf + pending_calls
+    
+    # Orders this month
+    orders_this_month = db.query(models.Order).filter(
+        models.Order.salesman_id == uid,
+        models.Order.is_deleted == False,
+        func.date(models.Order.created_at) >= first_of_month
+    ).count()
+    
+    # Today's visits (from unified tracking VisitLog)
+    today_visits = 0
+    try:
+        today_visits = db.query(models.VisitLog).filter(
+            models.VisitLog.user_id == uid,
+            func.date(models.VisitLog.start_time) == today,
+        ).count()
+    except Exception:
+        # Fallback to ShopVisit table
+        today_visits = db.query(models.ShopVisit).filter(
+            models.ShopVisit.salesman_id == uid,
+            models.ShopVisit.created_at >= today_start,
+            models.ShopVisit.created_at < today_end
+        ).count()
+    
+    return {
+        "assigned_enquiries": assigned_enquiries,
+        "today_calls": today_calls,
+        "pending_followups": pending_followups,
+        "orders_this_month": orders_this_month,
+        "today_visits": today_visits,
+    }
+
+
 @router.get("/salesman/analytics/summary", response_model=schemas.SalesmanAnalytics)
 def get_salesman_analytics_summary(
     user_id: Optional[int] = None,
@@ -325,7 +401,7 @@ def get_salesman_analytics_summary(
     
     # Converted enquiries
     converted_enquiries = db.query(models.Enquiry).filter(
-        models.Enquiry.assigned_to == current_user.id,
+        models.Enquiry.assigned_to == target_user_id,
         models.Enquiry.status == "CONVERTED"
     ).count()
     
@@ -336,21 +412,21 @@ def get_salesman_analytics_summary(
     revenue_this_month = db.query(func.sum(models.Order.total_amount)).join(
         models.Enquiry, models.Order.enquiry_id == models.Enquiry.id
     ).filter(
-        models.Enquiry.assigned_to == current_user.id,
+        models.Enquiry.assigned_to == target_user_id,
         models.Order.status == "APPROVED",
         models.Order.created_at >= first_day
     ).scalar() or 0
     
     # Missed followups
     missed_followups = db.query(models.SalesFollowUp).filter(
-        models.SalesFollowUp.salesman_id == current_user.id,
+        models.SalesFollowUp.salesman_id == target_user_id,
         models.SalesFollowUp.status == "Pending",
         models.SalesFollowUp.followup_date < datetime.utcnow()
     ).count()
     
     # Orders pending approval
     orders_pending = db.query(models.Order).filter(
-        models.Order.salesman_id == current_user.id,
+        models.Order.salesman_id == target_user_id,
         models.Order.status == "PENDING"
     ).count()
     
@@ -359,7 +435,7 @@ def get_salesman_analytics_summary(
     
     # Average closing days
     converted = db.query(models.Enquiry).filter(
-        models.Enquiry.assigned_to == current_user.id,
+        models.Enquiry.assigned_to == target_user_id,
         models.Enquiry.status == "CONVERTED"
     ).all()
     

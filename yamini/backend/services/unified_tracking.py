@@ -93,9 +93,14 @@ def create_tracking_session(
             logger.info(f"Session already active for user {user.id} on {today}")
             return existing
         else:
-            # Session was ended today — don't create another
-            logger.warning(f"Session already ended for user {user.id} on {today}")
-            raise ValueError("Tracking session already ended for today")
+            # Session was ended today — re-activate it instead of refusing
+            existing.status = "ACTIVE"
+            existing.check_out_time = None
+            existing.auto_stopped = False
+            existing.updated_at = datetime.utcnow()
+            db.flush()
+            logger.info(f"Tracking session re-activated for user {user.id} on {today}")
+            return existing
 
     session = TrackingSession(
         user_id=user.id,
