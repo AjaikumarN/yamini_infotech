@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/reception_animation_constants.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/widgets/performance_widgets.dart';
@@ -427,21 +428,46 @@ class _ReceptionDashboardScreenState extends State<ReceptionDashboardScreen> {
 
     return _FadeSlideEntry(
       staggerIndex: 0,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            'Welcome back, ${user?.name ?? 'Reception'}',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
+          if (user?.profileImage != null && user!.profileImage!.isNotEmpty) ...[
+            CircleAvatar(
+              radius: 24,
+              backgroundImage: NetworkImage(
+                user.profileImage!.startsWith('http')
+                    ? user.profileImage!
+                    : '${ApiConstants.BASE_URL}${user.profileImage}',
+              ),
+              onBackgroundImageError: (_, __) {},
             ),
-          ),
-          SizedBox(height: ReceptionAnimationConstants.spacingXs),
-          Text(
-            dateStr,
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            const SizedBox(width: 12),
+          ] else ...[
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.teal.withValues(alpha: 0.1),
+              child: const Icon(Icons.person, color: Colors.teal),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome back, ${user?.name ?? 'Reception'}',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+                SizedBox(height: ReceptionAnimationConstants.spacingXs),
+                Text(
+                  dateStr,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                ),
+              ],
+            ),
           ),
         ],
       ),

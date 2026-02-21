@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/constants/api_constants.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/theme/admin_theme.dart';
 import '../../../core/widgets/admin_components.dart';
@@ -325,26 +326,50 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Widget _buildHeader() {
     final user = AuthService.instance.currentUser;
+    final photoUrl = user?.profileImage;
     return AdminFadeIn(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            '${_getGreeting()}, ${user?.name ?? 'Admin'}',
-            style: AdminTheme.headingLarge,
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Text('Live operational overview', style: AdminTheme.bodyMedium),
-              if (lastRefresh != null) ...[
-                const SizedBox(width: 12),
-                AdminInfoBar(
-                  text: 'Updated ${_formatLastRefresh()}',
-                  icon: Icons.access_time,
+          if (photoUrl != null && photoUrl.isNotEmpty) ...[
+            CircleAvatar(
+              radius: 24,
+              backgroundImage: NetworkImage(
+                photoUrl.startsWith('http') ? photoUrl : '${ApiConstants.BASE_URL}$photoUrl',
+              ),
+              onBackgroundImageError: (_, __) {},
+            ),
+            const SizedBox(width: 12),
+          ] else ...[
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: AdminTheme.primary.withValues(alpha: 0.1),
+              child: Icon(Icons.person, color: AdminTheme.primary),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_getGreeting()}, ${user?.name ?? 'Admin'}',
+                  style: AdminTheme.headingLarge,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text('Live operational overview', style: AdminTheme.bodyMedium),
+                    if (lastRefresh != null) ...[
+                      const SizedBox(width: 12),
+                      AdminInfoBar(
+                        text: 'Updated ${_formatLastRefresh()}',
+                        icon: Icons.access_time,
+                      ),
+                    ],
+                  ],
                 ),
               ],
-            ],
+            ),
           ),
         ],
       ),

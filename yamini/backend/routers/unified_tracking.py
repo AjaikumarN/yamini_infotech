@@ -146,11 +146,11 @@ def _check_visit_rate(user_id: int):
 # ============= HELPER =============
 
 INDIA_TZ = pytz.timezone("Asia/Kolkata")
-TRACKING_CUTOFF_HOUR = 18  # 6:00 PM IST
+TRACKING_CUTOFF_HOUR = 23  # 11:00 PM IST - effectively no block during working hours
 
 
 def _check_tracking_hours():
-    """Reject tracking operations after 6:00 PM IST."""
+    """Soft check - only block very late night (11 PM+). Scheduler handles auto-stop at 6:30 PM."""
     now = datetime.now(INDIA_TZ)
     if now.hour >= TRACKING_CUTOFF_HOUR:
         raise HTTPException(

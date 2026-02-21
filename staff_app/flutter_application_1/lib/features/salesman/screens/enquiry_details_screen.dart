@@ -155,7 +155,7 @@ class EnquiryDetailsScreen extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Enquiry editing and status updates will be available in Phase-2',
+                          'Contact the customer to follow up on this enquiry. Use the phone button above to call directly.',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.blue.shade900,

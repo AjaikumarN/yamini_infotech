@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/services/api_service.dart';
 
 /// Followup Details Screen
 ///
@@ -8,10 +9,137 @@ import 'package:url_launcher/url_launcher.dart';
 /// - Follow-up details (date, status, priority)
 /// - Enquiry reference
 /// - Notes and action items
-class FollowupDetailsScreen extends StatelessWidget {
+class FollowupDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> followup;
 
   const FollowupDetailsScreen({super.key, required this.followup});
+
+  @override
+  State<FollowupDetailsScreen> createState() => _FollowupDetailsScreenState();
+}
+
+class _FollowupDetailsScreenState extends State<FollowupDetailsScreen> {
+  bool _isLoading = false;
+  late Map<String, dynamic> followup;
+
+  @override
+  void initState() {
+    super.initState();
+    followup = Map<String, dynamic>.from(widget.followup);
+  }
+
+  Future<void> _markComplete() async {
+    final followupId = followup['id'] ?? followup['followup_id'];
+    if (followupId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Follow-up ID not found'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as Complete?'),
+        content: const Text('This follow-up will be marked as completed. This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Complete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final response = await ApiService.instance.patch(
+        '/api/sales/followups/$followupId/complete',
+      );
+      if (response.success) {
+        setState(() {
+          followup['status'] = 'Completed';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Follow-up marked as complete!'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.message ?? 'Failed to complete'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _reschedule() async {
+    final followupId = followup['id'] ?? followup['followup_id'];
+    if (followupId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Follow-up ID not found'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'Select new follow-up date',
+    );
+
+    if (picked == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final dateStr = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+      final response = await ApiService.instance.patch(
+        '/api/sales/followups/$followupId/reschedule',
+        body: {'new_date': dateStr},
+      );
+      if (response.success) {
+        setState(() {
+          followup['scheduled_date'] = dateStr;
+          followup['status'] = 'Pending';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Rescheduled to $dateStr'), backgroundColor: Colors.blue),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.message ?? 'Failed to reschedule'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -200,46 +328,59 @@ class FollowupDetailsScreen extends StatelessWidget {
 
             const SizedBox(height: 32),
 
-            // Action Buttons (Read-only for now)
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Reschedule feature coming in Phase-2'),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.event),
-                    label: const Text('Reschedule'),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+            // Action Buttons
+            if (_isLoading)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(),
+              ))
+            else if (status.toLowerCase() != 'completed')
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _reschedule,
+                      icon: const Icon(Icons.event),
+                      label: const Text('Reschedule'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Mark Complete feature coming in Phase-2',
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.check),
-                    label: const Text('Complete'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _markComplete,
+                      icon: const Icon(Icons.check),
+                      label: const Text('Complete'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ),
+                ],
+              )
+            else
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
                 ),
-              ],
-            ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text('This follow-up is completed',
+                      style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

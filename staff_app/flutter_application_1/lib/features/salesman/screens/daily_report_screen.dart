@@ -23,6 +23,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
   // State
   bool isLoading = true;
   bool isSubmitting = false;
+  bool isUpdating = false;
   String? error;
   Map<String, dynamic>? prefillData;
   
@@ -31,6 +32,11 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
   final _challengesController = TextEditingController();
   final _tomorrowPlanController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  
+  // Manual metric adjustments
+  int _manualCalls = 0;
+  int _manualMeetings = 0;
+  int _manualOrders = 0;
   
   // Speech recognition
   final stt.SpeechToText _speech = stt.SpeechToText();
@@ -76,7 +82,12 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
         setState(() {
           prefillData = data;
           
-          // If already submitted, prefill the text fields (read-only)
+          // Load manual metric adjustments
+          _manualCalls = data['manual_calls'] ?? 0;
+          _manualMeetings = data['manual_meetings'] ?? 0;
+          _manualOrders = data['manual_orders'] ?? 0;
+          
+          // If already submitted, prefill the text fields
           if (data['already_submitted'] == true) {
             _achievementsController.text = data['achievements'] ?? '';
             _challengesController.text = data['challenges'] ?? '';
@@ -148,6 +159,65 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       if (mounted) {
         setState(() => isSubmitting = false);
       }
+    }
+  }
+
+  Future<void> _updateReport() async {
+    setState(() => isUpdating = true);
+    try {
+      final today = DateTime.now();
+      final dateStr = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+      
+      final body = <String, dynamic>{
+        'manual_calls': _manualCalls,
+        'manual_meetings': _manualMeetings,
+        'manual_orders': _manualOrders,
+      };
+      
+      // Also update text fields if changed
+      if (_achievementsController.text.trim().isNotEmpty) {
+        body['achievements'] = _achievementsController.text.trim();
+      }
+      if (_challengesController.text.trim().isNotEmpty) {
+        body['challenges'] = _challengesController.text.trim();
+      }
+      if (_tomorrowPlanController.text.trim().isNotEmpty) {
+        body['tomorrow_plan'] = _tomorrowPlanController.text.trim();
+      }
+      
+      final response = await ApiService.instance.patch(
+        '${ApiConstants.SALESMAN_DAILY_REPORT}/$dateStr',
+        body: body,
+      );
+
+      if (response.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Report updated successfully!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _fetchPrefillData();
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(response.message ?? 'Failed to update'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isUpdating = false);
     }
   }
 
@@ -260,10 +330,12 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
               const SizedBox(height: 24),
               
               if (alreadySubmitted) ...[
-                // Already submitted - show read-only
+                // Already submitted - show editable state
                 _buildSubmittedBanner(),
                 const SizedBox(height: 16),
-                _buildReadOnlyFields(),
+                _buildFormSection(),
+                const SizedBox(height: 16),
+                _buildUpdateButton(),
               ] else ...[
                 // Form for submission
                 _buildFormSection(),
@@ -361,7 +433,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Today\'s Activity (Auto-calculated)',
+          'Today\'s Activity (Auto-calculated + Manual)',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -372,29 +444,35 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildMetricCard(
+              child: _buildEditableMetricCard(
                 'Calls Made',
                 prefillData?['calls_made']?.toString() ?? '0',
+                _manualCalls,
                 Icons.phone,
                 Colors.blue,
+                (val) => setState(() => _manualCalls = val),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildMetricCard(
+              child: _buildEditableMetricCard(
                 'Meetings',
                 prefillData?['meetings_done']?.toString() ?? '0',
+                _manualMeetings,
                 Icons.groups,
                 Colors.green,
+                (val) => setState(() => _manualMeetings = val),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildMetricCard(
+              child: _buildEditableMetricCard(
                 'Orders',
                 prefillData?['orders_closed']?.toString() ?? '0',
+                _manualOrders,
                 Icons.shopping_cart,
                 Colors.orange,
+                (val) => setState(() => _manualOrders = val),
               ),
             ),
           ],
@@ -403,31 +481,65 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     );
   }
 
-  Widget _buildMetricCard(String label, String value, IconData icon, Color color) {
+  Widget _buildEditableMetricCard(String label, String autoValue, int manualValue, IconData icon, Color color, Function(int) onChanged) {
+    final autoInt = int.tryParse(autoValue) ?? 0;
+    final total = autoInt + manualValue;
+    
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 6),
             Text(
-              value,
+              '$total',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
+            if (manualValue > 0)
+              Text(
+                '($autoValue + $manualValue)',
+                style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
+              ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                InkWell(
+                  onTap: manualValue > 0 ? () => onChanged(manualValue - 1) : null,
+                  child: Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(
+                      color: manualValue > 0 ? Colors.red.shade50 : Colors.grey.shade100,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.remove, size: 16, color: manualValue > 0 ? Colors.red : Colors.grey),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => onChanged(manualValue + 1),
+                  child: Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.add, size: 16, color: Colors.green.shade700),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -466,74 +578,13 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
                     ),
                   ),
                   Text(
-                    'Submitted$timeStr. Reports cannot be edited.',
+                    'Submitted$timeStr. You can still edit metrics and notes.',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.green.shade700,
                     ),
                   ),
                 ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReadOnlyFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildReadOnlyField(
-          'Today\'s Achievements',
-          prefillData?['achievements'] ?? '',
-          Icons.emoji_events,
-        ),
-        const SizedBox(height: 16),
-        _buildReadOnlyField(
-          'Challenges Faced',
-          prefillData?['challenges'] ?? '',
-          Icons.warning_amber,
-        ),
-        const SizedBox(height: 16),
-        _buildReadOnlyField(
-          'Tomorrow\'s Plan',
-          prefillData?['tomorrow_plan'] ?? '',
-          Icons.calendar_today,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReadOnlyField(String label, String value, IconData icon) {
-    return Card(
-      color: Colors.grey.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 20, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value.isNotEmpty ? value : 'No data',
-              style: TextStyle(
-                fontSize: 14,
-                color: value.isNotEmpty ? Colors.grey.shade800 : Colors.grey.shade400,
               ),
             ),
           ],
@@ -725,6 +776,43 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     );
   }
 
+  Widget _buildUpdateButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: isUpdating ? null : _updateReport,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: isUpdating
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.edit),
+                  SizedBox(width: 8),
+                  Text(
+                    'Update Report',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
   Widget _buildWarningFooter() {
     return Card(
       color: Colors.amber.shade50,
@@ -736,7 +824,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'You can submit only one daily report per day. Reports cannot be edited after submission.',
+                'You can submit only one daily report per day. After submission, you can still update manual metrics and notes.',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.amber.shade900,

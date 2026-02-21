@@ -409,6 +409,91 @@ def get_today_followups(
 
 
 # ==========================================
+# FOLLOW-UP COMPLETION ENDPOINT
+# ==========================================
+
+@router.patch("/followups/{followup_id}/complete")
+def complete_followup(
+    followup_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Mark a follow-up as completed. Updates DB with completed_at timestamp."""
+    followup = db.query(models.SalesFollowUp).filter(
+        models.SalesFollowUp.id == followup_id
+    ).first()
+    
+    if not followup:
+        raise HTTPException(status_code=404, detail="Follow-up not found")
+    
+    # Salesman can only complete their own follow-ups
+    if current_user.role == models.UserRole.SALESMAN and followup.salesman_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only complete your own follow-ups")
+    
+    if followup.status == "Completed":
+        raise HTTPException(status_code=400, detail="Follow-up is already completed")
+    
+    followup.status = "Completed"
+    followup.completed_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(followup)
+    
+    return {
+        "id": followup.id,
+        "status": followup.status,
+        "completed_at": followup.completed_at.isoformat() if followup.completed_at else None,
+        "message": "Follow-up marked as completed"
+    }
+
+
+@router.patch("/followups/{followup_id}/reschedule")
+def reschedule_followup(
+    followup_id: int,
+    body: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Reschedule a follow-up to a new date."""
+    followup = db.query(models.SalesFollowUp).filter(
+        models.SalesFollowUp.id == followup_id
+    ).first()
+    
+    if not followup:
+        raise HTTPException(status_code=404, detail="Follow-up not found")
+    
+    if current_user.role == models.UserRole.SALESMAN and followup.salesman_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only reschedule your own follow-ups")
+    
+    if followup.status == "Completed":
+        raise HTTPException(status_code=400, detail="Cannot reschedule a completed follow-up")
+    
+    new_date = body.get("new_date")
+    if not new_date:
+        raise HTTPException(status_code=400, detail="new_date is required")
+    
+    try:
+        followup.followup_date = datetime.fromisoformat(new_date)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid date format. Use ISO format (YYYY-MM-DDTHH:MM:SS)")
+    
+    followup.status = "Pending"
+    
+    if body.get("note"):
+        followup.note = body["note"]
+    
+    db.commit()
+    db.refresh(followup)
+    
+    return {
+        "id": followup.id,
+        "status": followup.status,
+        "followup_date": followup.followup_date.isoformat(),
+        "message": "Follow-up rescheduled successfully"
+    }
+
+
+# ==========================================
 # DAILY REPORT ENDPOINTS (ENHANCED)
 # ==========================================
 
@@ -481,6 +566,9 @@ def get_daily_report_prefill(
         calls_made=calls_made,
         meetings_done=meetings_done,
         orders_closed=orders_closed,
+        manual_calls=existing_report.manual_calls if existing_report and existing_report.manual_calls else 0,
+        manual_meetings=existing_report.manual_meetings if existing_report and existing_report.manual_meetings else 0,
+        manual_orders=existing_report.manual_orders if existing_report and existing_report.manual_orders else 0,
         achievements=existing_report.achievements if existing_report else None,
         challenges=existing_report.challenges if existing_report else None,
         tomorrow_plan=existing_report.tomorrow_plan if existing_report else None,
@@ -620,6 +708,65 @@ def submit_daily_report(
     db.refresh(db_report)
     
     return db_report
+
+
+@router.patch("/salesman/daily-report/{report_date}")
+def update_daily_report(
+    report_date: str,
+    body: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Update daily report - allows editing manual metric adjustments.
+    Salesman can add manual_calls, manual_meetings, manual_orders to supplement auto-derived counts.
+    Also allows editing achievements, challenges, tomorrow_plan after submission.
+    """
+    if current_user.role != models.UserRole.SALESMAN:
+        raise HTTPException(status_code=403, detail="Only salesmen can access this")
+    
+    try:
+        date_obj = datetime.fromisoformat(report_date).date()
+    except (ValueError, TypeError):
+        date_obj = date.today()
+    
+    report = db.query(models.DailyReport).filter(
+        models.DailyReport.salesman_id == current_user.id,
+        models.DailyReport.report_date == date_obj
+    ).first()
+    
+    if not report:
+        raise HTTPException(status_code=404, detail="No report found for this date")
+    
+    # Allow updating manual metric adjustments
+    if "manual_calls" in body:
+        report.manual_calls = int(body["manual_calls"])
+    if "manual_meetings" in body:
+        report.manual_meetings = int(body["manual_meetings"])
+    if "manual_orders" in body:
+        report.manual_orders = int(body["manual_orders"])
+    
+    # Allow updating text fields even after submission
+    if "achievements" in body and body["achievements"]:
+        report.achievements = body["achievements"].strip()
+    if "challenges" in body and body["challenges"]:
+        report.challenges = body["challenges"].strip()
+    if "tomorrow_plan" in body and body["tomorrow_plan"]:
+        report.tomorrow_plan = body["tomorrow_plan"].strip()
+    
+    db.commit()
+    db.refresh(report)
+    
+    return {
+        "id": report.id,
+        "calls_made": report.calls_made,
+        "manual_calls": report.manual_calls or 0,
+        "shops_visited": report.shops_visited,
+        "manual_meetings": report.manual_meetings or 0,
+        "sales_closed": report.sales_closed,
+        "manual_orders": report.manual_orders or 0,
+        "message": "Report updated successfully"
+    }
 
 
 @router.get("/salesman/daily-report/{report_date}")

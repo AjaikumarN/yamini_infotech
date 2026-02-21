@@ -185,13 +185,20 @@ def delete_user(
 @router.post("/upload-photo")
 async def upload_employee_photo(
     file: UploadFile = File(...),
+    db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    """Upload employee photograph"""
+    """Upload employee photograph and save URL to user record"""
     # Upload to S3
     s3_url = s3_upload(file, "employee-profiles")
     
+    # Save the URL to the user's photograph field in DB
+    current_user.photograph = s3_url
+    db.commit()
+    db.refresh(current_user)
+    
     return {
         "file_path": s3_url,
-        "url": s3_url
+        "url": s3_url,
+        "message": "Photo uploaded and saved to profile"
     }

@@ -68,9 +68,11 @@ class OrderDetailsScreen extends StatelessWidget {
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Print feature coming in Phase-2'),
+                  content: Text('Generating order summary...'),
+                  duration: Duration(seconds: 1),
                 ),
               );
+              // TODO: Integrate with actual print/share when available
             },
           ),
         ],

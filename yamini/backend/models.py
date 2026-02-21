@@ -510,6 +510,11 @@ class DailyReport(Base):
     enquiries_generated = Column(Integer, default=0)
     sales_closed = Column(Integer, default=0)
     
+    # Manual metric adjustments (SALESMAN can add to supplement auto-derived counts)
+    manual_calls = Column(Integer, default=0)
+    manual_meetings = Column(Integer, default=0)
+    manual_orders = Column(Integer, default=0)
+    
     # Manual input sections (SALESMAN FILLS)
     achievements = Column(Text)  # Today's achievements
     challenges = Column(Text)    # Challenges faced

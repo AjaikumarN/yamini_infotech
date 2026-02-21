@@ -386,6 +386,11 @@ class DailyReportPrefill(BaseModel):
     meetings_done: int = 0  # From visits table
     orders_closed: int = 0  # From converted enquiries
     
+    # Manual metric adjustments
+    manual_calls: int = 0
+    manual_meetings: int = 0
+    manual_orders: int = 0
+    
     # If already submitted, include the data
     achievements: Optional[str] = None
     challenges: Optional[str] = None

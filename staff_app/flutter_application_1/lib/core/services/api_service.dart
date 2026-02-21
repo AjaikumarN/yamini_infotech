@@ -151,6 +151,24 @@ class ApiService {
     }
   }
 
+  /// PATCH request (partial update)
+  Future<ApiResponse<T>> patch<T>(
+    String endpoint, {
+    Map<String, dynamic>? body,
+    T Function(dynamic)? fromJson,
+    bool requiresAuth = true,
+  }) async {
+    try {
+      final response = await _dio.patch(endpoint, data: body);
+      _dio.invalidateCache(endpoint.split('/').take(3).join('/'));
+      return _handleDioResponse<T>(response, fromJson);
+    } on DioException catch (e) {
+      return ApiResponse.error(_handleDioError(e));
+    } catch (e) {
+      return ApiResponse.error('An unexpected error occurred');
+    }
+  }
+
   /// DELETE request
   Future<ApiResponse<T>> delete<T>(
     String endpoint, {

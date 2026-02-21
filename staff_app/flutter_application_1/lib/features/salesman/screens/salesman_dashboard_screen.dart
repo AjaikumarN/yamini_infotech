@@ -122,8 +122,11 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Greeting
-                    _SalesmanGreeting(greeting: _getGreeting()),
+                    // Greeting with photo
+                    _SalesmanGreeting(
+                      greeting: _getGreeting(),
+                      photoUrl: AuthService.instance.currentUser?.profileImage,
+                    ),
                     const SizedBox(height: 16),
 
                     // Attendance Banner
@@ -600,8 +603,9 @@ class _SalesmanDashboardScreenState extends State<SalesmanDashboardScreen> {
 /// Animated greeting widget with fade + slide
 class _SalesmanGreeting extends StatefulWidget {
   final String greeting;
+  final String? photoUrl;
 
-  const _SalesmanGreeting({required this.greeting});
+  const _SalesmanGreeting({required this.greeting, this.photoUrl});
 
   @override
   State<_SalesmanGreeting> createState() => _SalesmanGreetingState();
@@ -646,11 +650,31 @@ class _SalesmanGreetingState extends State<_SalesmanGreeting>
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: Text(
-          '${widget.greeting}! 👋',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+        child: Row(
+          children: [
+            if (widget.photoUrl != null && widget.photoUrl!.isNotEmpty) ...[
+              CircleAvatar(
+                radius: 24,
+                backgroundImage: NetworkImage(widget.photoUrl!),
+                onBackgroundImageError: (_, __) {},
+                child: widget.photoUrl == null ? const Icon(Icons.person) : null,
+              ),
+              const SizedBox(width: 12),
+            ] else ...[
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                child: Icon(Icons.person, color: Theme.of(context).primaryColor),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                '${widget.greeting}! 👋',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/widgets/performance_widgets.dart';
@@ -6,8 +8,8 @@ import '../widgets/salesman_ui_components.dart';
 
 /// Location Sharing Screen
 ///
-/// Display location tracking status (read-only for Phase 1)
-/// Uses real backend data - NO mock fallbacks
+/// Full GPS tracking and sharing controls
+/// Start/Stop tracking sessions, send live GPS updates
 class LocationSharingScreen extends StatefulWidget {
   const LocationSharingScreen({super.key});
 
@@ -19,11 +21,20 @@ class _LocationSharingScreenState extends State<LocationSharingScreen> {
   bool isLoading = true;
   Map<String, dynamic>? locationData;
   String? error;
+  bool _isToggling = false;
+  Timer? _gpsTimer;
+  Position? _lastPosition;
 
   @override
   void initState() {
     super.initState();
     _fetchLocationStatus();
+  }
+
+  @override
+  void dispose() {
+    _gpsTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchLocationStatus() async {
@@ -33,7 +44,6 @@ class _LocationSharingScreenState extends State<LocationSharingScreen> {
     });
 
     try {
-      // Use correct endpoint: /api/tracking/visits/active
       final response = await ApiService.instance.get(
         ApiConstants.TRACKING_ACTIVE_VISIT,
       );
@@ -41,7 +51,6 @@ class _LocationSharingScreenState extends State<LocationSharingScreen> {
       if (response.success && response.data != null) {
         final data = response.data as Map<String, dynamic>;
         setState(() {
-          // Transform backend response to UI format
           if (data['status'] == 'active_visit') {
             locationData = {
               'is_sharing': true,
@@ -54,6 +63,7 @@ class _LocationSharingScreenState extends State<LocationSharingScreen> {
                 'timestamp': data['checkintime'] ?? '',
               },
             };
+            _startGpsUpdates();
           } else {
             locationData = {'is_sharing': false, 'status': 'inactive'};
           }
@@ -61,7 +71,6 @@ class _LocationSharingScreenState extends State<LocationSharingScreen> {
         });
       } else {
         setState(() {
-          // No active visit
           locationData = {'is_sharing': false, 'status': 'inactive'};
           isLoading = false;
         });
@@ -71,6 +80,160 @@ class _LocationSharingScreenState extends State<LocationSharingScreen> {
         error = 'Connection error: ${e.toString()}';
         isLoading = false;
       });
+    }
+  }
+
+  void _startGpsUpdates() {
+    _gpsTimer?.cancel();
+    _gpsTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      await _sendGpsUpdate();
+    });
+    // Also send immediately
+    _sendGpsUpdate();
+  }
+
+  Future<void> _sendGpsUpdate() async {
+    try {
+      final hasPermission = await _checkLocationPermission();
+      if (!hasPermission) return;
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      _lastPosition = position;
+
+      await ApiService.instance.post(
+        ApiConstants.TRACKING_LOCATION_UPDATE,
+        body: {
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+          'accuracy': position.accuracy,
+        },
+      );
+
+      if (mounted) {
+        setState(() {
+          locationData?['last_location'] = {
+            'latitude': position.latitude.toStringAsFixed(6),
+            'longitude': position.longitude.toStringAsFixed(6),
+            'timestamp': DateTime.now().toIso8601String(),
+          };
+        });
+      }
+    } catch (_) {
+      // Silently fail GPS updates
+    }
+  }
+
+  Future<bool> _checkLocationPermission() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return false;
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return false;
+    }
+    if (permission == LocationPermission.deniedForever) return false;
+    return true;
+  }
+
+  Future<void> _toggleTracking() async {
+    final isSharing = locationData?['is_sharing'] ?? false;
+    setState(() => _isToggling = true);
+
+    try {
+      if (isSharing) {
+        // Stop tracking
+        final response = await ApiService.instance.post(
+          '${ApiConstants.TRACKING_VISIT_CHECKOUT}/${locationData?['visit_id']}',
+          body: {
+            'latitude': _lastPosition?.latitude ?? 0,
+            'longitude': _lastPosition?.longitude ?? 0,
+            'checkout_notes': 'Session ended from Location Sharing screen',
+          },
+        );
+        if (response.success) {
+          _gpsTimer?.cancel();
+          setState(() {
+            locationData = {'is_sharing': false, 'status': 'inactive'};
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Tracking stopped'), backgroundColor: Colors.orange),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(response.message ?? 'Failed to stop'), backgroundColor: Colors.red),
+            );
+          }
+        }
+      } else {
+        // Start tracking - need location permission first
+        final hasPermission = await _checkLocationPermission();
+        if (!hasPermission) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location permission required'), backgroundColor: Colors.red),
+            );
+          }
+          setState(() => _isToggling = false);
+          return;
+        }
+
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+        _lastPosition = position;
+
+        final response = await ApiService.instance.post(
+          ApiConstants.TRACKING_VISIT_CHECKIN,
+          body: {
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+            'customer_name': 'Field Visit',
+            'visit_purpose': 'Sales Activity',
+          },
+        );
+        if (response.success && response.data != null) {
+          final data = response.data as Map<String, dynamic>;
+          setState(() {
+            locationData = {
+              'is_sharing': true,
+              'status': 'active',
+              'visit_id': data['visit_id'] ?? data['id'],
+              'customer_name': 'Field Visit',
+              'last_location': {
+                'latitude': position.latitude.toStringAsFixed(6),
+                'longitude': position.longitude.toStringAsFixed(6),
+                'timestamp': DateTime.now().toIso8601String(),
+              },
+            };
+          });
+          _startGpsUpdates();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Live tracking started!'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(response.message ?? 'Failed to start tracking'), backgroundColor: Colors.red),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isToggling = false);
     }
   }
 
@@ -284,24 +447,59 @@ class _LocationSharingScreenState extends State<LocationSharingScreen> {
   }
 
   Widget _buildInfoCard() {
-    return Card(
-      color: Colors.blue.shade50,
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(Icons.info, color: Colors.blue.shade700, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Live GPS tracking and sharing controls will be available in Phase-3',
-                style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
-              ),
+    final isSharing = locationData?['is_sharing'] ?? false;
+
+    return Column(
+      children: [
+        // Start/Stop Tracking Button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _isToggling ? null : _toggleTracking,
+            icon: _isToggling
+                ? const SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : Icon(isSharing ? Icons.stop : Icons.play_arrow),
+            label: Text(
+              _isToggling
+                  ? 'Processing...'
+                  : isSharing
+                      ? 'Stop Tracking'
+                      : 'Start Live Tracking',
             ),
-          ],
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isSharing ? Colors.red : Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
-      ),
+        const SizedBox(height: 12),
+        Card(
+          color: Colors.blue.shade50,
+          elevation: 1,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.info, color: Colors.blue.shade700, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    isSharing
+                        ? 'GPS location is being sent to the server every 30 seconds. Your admin can see your live location.'
+                        : 'Tap "Start Live Tracking" to begin sharing your GPS location with your admin.',
+                    style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

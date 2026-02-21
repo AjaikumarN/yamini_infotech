@@ -19,6 +19,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool isLoading = true;
   List<dynamic> orders = [];
   String? error;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -61,6 +62,79 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
+  Future<void> _showCreateOrderDialog() async {
+    // First fetch enquiries that are CONVERTED (eligible for ordering)
+    final enquiriesResponse = await ApiService.instance.get(ApiConstants.ENQUIRIES);
+    
+    if (!enquiriesResponse.success || enquiriesResponse.data == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(enquiriesResponse.message ?? 'Failed to load enquiries'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    final allEnquiries = enquiriesResponse.data is List ? enquiriesResponse.data as List : [];
+    // Filter to show CONVERTED enquiries (ready for order)
+    final enquiries = allEnquiries.where((e) {
+      final status = (e['status'] ?? '').toString().toLowerCase();
+      return status == 'converted' || status == 'qualified' || status == 'new';
+    }).toList();
+
+    if (!mounted) return;
+
+    if (enquiries.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No enquiries available for creating orders'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    // Show bottom sheet with enquiry selection and order form
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _CreateOrderSheet(enquiries: enquiries),
+    );
+
+    if (result == null || !mounted) return;
+
+    // Create the order
+    setState(() => _isCreating = true);
+    try {
+      final response = await ApiService.instance.post(
+        ApiConstants.ORDERS,
+        body: result,
+      );
+      if (response.success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Order created successfully!'), backgroundColor: Colors.green),
+          );
+          _fetchOrders();
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response.message ?? 'Failed to create order'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCreating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,6 +167,15 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 },
               ),
             ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _isCreating ? null : _showCreateOrderDialog,
+        icon: _isCreating
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : const Icon(Icons.add),
+        label: Text(_isCreating ? 'Creating...' : 'Create Order'),
+        backgroundColor: Colors.orange,
+        foregroundColor: Colors.white,
+      ),
     );
   }
 
@@ -293,6 +376,208 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet for creating a new order from an enquiry
+class _CreateOrderSheet extends StatefulWidget {
+  final List<dynamic> enquiries;
+  const _CreateOrderSheet({required this.enquiries});
+
+  @override
+  State<_CreateOrderSheet> createState() => _CreateOrderSheetState();
+}
+
+class _CreateOrderSheetState extends State<_CreateOrderSheet> {
+  Map<String, dynamic>? _selectedEnquiry;
+  final _quantityController = TextEditingController(text: '1');
+  final _discountController = TextEditingController(text: '0');
+  final _notesController = TextEditingController();
+  DateTime? _expectedDelivery;
+
+  @override
+  void dispose() {
+    _quantityController.dispose();
+    _discountController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 20, right: 20, top: 20,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Create New Order', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 20),
+            
+            // Enquiry Selection
+            const Text('Select Enquiry *', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButton<Map<String, dynamic>>(
+                isExpanded: true,
+                underline: const SizedBox(),
+                hint: const Text('Choose an enquiry'),
+                value: _selectedEnquiry,
+                items: widget.enquiries.map<DropdownMenuItem<Map<String, dynamic>>>((e) {
+                  final enquiry = e as Map<String, dynamic>;
+                  final name = enquiry['customer_name'] ?? 'Customer #${enquiry['id']}';
+                  final product = enquiry['product_name'] ?? enquiry['product_interest'] ?? '';
+                  return DropdownMenuItem(
+                    value: enquiry,
+                    child: Text('$name - $product', overflow: TextOverflow.ellipsis),
+                  );
+                }).toList(),
+                onChanged: (val) => setState(() => _selectedEnquiry = val),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Quantity
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Quantity *', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _quantityController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Discount %', style: TextStyle(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _discountController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // Expected Delivery
+            const Text('Expected Delivery', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now().add(const Duration(days: 7)),
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (date != null) setState(() => _expectedDelivery = date);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _expectedDelivery != null
+                      ? '${_expectedDelivery!.day}/${_expectedDelivery!.month}/${_expectedDelivery!.year}'
+                      : 'Tap to select date',
+                  style: TextStyle(color: _expectedDelivery != null ? Colors.black : Colors.grey),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Notes
+            const Text('Notes', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _notesController,
+              maxLines: 2,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Optional order notes...',
+                contentPadding: EdgeInsets.all(12),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Submit
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedEnquiry == null ? null : () {
+                  final qty = int.tryParse(_quantityController.text) ?? 1;
+                  final discount = double.tryParse(_discountController.text) ?? 0;
+                  
+                  final body = <String, dynamic>{
+                    'enquiry_id': _selectedEnquiry!['id'],
+                    'quantity': qty,
+                  };
+                  if (discount > 0) body['discount_percent'] = discount;
+                  if (_expectedDelivery != null) {
+                    body['expected_delivery_date'] = _expectedDelivery!.toIso8601String();
+                  }
+                  if (_notesController.text.trim().isNotEmpty) {
+                    body['notes'] = _notesController.text.trim();
+                  }
+                  
+                  Navigator.pop(context, body);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Create Order', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
