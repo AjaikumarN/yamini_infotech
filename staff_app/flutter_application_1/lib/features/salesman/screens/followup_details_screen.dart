@@ -57,8 +57,8 @@ class _FollowupDetailsScreenState extends State<FollowupDetailsScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final response = await ApiService.instance.patch(
-        '/api/sales/followups/$followupId/complete',
+      final response = await ApiService.instance.put(
+        '/api/sales/calls/$followupId/complete',
       );
       if (response.success) {
         setState(() {
@@ -109,8 +109,8 @@ class _FollowupDetailsScreenState extends State<FollowupDetailsScreen> {
     setState(() => _isLoading = true);
     try {
       final dateStr = '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-      final response = await ApiService.instance.patch(
-        '/api/sales/followups/$followupId/reschedule',
+      final response = await ApiService.instance.put(
+        '/api/sales/calls/$followupId/reschedule',
         body: {'new_date': dateStr},
       );
       if (response.success) {

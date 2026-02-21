@@ -82,9 +82,11 @@ def get_my_calls(
             "phone": call.phone,
             "call_type": call.call_type,
             "outcome": call.outcome,
+            "status": "Completed" if (call.outcome or "").lower() == "completed" else "Pending",
             "notes": call.notes,
             "call_date": call.call_date,
             "created_at": call.call_date,  # Frontend expects created_at
+            "scheduled_date": (call.next_action_date or call.call_date).isoformat() if (call.next_action_date or call.call_date) else None,
             "call_outcome": call.call_outcome,
             "next_action_date": call.next_action_date,
             "voice_note_text": call.voice_note_text,
@@ -156,7 +158,57 @@ def mark_call_completed(
     db.commit()
     db.refresh(call)
     
-    return call
+    return {
+        "id": call.id,
+        "status": "Completed",
+        "outcome": call.outcome,
+        "message": "Follow-up marked as completed"
+    }
+
+
+@router.put("/calls/{call_id}/reschedule")
+def reschedule_call(
+    call_id: int,
+    body: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Reschedule a call to a new date by updating next_action_date."""
+    if current_user.role not in [models.UserRole.SALESMAN, models.UserRole.ADMIN]:
+        raise HTTPException(status_code=403, detail="Only salesmen can reschedule calls")
+    
+    call = db.query(models.SalesCall).filter(models.SalesCall.id == call_id).first()
+    if not call:
+        raise HTTPException(status_code=404, detail="Call not found")
+    
+    if current_user.role == models.UserRole.SALESMAN and call.salesman_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You can only reschedule your own calls")
+    
+    new_date = body.get("new_date")
+    if not new_date:
+        raise HTTPException(status_code=400, detail="new_date is required")
+    
+    try:
+        call.next_action_date = datetime.fromisoformat(new_date)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid date format. Use ISO format (YYYY-MM-DD)")
+    
+    # Reset outcome so it appears pending again
+    call.outcome = "Pending"
+    
+    if body.get("note"):
+        call.notes = body["note"]
+    
+    db.commit()
+    db.refresh(call)
+    
+    return {
+        "id": call.id,
+        "status": "Pending",
+        "next_action_date": call.next_action_date.isoformat() if call.next_action_date else None,
+        "message": "Call rescheduled successfully"
+    }
+
 
 @router.get("/my-visits")
 def get_my_visits(

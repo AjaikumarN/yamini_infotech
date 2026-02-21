@@ -78,7 +78,7 @@ class ApiConstants {
   static const String TRACKING_LIVE_LOCATIONS = '/api/tracking/live/locations';
   
   // ==================== ORDERS ====================
-  static const String ORDERS = '/api/orders';
+  static const String ORDERS = '/api/orders/';
   static const String ORDERS_MY = '/api/orders/my-orders';
   static const String ORDERS_PENDING = '/api/orders/pending-approval';
   
