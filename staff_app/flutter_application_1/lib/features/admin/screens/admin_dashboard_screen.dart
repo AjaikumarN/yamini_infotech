@@ -52,9 +52,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       await Future.wait([
         _fetchAttendanceStats(),
         _fetchLiveLocationCount(),
-        _fetchEnquiriesCount(),
-        _fetchOrdersCount(),
-        _fetchServiceJobsCount(),
+        _fetchBusinessMetrics(),
       ]);
 
       setState(() {
@@ -71,30 +69,45 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   Future<void> _fetchAttendanceStats() async {
     try {
+      // Use backend-driven summary endpoint — single source of truth
       final response = await ApiService.instance.get(
-        '/api/attendance/all/today',
+        '/api/attendance/admin/summary',
         cacheDuration: const Duration(minutes: 2),
       );
       if (response.success && response.data != null) {
-        final List data = response.data as List;
-        final salesmen = data
-            .where(
-              (e) =>
-                  e['role']?.toString().toUpperCase().contains('SALESMAN') ??
-                  false,
-            )
-            .toList();
-
+        final data = response.data as Map<String, dynamic>;
         setState(() {
-          totalSalesmen = salesmen.length;
-          checkedInSalesmen = salesmen
-              .where((e) => e['checked_in'] == true)
-              .length;
+          totalSalesmen = data['total_salesmen'] ?? 0;
+          checkedInSalesmen = data['by_role']?['SALESMAN']?['checked_in'] ?? 0;
           notCheckedInSalesmen = totalSalesmen - checkedInSalesmen;
         });
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('Attendance fetch error: $e');
+      // Fallback to old endpoint if summary not available
+      try {
+        final response = await ApiService.instance.get(
+          '/api/attendance/all/today',
+          cacheDuration: const Duration(minutes: 2),
+        );
+        if (response.success && response.data != null) {
+          final List data = response.data as List;
+          final salesmen = data
+              .where(
+                (e) =>
+                    e['role']?.toString().toUpperCase().contains('SALESMAN') ??
+                    false,
+              )
+              .toList();
+
+          setState(() {
+            totalSalesmen = salesmen.length;
+            checkedInSalesmen = salesmen
+                .where((e) => e['checked_in'] == true)
+                .length;
+            notCheckedInSalesmen = totalSalesmen - checkedInSalesmen;
+          });
+        }
+      } catch (_) {}
     }
   }
 
@@ -114,7 +127,35 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  Future<void> _fetchEnquiriesCount() async {
+  Future<void> _fetchBusinessMetrics() async {
+    try {
+      // Use backend-driven counts — single source of truth
+      final response = await ApiService.instance.get(
+        '/api/analytics/dashboard-counts',
+        cacheDuration: const Duration(minutes: 3),
+      );
+      if (response.success && response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        setState(() {
+          openEnquiries = data['open_enquiries'] ?? 0;
+          openOrders = data['open_orders'] ?? 0;
+          openServiceJobs = data['active_service_jobs'] ?? 0;
+        });
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('Dashboard counts error: $e');
+    }
+
+    // Fallback: fetch from individual endpoints if counts endpoint not available
+    await Future.wait([
+      _fetchEnquiriesCountFallback(),
+      _fetchOrdersCountFallback(),
+      _fetchServiceJobsCountFallback(),
+    ]);
+  }
+
+  Future<void> _fetchEnquiriesCountFallback() async {
     try {
       final response = await ApiService.instance.get('/api/enquiries', cacheDuration: const Duration(minutes: 3));
       if (response.success && response.data != null) {
@@ -133,7 +174,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  Future<void> _fetchOrdersCount() async {
+  Future<void> _fetchOrdersCountFallback() async {
     try {
       final response = await ApiService.instance.get('/api/orders', cacheDuration: const Duration(minutes: 3));
       if (response.success && response.data != null) {
@@ -152,7 +193,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  Future<void> _fetchServiceJobsCount() async {
+  Future<void> _fetchServiceJobsCountFallback() async {
     try {
       final response = await ApiService.instance.get('/api/service-requests', cacheDuration: const Duration(minutes: 3));
       if (response.success && response.data != null) {

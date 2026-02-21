@@ -582,6 +582,110 @@ def get_all_attendance_by_date(
     return attendance_data
 
 
+# ========================================
+# ADMIN ATTENDANCE SUMMARY (Single Source of Truth)
+# ========================================
+
+@router.get("/admin/summary")
+def get_attendance_admin_summary(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    GET /api/attendance/admin/summary
+    
+    Single source of truth for dashboard attendance counters.
+    Uses attendance table only — no derived state.
+    
+    Returns:
+        total_field_staff: int
+        present: int — distinct employees checked in today
+        late: int — checked in after 9:30 AM
+        absent: int — total - present
+        checked_in: int — same as present (all check-ins, no check-out tracking)
+        by_role: dict with SALESMAN and SERVICE_ENGINEER breakdowns
+    """
+    if current_user.role not in [models.UserRole.ADMIN, models.UserRole.RECEPTION]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin or Reception access required"
+        )
+
+    now_ist = datetime.now(IST)
+    today_ist = now_ist.date()
+
+    # Total active field staff (SALESMAN + SERVICE_ENGINEER + RECEPTION)
+    field_roles = [
+        models.UserRole.SALESMAN,
+        models.UserRole.SERVICE_ENGINEER,
+        models.UserRole.RECEPTION,
+    ]
+    total_staff = db.query(func.count(models.User.id)).filter(
+        models.User.is_active == True,
+        models.User.role.in_(field_roles)
+    ).scalar() or 0
+
+    total_salesmen = db.query(func.count(models.User.id)).filter(
+        models.User.is_active == True,
+        models.User.role == models.UserRole.SALESMAN
+    ).scalar() or 0
+
+    total_engineers = db.query(func.count(models.User.id)).filter(
+        models.User.is_active == True,
+        models.User.role == models.UserRole.SERVICE_ENGINEER
+    ).scalar() or 0
+
+    # Present today (from attendance table — single source of truth)
+    present_today = db.query(func.count(func.distinct(models.Attendance.employee_id))).filter(
+        models.Attendance.attendance_date == today_ist
+    ).scalar() or 0
+
+    # Late today
+    late_today = db.query(func.count(func.distinct(models.Attendance.employee_id))).filter(
+        models.Attendance.attendance_date == today_ist,
+        models.Attendance.status == 'Late'
+    ).scalar() or 0
+
+    # Per-role breakdown
+    salesman_checked_in = db.query(func.count(func.distinct(models.Attendance.employee_id))).join(
+        models.User, models.Attendance.employee_id == models.User.id
+    ).filter(
+        models.Attendance.attendance_date == today_ist,
+        models.User.role == models.UserRole.SALESMAN
+    ).scalar() or 0
+
+    engineer_checked_in = db.query(func.count(func.distinct(models.Attendance.employee_id))).join(
+        models.User, models.Attendance.employee_id == models.User.id
+    ).filter(
+        models.Attendance.attendance_date == today_ist,
+        models.User.role == models.UserRole.SERVICE_ENGINEER
+    ).scalar() or 0
+
+    return {
+        "total_field_staff": total_staff,
+        "total_salesmen": total_salesmen,
+        "total_engineers": total_engineers,
+        "present": present_today,
+        "late": late_today,
+        "absent": total_staff - present_today,
+        "checked_in": present_today,
+        "not_checked_in": total_staff - present_today,
+        "by_role": {
+            "SALESMAN": {
+                "total": total_salesmen,
+                "checked_in": salesman_checked_in,
+                "not_checked_in": total_salesmen - salesman_checked_in,
+            },
+            "SERVICE_ENGINEER": {
+                "total": total_engineers,
+                "checked_in": engineer_checked_in,
+                "not_checked_in": total_engineers - engineer_checked_in,
+            },
+        },
+        "date": today_ist.isoformat(),
+    }
+
+
 # ========================================    attendance_data = []
     for employee in employees:
         # Query attendance with fallback for older records

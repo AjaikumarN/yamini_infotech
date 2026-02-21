@@ -484,3 +484,49 @@ def get_admin_dashboard_analytics(
         "service": service_analytics,
         "attendance": attendance_analytics
     }
+
+
+@router.get("/dashboard-counts")
+def get_dashboard_counts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    GET /api/analytics/dashboard-counts
+
+    Single endpoint for admin dashboard KPI counters.
+    All counts are derived from SQL — no client-side filtering.
+
+    Returns:
+        open_enquiries: int
+        open_orders: int
+        active_service_jobs: int
+    """
+    if current_user.role not in [UserRole.ADMIN, UserRole.RECEPTION]:
+        raise HTTPException(status_code=403, detail="Admin or Reception access required")
+
+    from models import Enquiry, Order
+
+    # Open enquiries: NOT converted, cancelled, or closed
+    open_enquiries = db.query(func.count(Enquiry.id)).filter(
+        Enquiry.is_deleted == False,
+        ~Enquiry.status.in_(['CONVERTED', 'CANCELLED', 'CLOSED'])
+    ).scalar() or 0
+
+    # Open orders: PENDING, PROCESSING, or CONFIRMED
+    open_orders = db.query(func.count(Order.id)).filter(
+        Order.is_deleted == False,
+        Order.status.in_(['PENDING', 'PROCESSING', 'CONFIRMED'])
+    ).scalar() or 0
+
+    # Active service jobs: PENDING, NEW, ASSIGNED, ON_THE_WAY, IN_PROGRESS, ON_HOLD
+    active_service_jobs = db.query(func.count(Complaint.id)).filter(
+        Complaint.is_deleted == False,
+        Complaint.status.in_(['PENDING', 'NEW', 'ASSIGNED', 'ON_THE_WAY', 'IN_PROGRESS', 'ON_HOLD'])
+    ).scalar() or 0
+
+    return {
+        "open_enquiries": open_enquiries,
+        "open_orders": open_orders,
+        "active_service_jobs": active_service_jobs,
+    }
