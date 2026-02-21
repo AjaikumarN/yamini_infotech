@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter/foundation.dart';
 import '../constants/api_constants.dart';
@@ -41,6 +43,14 @@ class DioClient {
         'Connection': 'keep-alive',
       },
     ));
+
+    // Accept self-signed / improperly-chained SSL certificates
+    (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
+      final client = HttpClient();
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+      return client;
+    };
 
     // Auth interceptor
     _dio.interceptors.add(InterceptorsWrapper(
