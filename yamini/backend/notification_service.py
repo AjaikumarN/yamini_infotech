@@ -378,11 +378,12 @@ class NotificationService:
         """
         priority_label = service.priority or "NORMAL"
         
+        fault_desc = (service.fault_description or "N/A")[:100]
         return NotificationService.create_notification(
             db=db,
             user_id=engineer_id,
             title=f"New {priority_label} Service Assigned",
-            message=f"Service Request #{service.id} has been assigned to you. Customer: {service.customer_name}, Issue: {service.complaint_text[:100]}...",
+            message=f"Service Request #{service.id} has been assigned to you. Customer: {service.customer_name}, Issue: {fault_desc}...",
             notification_type="service_assigned",
             priority="high" if priority_label == "CRITICAL" else "medium",
             module="service_engineer",
