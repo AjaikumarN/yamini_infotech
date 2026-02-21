@@ -158,10 +158,15 @@ class TrackingService {
   // ============= ADMIN APIs =============
 
   /// Get all live locations (admin only)
-  Future<List<LiveLocation>> getAllLiveLocations() async {
+  /// Optionally filtered by [role]: 'SALESMAN', 'SERVICE_ENGINEER', or null for all.
+  Future<List<LiveLocation>> getAllLiveLocations({String? role}) async {
     try {
+      final Map<String, String>? queryParams =
+          (role != null && role.isNotEmpty) ? {'role': role} : null;
+
       final response = await _api.get<Map<String, dynamic>>(
         '/api/tracking/live/locations',
+        queryParams: queryParams,
         fromJson: (data) => data as Map<String, dynamic>,
       );
 

@@ -20,33 +20,47 @@ def create_enquiry(
     current_user: Optional[models.User] = Depends(auth.get_current_user_optional)
 ):
     """Create a new enquiry (Public endpoint - no authentication required for website submissions)"""
+    import logging
+    logger = logging.getLogger(__name__)
+
     # Determine who created the enquiry
     created_by_name = current_user.full_name if current_user else "Website Visitor"
-    
+
     # Auto-assign to salesman if they created it
     if current_user and current_user.role == models.UserRole.SALESMAN:
-        # Convert to dict to modify
         enquiry_dict = enquiry.dict()
         enquiry_dict['assigned_to'] = current_user.id
-        # Create new schema object with assigned_to
         enquiry = schemas.EnquiryCreate(**enquiry_dict)
-    
-    # Create enquiry
-    new_enquiry = crud.create_enquiry(db=db, enquiry=enquiry, created_by=created_by_name)
-    
-    # Send notifications for all enquiry submissions (internal and public)
+
+    # ── Create enquiry in DB (transaction handled inside crud) ──
+    try:
+        new_enquiry = crud.create_enquiry(db=db, enquiry=enquiry, created_by=created_by_name)
+    except ValueError as ve:
+        raise HTTPException(status_code=422, detail=str(ve))
+    except Exception as e:
+        logger.error(f"Enquiry creation DB error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to create enquiry. Please try again.")
+
+    # ── Snapshot response data BEFORE any notification work ──
+    # This ensures notification failures cannot corrupt the response.
+    try:
+        response_data = schemas.Enquiry.model_validate(new_enquiry).model_dump()
+        # Ensure address is never None in response
+        response_data["address"] = response_data.get("address") or ""
+        response_data["message"] = ""
+    except Exception as e:
+        logger.error(f"Enquiry serialization error: {e}", exc_info=True)
+        # Return minimal valid response rather than 500
+        return new_enquiry
+
+    # ── Fire-and-forget notifications (failures never affect response) ──
     try:
         NotificationService.notify_enquiry_created(
-            db=db,
-            enquiry=new_enquiry,
-            created_by_name=created_by_name
+            db=db, enquiry=new_enquiry, created_by_name=created_by_name
         )
     except Exception as e:
-        # Log error but don't fail the request
-        import logging
-        logging.error(f"Failed to send enquiry notifications: {e}")
-    
-    # Queue WhatsApp notification to customer (worker sends it)
+        logger.error(f"Failed to send enquiry notifications: {e}")
+
     try:
         if getattr(new_enquiry, 'phone', None):
             msg = WhatsAppMessageTemplates.enquiry_created(
@@ -61,10 +75,8 @@ def create_enquiry(
                 customer_name=new_enquiry.customer_name,
             )
     except Exception as e:
-        import logging
-        logging.error(f"Failed to queue WhatsApp notification: {e}")
+        logger.error(f"Failed to queue WhatsApp notification: {e}")
 
-    # Staff notification → Admin + Reception
     try:
         notify_roles(
             db=db, roles=["ADMIN", "RECEPTION"],
@@ -76,7 +88,7 @@ def create_enquiry(
     except Exception:
         pass
 
-    return new_enquiry
+    return response_data
 
 @router.get("", response_model=List[schemas.Enquiry])
 def get_enquiries(

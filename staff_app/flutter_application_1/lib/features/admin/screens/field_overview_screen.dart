@@ -77,7 +77,16 @@ class _FieldOverviewScreenState extends State<FieldOverviewScreen> {
 
   Future<void> _fetchLiveLocations() async {
     try {
-      final locations = await _trackingService.getAllLiveLocations();
+      // Build query param for backend-driven role filtering
+      String? roleParam;
+      if (roleFilter == 'salesman') {
+        roleParam = 'SALESMAN';
+      } else if (roleFilter == 'engineer') {
+        roleParam = 'SERVICE_ENGINEER';
+      }
+      // 'all' → no param → backend returns all roles
+
+      final locations = await _trackingService.getAllLiveLocations(role: roleParam);
       setState(() {
         liveLocations = locations;
         activeStaffCount = locations.where((l) => l.isActive).length;
@@ -121,17 +130,10 @@ class _FieldOverviewScreenState extends State<FieldOverviewScreen> {
     }
   }
 
+  // Filtered locations — backend already filtered, return all.
+  // Client-side fallback kept for edge cases.
   List<LiveLocation> get filteredLocations {
-    if (roleFilter == 'all') return liveLocations;
-    return liveLocations.where((loc) {
-      final role = (loc.role ?? '').toLowerCase();
-      if (roleFilter == 'salesman') {
-        return role.contains('salesman') || role.contains('sales');
-      } else if (roleFilter == 'engineer') {
-        return role.contains('engineer') || role.contains('service');
-      }
-      return true;
-    }).toList();
+    return liveLocations;
   }
 
   Color _getRoleColor(String? role) {
@@ -308,7 +310,11 @@ class _FieldOverviewScreenState extends State<FieldOverviewScreen> {
   Widget _buildFilterChip(String label, String value, {Color? color}) {
     final isSelected = roleFilter == value;
     return GestureDetector(
-      onTap: () => setState(() => roleFilter = value),
+      onTap: () {
+        setState(() => roleFilter = value);
+        // Re-fetch from backend with new role filter
+        _fetchLiveLocations();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(

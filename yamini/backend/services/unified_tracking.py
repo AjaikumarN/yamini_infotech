@@ -232,9 +232,14 @@ def update_live_location(
     return True
 
 
-def get_all_live_locations(db: Session) -> List[Dict[str, Any]]:
-    """Get all active live locations for admin map (JOIN with user info)."""
-    result = db.execute(text("""
+def get_all_live_locations(db: Session, role_filter: str = None) -> List[Dict[str, Any]]:
+    """Get all active live locations for admin map (JOIN with user info).
+    
+    Args:
+        db: Database session
+        role_filter: Optional role filter — 'SALESMAN', 'SERVICE_ENGINEER', or None for all.
+    """
+    query = """
         SELECT
             ll.user_id,
             u.full_name,
@@ -249,13 +254,22 @@ def get_all_live_locations(db: Session) -> List[Dict[str, Any]]:
             ll.is_active,
             ll.session_id,
             ts.check_in_time,
-            ts.session_date
+            ts.session_date,
+            COALESCE(CAST(u.role AS TEXT), COALESCE(ts.role, '')) AS user_role
         FROM unified_live_locations ll
         JOIN users u ON ll.user_id = u.id
         LEFT JOIN tracking_sessions ts ON ll.session_id = ts.id
         WHERE ll.is_active = true
-        ORDER BY ll.last_updated DESC
-    """))
+    """
+    params = {}
+
+    if role_filter and role_filter.upper() not in ('ALL', ''):
+        query += " AND UPPER(COALESCE(CAST(u.role AS TEXT), COALESCE(ts.role, ''))) = :role_filter"
+        params["role_filter"] = role_filter.upper()
+
+    query += " ORDER BY ll.last_updated DESC"
+
+    result = db.execute(text(query), params)
 
     locations = []
     for row in result:
@@ -277,6 +291,7 @@ def get_all_live_locations(db: Session) -> List[Dict[str, Any]]:
             "session_id": row[11],
             "check_in_time": row[12].isoformat() if row[12] else None,
             "session_date": row[13].isoformat() if row[13] else None,
+            "role": (row[14] or "").upper(),
         })
 
     return locations

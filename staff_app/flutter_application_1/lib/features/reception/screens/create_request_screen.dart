@@ -108,9 +108,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         'email': _emailController.text.trim().isEmpty
             ? null
             : _emailController.text.trim(),
+        'address': _addressController.text.trim(),
         'product_interest': _requirementController.text.trim(),
         'description': _requirementController.text.trim(),
-        'notes': 'Address: ${_addressController.text.trim()}',
         'source': 'RECEPTION',
       },
     );

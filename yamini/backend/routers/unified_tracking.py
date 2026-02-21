@@ -483,13 +483,15 @@ async def get_visit_history(
 
 @router.get("/admin/live-locations")
 async def admin_live_locations(
+    role: Optional[str] = Query(None, description="Filter by role: SALESMAN, SERVICE_ENGINEER, or ALL"),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get all active live locations for the admin dashboard map."""
+    """Get all active live locations for the admin dashboard map.
+    Optionally filter by role (SALESMAN, SERVICE_ENGINEER)."""
     _require_admin_role(current_user)
 
-    locations = get_all_live_locations(db)
+    locations = get_all_live_locations(db, role_filter=role)
     return {
         "active_count": len(locations),
         "locations": locations,
@@ -689,12 +691,13 @@ async def compat_location_update(
 
 @compat_router.get("/api/tracking/live/locations")
 async def compat_live_locations(
+    role: Optional[str] = Query(None, description="Filter by role: SALESMAN, SERVICE_ENGINEER, or ALL"),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Backward-compatible live locations for admin map."""
     _require_admin_role(current_user)
-    locations = get_all_live_locations(db)
+    locations = get_all_live_locations(db, role_filter=role)
     return {"active_count": len(locations), "locations": locations}
 
 
@@ -798,12 +801,13 @@ async def compat_visit_history(
 
 @compat_router.get("/api/admin/salesmen/live")
 async def compat_admin_live(
+    role: Optional[str] = Query(None, description="Filter by role: SALESMAN, SERVICE_ENGINEER, or ALL"),
     current_user=Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Backward-compatible admin live locations."""
     _require_admin_role(current_user)
-    locations = get_all_live_locations(db)
+    locations = get_all_live_locations(db, role_filter=role)
     return {"active_count": len(locations), "locations": locations}
 
 

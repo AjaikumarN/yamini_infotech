@@ -160,6 +160,9 @@ async def create_service_request(
     created_at = datetime.utcnow()
     sla_time = calculate_sla_time(complaint.priority, created_at)
     
+    # Status is derived from assignment: ASSIGNED if engineer present, else NEW
+    initial_status = "ASSIGNED" if complaint.assigned_to else "NEW"
+
     db_complaint = models.Complaint(
         ticket_no=ticket_no,
         customer_id=complaint.customer_id,
@@ -171,7 +174,7 @@ async def create_service_request(
         machine_model=complaint.machine_model,
         fault_description=complaint.fault_description,
         priority=complaint.priority,
-        status="ASSIGNED",
+        status=initial_status,
         assigned_to=complaint.assigned_to,
         sla_time=sla_time,
         created_at=created_at

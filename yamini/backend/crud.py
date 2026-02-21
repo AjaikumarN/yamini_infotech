@@ -57,37 +57,57 @@ def get_customer(db: Session, customer_id: int):
 
 # Enquiry CRUD
 def create_enquiry(db: Session, enquiry: schemas.EnquiryCreate, created_by: str):
-    enquiry_id = generate_id("ENQ", db, models.Enquiry, "enquiry_id")
-    
-    # Convert Pydantic model to dict, excluding None values
-    enquiry_data = enquiry.dict(exclude_none=True)
-    
-    # If product_id is provided, fetch product name
-    if enquiry_data.get('product_id'):
-        product = db.query(models.Product).filter(
-            models.Product.id == enquiry_data['product_id']
-        ).first()
-        if product:
-            enquiry_data['product_interest'] = product.name
-    
-    # Handle description field (map to notes) - remove it from data
-    if 'description' in enquiry_data:
-        if enquiry_data['description']:
-            if enquiry_data.get('notes'):
-                enquiry_data['notes'] += f"\n\nCustomer Message: {enquiry_data['description']}"
-            else:
-                enquiry_data['notes'] = enquiry_data['description']
-        del enquiry_data['description']
-    
-    db_enquiry = models.Enquiry(
-        enquiry_id=enquiry_id,
-        **enquiry_data,
-        created_by=created_by
-    )
-    db.add(db_enquiry)
-    db.commit()
-    db.refresh(db_enquiry)
-    return db_enquiry
+    """Create enquiry with proper transaction handling and validation."""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        enquiry_id = generate_id("ENQ", db, models.Enquiry, "enquiry_id")
+
+        # Convert Pydantic model to dict, excluding None values
+        enquiry_data = enquiry.dict(exclude_none=True)
+
+        # Ensure required fields have valid values
+        if not enquiry_data.get('customer_name', '').strip():
+            raise ValueError("customer_name is required")
+
+        # Ensure address is always a string (never None)
+        enquiry_data['address'] = (enquiry_data.get('address') or '').strip()
+
+        # If product_id is provided, fetch product name
+        if enquiry_data.get('product_id'):
+            product = db.query(models.Product).filter(
+                models.Product.id == enquiry_data['product_id']
+            ).first()
+            if product:
+                enquiry_data['product_interest'] = product.name
+
+        # Handle description field (map to notes) - remove it from data
+        if 'description' in enquiry_data:
+            if enquiry_data['description']:
+                if enquiry_data.get('notes'):
+                    enquiry_data['notes'] += f"\n\nCustomer Message: {enquiry_data['description']}"
+                else:
+                    enquiry_data['notes'] = enquiry_data['description']
+            del enquiry_data['description']
+
+        db_enquiry = models.Enquiry(
+            enquiry_id=enquiry_id,
+            **enquiry_data,
+            created_by=created_by
+        )
+        db.add(db_enquiry)
+        db.commit()
+        db.refresh(db_enquiry)
+        return db_enquiry
+
+    except ValueError:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to create enquiry: {e}", exc_info=True)
+        raise
 
 def get_enquiries(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Enquiry).offset(skip).limit(limit).all()
