@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO, { buildBreadcrumbJsonLd } from '../../components/SEO';
 
 const BRANCHES = [
   {
@@ -29,6 +30,16 @@ const BRANCHES = [
 export default function ContactPage() {
   return (
     <div>
+      <SEO
+        title="Contact Yamini Infotech - Branches in Tirunelveli, Tenkasi & Nagercoil"
+        description="Contact Yamini Infotech for copier sales, printer service, toner supply and AMC. Call 98421 22952. Branches in Tirunelveli, Tenkasi and Nagercoil."
+        path="/contact"
+        keywords="Yamini Infotech contact, copier service Tirunelveli phone, Yamini Infotech address, printer service near me Tirunelveli, Yamini Infotech Tenkasi, Yamini Infotech Nagercoil"
+        jsonLd={buildBreadcrumbJsonLd([
+          { name: 'Home', path: '/' },
+          { name: 'Contact', path: '/contact' },
+        ])}
+      />
       {/* Hero */}
       <section style={{
         background: 'linear-gradient(135deg, var(--brand-light) 0%, #f0f4ff 100%)',

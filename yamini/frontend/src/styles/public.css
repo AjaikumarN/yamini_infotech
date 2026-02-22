@@ -289,6 +289,41 @@
   92% { box-shadow: 0 4px 28px rgba(37,211,102,0.6); }
 }
 
+/* ── STICKY CALL BAR — mobile-only conversion ── */
+.pub-sticky-call-bar {
+  display: none; /* hidden by default */
+}
+[data-device="mobile"] .pub-sticky-call-bar {
+  display: flex;
+  position: fixed; left: 0; right: 0;
+  bottom: var(--bottom-nav-h, 56px);
+  z-index: 89;
+  background: #0f172a;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: 6px 12px;
+  gap: 10px;
+}
+.sticky-call-btn, .sticky-wa-btn {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 0;
+  border-radius: var(--radius-lg, 12px);
+  font-size: 14px; font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s ease;
+}
+.sticky-call-btn {
+  background: var(--brand, #2563eb); color: white;
+}
+.sticky-wa-btn {
+  background: var(--whatsapp, #25d366); color: white;
+}
+.sticky-call-btn:active, .sticky-wa-btn:active { transform: scale(0.95); }
+/* Adjust WhatsApp FAB position when sticky bar is shown on mobile */
+[data-device="mobile"] .pub-fab-wa {
+  bottom: calc(var(--bottom-nav-h, 56px) + 52px + 14px);
+}
+
 /* ── MOBILE MENU (slide from right) ── */
 .pub-mobile-menu {
   position: fixed; inset: 0; z-index: 200;

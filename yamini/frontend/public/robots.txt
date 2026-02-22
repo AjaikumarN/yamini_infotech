@@ -1,0 +1,37 @@
+User-agent: *
+Allow: /
+Allow: /products
+Allow: /products/*
+Allow: /services
+Allow: /about
+Allow: /contact
+Allow: /track
+Allow: /blog
+Allow: /blog/*
+Allow: /copier-service-tirunelveli
+Allow: /printer-service-tenkasi
+Allow: /copier-dealer-nagercoil
+Allow: /xerox-machine-thoothukudi
+Allow: /kyocera-copier-tirunelveli
+Allow: /canon-printer-tirunelveli
+Allow: /ricoh-copier-tirunelveli
+Allow: /printer-rental-tirunelveli
+Allow: /copier-amc-tirunelveli
+Allow: /photocopier-repair-tirunelveli
+Allow: /office-printer-for-school-tirunelveli
+Allow: /a3-copier-machine-tirunelveli
+Allow: /color-photocopier-rental-tirunelveli
+Allow: /printer-repair-near-me-tirunelveli
+Allow: /kyocera-installation-school-tirunelveli
+Allow: /printer-rental-for-hospital-tirunelveli
+
+Disallow: /login
+Disallow: /admin/*
+Disallow: /reception/*
+Disallow: /salesman/*
+Disallow: /service-engineer/*
+Disallow: /customer
+
+# Sitemap
+Sitemap: https://yaminicopier.com/sitemap.xml
+Sitemap: https://api.yaminicopier.com/api/seo/sitemap.xml

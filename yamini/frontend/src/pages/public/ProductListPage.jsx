@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDeviceProfile } from '../../hooks/useDeviceProfile';
 import { apiRequest } from '../../utils/api';
 import { getUploadUrl } from '../../config';
+import SEO, { buildBreadcrumbJsonLd } from '../../components/SEO';
 
 export default function ProductListPage() {
   const [products, setProducts] = useState([]);
@@ -50,6 +51,16 @@ export default function ProductListPage() {
 
   return (
     <>
+      <SEO
+        title="Copier & Printer Products"
+        description="Browse xerox machines, copiers, printers and multifunction devices from Kyocera, Konica Minolta, Canon, Ricoh at Yamini Infotech Tirunelveli. Best prices with installation & AMC support."
+        path="/products"
+        keywords="buy copier Tirunelveli, xerox machine price, Kyocera copier price, Konica Minolta multifunction printer, Canon printer Tirunelveli, Ricoh copier Tenkasi, office printer Nagercoil, photocopier for school, copier for shop"
+        jsonLd={buildBreadcrumbJsonLd([
+          { name: 'Home', path: '/' },
+          { name: 'Products', path: '/products' },
+        ])}
+      />
       {/* Search bar */}
       <div className="pub-list-controls">
         <input
@@ -109,7 +120,7 @@ export default function ProductListPage() {
               <div key={p.id} className="pub-product-card" onClick={() => navigate(`/products/${p.id}`)}>
                 <div className="pub-product-card-img">
                   {p.image_url ? (
-                    <img src={getUploadUrl(p.image_url)} alt={p.name} loading="lazy"
+                    <img src={getUploadUrl(p.image_url)} alt={`${p.name} - ${p.brand || 'Copier'} ${p.category || 'Machine'} available at Yamini Infotech Tirunelveli`} loading="lazy"
                       onError={(e) => { e.target.style.display = 'none'; }} />
                   ) : (
                     <span style={{ color: '#94a3b8', fontSize: 32 }}>🖨</span>

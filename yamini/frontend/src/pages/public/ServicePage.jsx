@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useDeviceProfile } from '../../hooks/useDeviceProfile';
 import { apiRequest } from '../../utils/api';
+import SEO, { buildBreadcrumbJsonLd, buildFAQJsonLd, buildOffersJsonLd, buildServiceJsonLd } from '../../components/SEO';
+
+const SERVICE_FAQS = [
+  { question: 'How much does copier rental cost in Tirunelveli?', answer: 'Copier rental prices at Yamini Infotech start from ₹3,000/month depending on the model and usage. We offer flexible rental plans for offices, schools, and shops in Tirunelveli, Tenkasi, and Nagercoil. Contact us at 98421 22952 for a custom quote.' },
+  { question: 'Do you provide AMC (Annual Maintenance Contract) for copiers?', answer: 'Yes, Yamini Infotech provides comprehensive AMC plans covering unlimited service visits, genuine spare parts, toner supply, and preventive maintenance. Our AMC covers Kyocera, Konica Minolta, Canon, Ricoh, and other major brands.' },
+  { question: 'How fast is your copier repair response time?', answer: 'Our service engineers typically reach your location within 2-4 hours in Tirunelveli city and within 24 hours for Tenkasi and Nagercoil areas. For AMC customers, we guarantee same-day service.' },
+  { question: 'Which copier and printer brands do you service?', answer: 'We service and sell all major brands including Kyocera, Konica Minolta, Canon, Ricoh, HP, Epson, Brother, and Sharp. We are authorized dealers for Kyocera and Konica Minolta in the Tirunelveli region.' },
+  { question: 'Do you provide toner refill and cartridge replacement?', answer: 'Yes, we provide genuine toner refills, compatible cartridges, and OEM toner cartridges for all copier and printer brands. Fast delivery across Tirunelveli, Tenkasi, and Nagercoil.' },
+  { question: 'Can I exchange my old copier for a new one?', answer: 'Absolutely! Yamini Infotech offers exchange and trade-in programs. You can upgrade your old copier to a new multifunction machine with attractive exchange value. Call 98421 22952 for evaluation.' },
+  { question: 'Do you install copiers and printers at my office?', answer: 'Yes, we provide free installation and setup for all machines purchased from us. Our engineers will install, configure network printing, and train your staff on usage.' },
+  { question: 'What areas do you serve?', answer: 'We serve across South Tamil Nadu including Tirunelveli, Palayamkottai, Tenkasi, Nagercoil, Kanyakumari, Thoothukudi, Ambasamudram, Sankarankovil, Rajapalayam, Srivaikundam, Courtallam, and surrounding areas.' },
+];
 
 const SERVICE_TYPES = [
   { id: 'repair', icon: '🔧', label: 'Repair', desc: 'Machine not working or error' },
@@ -78,6 +90,33 @@ export default function ServicePage() {
 
   return (
     <div className="container" style={{ padding: 'var(--sp-2xl) var(--page-mx)' }}>
+      <SEO
+        title="Book Copier & Printer Service Online"
+        description="Book xerox machine repair, toner refill, printer service, AMC support and new installation online. Fast response from Yamini Infotech in Tirunelveli, Tenkasi & Nagercoil."
+        path="/services"
+        keywords="copier repair Tirunelveli, printer service booking, toner refill Tirunelveli, xerox machine repair, AMC service copier, installation support, book copier service online, copier rental Tirunelveli, printer AMC Tenkasi"
+        jsonLd={[
+          buildBreadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Services', path: '/services' },
+          ]),
+          buildFAQJsonLd(SERVICE_FAQS),
+          buildServiceJsonLd({
+            serviceName: 'Copier & Printer Service',
+            serviceType: 'Copier Repair, AMC, Toner Supply, Installation',
+            areaServed: 'Tirunelveli',
+            description: 'Complete copier and printer service including repair, AMC, toner supply, installation, and rental in Tirunelveli, Tenkasi, and Nagercoil.',
+          }),
+          buildOffersJsonLd([
+            { name: 'Copier Repair Service', description: 'Same-day copier and printer repair with genuine parts', price: '500' },
+            { name: 'Basic AMC Plan', description: 'Annual maintenance with quarterly visits and phone support', price: '6000' },
+            { name: 'Comprehensive AMC Plan', description: 'Unlimited visits, toner, spare parts, priority response', price: '18000' },
+            { name: 'Copier Rental - Basic', description: 'B&W copier rental with toner and maintenance included', price: '3000' },
+            { name: 'Copier Rental - Standard', description: 'Color copier rental with full support', price: '5000' },
+            { name: 'Copier Rental - Premium', description: 'High-speed color MFD with unlimited copies', price: '8000' },
+          ]),
+        ]}
+      />
 
       {/* ── STEPPER INDICATOR ── */}
       {!success && (
@@ -118,6 +157,19 @@ export default function ServicePage() {
           {/* ── Track Service (inline on services page) ── */}
           <div style={{ marginTop: 'var(--sp-section)' }}>
             <ServiceTrackWidget />
+          </div>
+
+          {/* ── FAQ Section (SEO rich results) ── */}
+          <div style={{ marginTop: 'var(--sp-section)' }}>
+            <div className="pub-section-header" style={{ textAlign: 'left' }}>
+              <h2>Frequently Asked Questions</h2>
+              <p>Common questions about our copier & printer services</p>
+            </div>
+            <div className="pub-accordion">
+              {SERVICE_FAQS.map((faq, i) => (
+                <FAQItem key={i} question={faq.question} answer={faq.answer} />
+              ))}
+            </div>
           </div>
         </>
       )}
@@ -234,6 +286,28 @@ export default function ServicePage() {
               🏠 Go Home
             </button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── FAQ Accordion Item ── */
+function FAQItem({ question, answer }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="pub-accordion-item" itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
+      <button
+        className={`pub-accordion-header ${open ? 'open' : ''}`}
+        onClick={() => setOpen(!open)}
+        itemProp="name"
+      >
+        {question}
+        <span className="arrow">▼</span>
+      </button>
+      {open && (
+        <div className="pub-accordion-body" itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+          <p itemProp="text">{answer}</p>
         </div>
       )}
     </div>

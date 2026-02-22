@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from database import get_db
 from models import Product, User, UserRole
 from auth import get_current_user
+from services.seo_service import generate_product_seo_meta
 import json
 
 router = APIRouter(prefix="/api/products", tags=["Product Management"])
@@ -149,7 +150,8 @@ async def create_product(
     return {
         "message": "Product created successfully",
         "product_id": new_product.id,
-        "product": new_product
+        "product": new_product,
+        "_seo": generate_product_seo_meta(new_product)
     }
 
 @router.put("/{product_id}")
@@ -221,7 +223,8 @@ async def update_product(
     
     return {
         "message": "Product updated successfully",
-        "product": existing_product
+        "product": existing_product,
+        "_seo": generate_product_seo_meta(existing_product)
     }
 
 @router.delete("/{product_id}")

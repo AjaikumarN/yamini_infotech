@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiRequest } from '../../utils/api';
+import SEO from '../../components/SEO';
 
 const STATUSES = ['NEW', 'ASSIGNED', 'ON_THE_WAY', 'IN_PROGRESS', 'COMPLETED'];
 
@@ -33,6 +34,12 @@ export default function TrackPage() {
 
   return (
     <div className="container" style={{ padding: 'var(--sp-section) var(--page-mx)' }}>
+      <SEO
+        title="Track Your Service Request"
+        description="Track your copier or printer service request status online. Enter your ticket ID or phone number to check real-time service status at Yamini Infotech."
+        path="/track"
+        keywords="track service request, copier repair status, Yamini Infotech service tracking, printer repair status check"
+      />
 
       {/* ── Search Banner ── */}
       <div className="pub-track-banner">

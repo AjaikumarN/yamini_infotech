@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDeviceProfile } from '../../hooks/useDeviceProfile';
 import { apiRequest } from '../../utils/api';
 import { getUploadUrl } from '../../config';
+import SEO, { buildLocalBusinessJsonLd, buildWebSiteJsonLd, buildOrganizationJsonLd, buildAggregateRatingJsonLd, buildFAQJsonLd } from '../../components/SEO';
 
 const TESTIMONIALS = [
   { name: 'Rajesh Kumar', company: 'ABC Enterprises', rating: 5, text: 'Excellent service! Quick response and genuine parts. Yamini Infotech is our go-to for all copier needs.' },
@@ -17,6 +18,13 @@ const SERVICES = [
   { icon: '📦', label: 'Install', id: 'installation', desc: 'New machine setup' },
   { icon: '✅', label: 'AMC', id: 'amc_support', desc: 'Annual contract' },
   { icon: '🔄', label: 'Exchange', id: 'exchange', desc: 'Trade-in / upgrade' },
+];
+
+const HOME_FAQS = [
+  { question: 'Where is Yamini Infotech located?', answer: 'Yamini Infotech has branches in Tirunelveli (South Bypass Road, Palayamkottai), Tenkasi (Main Road), and Nagercoil (Court Road). We serve all of South Tamil Nadu.' },
+  { question: 'What brands does Yamini Infotech sell?', answer: 'We are authorized dealers for Kyocera and Konica Minolta. We also sell and service Canon, Ricoh, HP, Epson, Brother, and Sharp copiers and printers.' },
+  { question: 'Does Yamini Infotech offer copier rental?', answer: 'Yes! We offer flexible copier and printer rental plans starting from ₹3,000/month. Ideal for offices, schools, and businesses in Tirunelveli, Tenkasi, and Nagercoil.' },
+  { question: 'How can I contact Yamini Infotech?', answer: 'Call us at +91 98421 22952, WhatsApp us, or visit our branches. You can also book a service request directly on our website.' },
 ];
 
 export default function HomePage() {
@@ -38,8 +46,24 @@ export default function HomePage() {
     })();
   }, [deviceType]);
 
+  // Combine multiple JSON-LD schemas for the home page
+  const homeJsonLd = [
+    buildLocalBusinessJsonLd(),
+    buildWebSiteJsonLd(),
+    buildOrganizationJsonLd(),
+    buildAggregateRatingJsonLd({ ratingValue: 4.8, reviewCount: 250 }),
+    buildFAQJsonLd(HOME_FAQS),
+  ];
+
   return (
     <>
+      <SEO
+        title="Xerox Machine Sales & Service in Tirunelveli"
+        description="Yamini Infotech - #1 photocopier & printer sales, service, toner supply and AMC in Tirunelveli, Tenkasi & Nagercoil. Kyocera, Konica Minolta, Canon, Ricoh dealer. 25+ years trusted support. Call 98421 22952."
+        path="/"
+        keywords="Yamini Infotech, xerox machine Tirunelveli, copier service Tirunelveli, printer repair Tirunelveli, photocopier sales Tamil Nadu, toner supply Tirunelveli, AMC service copier, Konica Minolta dealer Tirunelveli, Kyocera dealer Tirunelveli, Canon printer service, Ricoh copier Tirunelveli, copier machine Tenkasi, printer service Nagercoil, office equipment Tirunelveli, multifunction printer sales"
+        jsonLd={homeJsonLd}
+      />
       {/* ── HERO ── */}
       <section className="pub-hero">
         <div className="pub-hero-text">
@@ -73,7 +97,7 @@ export default function HomePage() {
         <div className="pub-hero-image reveal-scale">
           <img
             src="/assets/images/hero-copier.webp"
-            alt="Copier Machine"
+            alt="Yamini Infotech - Xerox copier and printer sales service in Tirunelveli"
             onError={(e) => { e.target.style.display = 'none'; }}
             style={{ maxHeight: 400, objectFit: 'contain' }}
           />
@@ -119,7 +143,7 @@ export default function HomePage() {
                     {p.image_url ? (
                       <img
                         src={getUploadUrl(p.image_url)}
-                        alt={p.name}
+                        alt={`${p.name} - ${p.brand || 'copier'} available at Yamini Infotech Tirunelveli`}
                         loading="lazy"
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
@@ -199,15 +223,33 @@ export default function HomePage() {
         <div className="container">
           <div className="pub-section-header reveal">
             <h2>What Our Customers Say</h2>
+            <p>Trusted by 500+ businesses across South Tamil Nadu</p>
           </div>
           <div className="pub-testimonials-track">
             {TESTIMONIALS.map((t, i) => (
-              <div key={i} className="pub-testimonial-card">
-                <div className="stars">{'★'.repeat(t.rating)}{'☆'.repeat(5 - t.rating)}</div>
-                <div className="quote">"{t.text}"</div>
-                <div className="author">{t.name}</div>
+              <div key={i} className="pub-testimonial-card" itemScope itemType="https://schema.org/Review">
+                <div className="stars" itemProp="reviewRating" itemScope itemType="https://schema.org/Rating">
+                  <meta itemProp="ratingValue" content={t.rating} />
+                  {'★'.repeat(t.rating)}{'☆'.repeat(5 - t.rating)}
+                </div>
+                <div className="quote" itemProp="reviewBody">"{t.text}"</div>
+                <div className="author" itemProp="author">{t.name}</div>
                 <div className="text-sm text-muted">{t.company}</div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOME FAQ (SEO rich results) ── */}
+      <section className="pub-section">
+        <div className="container">
+          <div className="pub-section-header reveal">
+            <h2>Frequently Asked Questions</h2>
+          </div>
+          <div className="pub-accordion" style={{ maxWidth: 720, margin: '0 auto' }}>
+            {HOME_FAQS.map((faq, i) => (
+              <HomeFAQItem key={i} question={faq.question} answer={faq.answer} />
             ))}
           </div>
         </div>
@@ -225,6 +267,24 @@ export default function HomePage() {
         </a>
       </div>
     </>
+  );
+}
+
+/* ── Home FAQ Accordion Item ── */
+function HomeFAQItem({ question, answer }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="pub-accordion-item" itemScope itemProp="mainEntity" itemType="https://schema.org/Question">
+      <button className={`pub-accordion-header ${open ? 'open' : ''}`} onClick={() => setOpen(!open)} itemProp="name">
+        {question}
+        <span className="arrow">▼</span>
+      </button>
+      {open && (
+        <div className="pub-accordion-body" itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+          <p itemProp="text">{answer}</p>
+        </div>
+      )}
+    </div>
   );
 }
 

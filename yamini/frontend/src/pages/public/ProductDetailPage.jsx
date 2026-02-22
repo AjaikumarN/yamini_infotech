@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiRequest } from '../../utils/api';
 import { getUploadUrl } from '../../config';
+import SEO, { buildProductJsonLd, buildBreadcrumbJsonLd } from '../../components/SEO';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -82,13 +83,36 @@ export default function ProductDetailPage() {
     },
   ].filter(Boolean);
 
+  // Build SEO data
+  const productJsonLd = buildProductJsonLd(product);
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Products', path: '/products' },
+    { name: product.name, path: `/products/${product.id}` },
+  ]);
+  const productImage = product.image_url
+    ? (product.image_url.startsWith('http') ? product.image_url : `https://api.yaminicopier.com${product.image_url.startsWith('/') ? '' : '/'}${product.image_url}`)
+    : undefined;
+
   return (
     <>
+      <SEO
+        title={`${product.name}${product.brand ? ` - ${product.brand}` : ''}`}
+        description={product.description
+          ? `${product.description.substring(0, 140)} — Buy from Yamini Infotech Tirunelveli`
+          : `Buy ${product.name} from Yamini Infotech. Best price with installation, AMC and service support in Tirunelveli, Tenkasi & Nagercoil.`
+        }
+        path={`/products/${product.id}`}
+        image={productImage}
+        type="product"
+        keywords={`${product.name}, ${product.brand || ''} ${product.category || 'copier'}, buy ${product.name} Tirunelveli, ${product.brand || ''} dealer Tirunelveli, ${product.category || 'copier'} price`}
+        jsonLd={[productJsonLd, breadcrumbJsonLd]}
+      />
       <div className="pub-detail-layout">
         {/* Image */}
         <div className="pub-detail-carousel">
           {product.image_url ? (
-            <img src={getUploadUrl(product.image_url)} alt={product.name} />
+            <img src={getUploadUrl(product.image_url)} alt={`${product.name} - ${product.brand || ''} ${product.category || 'Copier'} for sale at Yamini Infotech Tirunelveli`} />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80, color: '#94a3b8' }}>
               🖨

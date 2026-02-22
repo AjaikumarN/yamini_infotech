@@ -1,4 +1,5 @@
 import React from 'react';
+import SEO, { buildBreadcrumbJsonLd } from '../../components/SEO';
 
 const WHY_CARDS = [
   { icon: '🏆', title: '25+ Years Experience', desc: 'Serving businesses since 1998 with reliable copier and printer solutions.' },
@@ -22,6 +23,16 @@ const AREAS = [
 export default function AboutPage() {
   return (
     <div>
+      <SEO
+        title="About Yamini Infotech - 25+ Years Copier & Printer Experts"
+        description="Yamini Infotech is South Tamil Nadu's leading copier & printer sales and service company since 1998. Authorized dealer for Kyocera, Konica Minolta, Canon, Ricoh in Tirunelveli, Tenkasi & Nagercoil."
+        path="/about"
+        keywords="about Yamini Infotech, copier company Tirunelveli, printer dealer Tirunelveli, Yamini Infotech history, photocopier expert Tamil Nadu, authorized copier dealer"
+        jsonLd={buildBreadcrumbJsonLd([
+          { name: 'Home', path: '/' },
+          { name: 'About Us', path: '/about' },
+        ])}
+      />
       {/* Hero */}
       <section style={{
         background: 'linear-gradient(135deg, var(--brand-light) 0%, #f0f4ff 100%)',

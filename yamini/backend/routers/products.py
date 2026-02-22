@@ -6,6 +6,7 @@ import crud
 import models
 import auth
 from database import get_db
+from services.seo_service import generate_product_seo_meta
 
 router = APIRouter(prefix="/api/products", tags=["Products"])
 
@@ -16,7 +17,10 @@ def create_product(
     current_user: models.User = Depends(auth.require_product_write)  # Admin only
 ):
     """Create a new product (Admin only - Backend enforced)"""
-    return crud.create_product(db=db, product=product)
+    new_product = crud.create_product(db=db, product=product)
+    # Auto-generate SEO metadata for the new product
+    seo_meta = generate_product_seo_meta(new_product)
+    return {**new_product.__dict__, "_seo": seo_meta}
 
 @router.get("/")
 def get_products(
@@ -92,7 +96,9 @@ def update_product(
     
     db.commit()
     db.refresh(product)
-    return product
+    # Auto-generate SEO metadata for the updated product
+    seo_meta = generate_product_seo_meta(product)
+    return {**product.__dict__, "_seo": seo_meta}
 
 @router.put("/{product_id}/stock")
 def update_product_stock(

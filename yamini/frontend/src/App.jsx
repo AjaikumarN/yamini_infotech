@@ -23,6 +23,11 @@ import ServicePageNew from './pages/public/ServicePage.jsx'
 import TrackPage from './pages/public/TrackPage.jsx'
 import AboutPage from './pages/public/AboutPage.jsx'
 import ContactPage from './pages/public/ContactPage.jsx'
+import BlogListPage from './pages/public/BlogListPage.jsx'
+import BlogPostPage from './pages/public/BlogPostPage.jsx'
+import LocationPage from './pages/public/LocationPage.jsx'
+import KeywordPage from './pages/public/KeywordPage.jsx'
+import LongTailPage from './pages/public/LongTailPage.jsx'
 
 // New Components
 import ProductListing from './components/ProductListing.jsx'
@@ -122,7 +127,8 @@ function App() {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/track" element={<TrackPage />} />
-                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog" element={<BlogListPage />} />
+                <Route path="/blog/:slug" element={<BlogPostPage />} />
                 <Route path="/login" element={<Login />} />
                 
                 {/* Product Catalog */}
@@ -135,6 +141,30 @@ function App() {
                 
                 {/* Service Request */}
                 <Route path="/services" element={<ServicePageNew />} />
+                
+                {/* Location Landing Pages (SEO) */}
+                <Route path="/copier-service-tirunelveli" element={<LocationPage />} />
+                <Route path="/printer-service-tenkasi" element={<LocationPage />} />
+                <Route path="/copier-dealer-nagercoil" element={<LocationPage />} />
+                <Route path="/xerox-machine-thoothukudi" element={<LocationPage />} />
+
+                {/* Keyword-Intent SEO Pages */}
+                <Route path="/kyocera-copier-tirunelveli" element={<KeywordPage />} />
+                <Route path="/canon-printer-tirunelveli" element={<KeywordPage />} />
+                <Route path="/ricoh-copier-tirunelveli" element={<KeywordPage />} />
+                <Route path="/printer-rental-tirunelveli" element={<KeywordPage />} />
+                <Route path="/copier-amc-tirunelveli" element={<KeywordPage />} />
+                <Route path="/photocopier-repair-tirunelveli" element={<KeywordPage />} />
+
+                {/* Long-Tail Micro-Intent SEO Pages */}
+                <Route path="/office-printer-for-school-tirunelveli" element={<LongTailPage />} />
+                <Route path="/a3-copier-machine-tirunelveli" element={<LongTailPage />} />
+                <Route path="/color-photocopier-rental-tirunelveli" element={<LongTailPage />} />
+                <Route path="/printer-repair-near-me-tirunelveli" element={<LongTailPage />} />
+
+                {/* Case Study Pages */}
+                <Route path="/kyocera-installation-school-tirunelveli" element={<LongTailPage />} />
+                <Route path="/printer-rental-for-hospital-tirunelveli" element={<LongTailPage />} />
               </Route>
               
               {/* ========================================
