@@ -221,6 +221,18 @@ export default function MIF() {
     }, 500);
   };
 
+  const handleDelete = async (mifId) => {
+    if (!confirm('Are you sure you want to delete this MIF record? This cannot be undone.')) return;
+    try {
+      await apiRequest(`/api/mif/${mifId}`, { method: 'DELETE' });
+      alert('✅ MIF record deleted successfully');
+      loadMIFs();
+    } catch (error) {
+      console.error('Failed to delete MIF:', error);
+      alert('❌ Failed to delete: ' + (error.message || 'Unknown error'));
+    }
+  };
+
   const handleCreate = async (e) => {
     e.preventDefault();
     try {
@@ -381,28 +393,45 @@ export default function MIF() {
                       {getStatusBadge(mif.status)}
                     </td>
                     <td style={{ padding: '14px 20px' }}>
-                      <button
-                        onClick={() => generatePDF(mif)}
-                        style={{
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          border: '1.5px solid #a78bfa',
-                          background: 'white',
-                          color: '#a78bfa',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => {
-                          e.target.style.background = '#f3e8ff';
-                        }}
-                        onMouseOut={(e) => {
-                          e.target.style.background = 'white';
-                        }}
-                      >
-                        View PDF
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => generatePDF(mif)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #a78bfa',
+                            background: 'white',
+                            color: '#a78bfa',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => { e.target.style.background = '#f3e8ff'; }}
+                          onMouseOut={(e) => { e.target.style.background = 'white'; }}
+                        >
+                          View PDF
+                        </button>
+                        <button
+                          onClick={() => handleDelete(mif.id)}
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #ef4444',
+                            background: 'white',
+                            color: '#ef4444',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={(e) => { e.target.style.background = '#fef2f2'; }}
+                          onMouseOut={(e) => { e.target.style.background = 'white'; }}
+                          title="Delete MIF record"
+                        >
+                          🗑️
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -474,7 +503,7 @@ export default function MIF() {
                       {new Date(mif.installation_date).toLocaleDateString()}
                     </div>
                   </div>
-                  <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+                  <div style={{ gridColumn: '1 / -1', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <button
                       onClick={() => generatePDF(mif)}
                       style={{
@@ -489,14 +518,29 @@ export default function MIF() {
                         width: '100%',
                         transition: 'all 0.2s'
                       }}
-                      onMouseOver={(e) => {
-                        e.target.style.background = '#f3e8ff';
-                      }}
-                      onMouseOut={(e) => {
-                        e.target.style.background = 'white';
-                      }}
+                      onMouseOver={(e) => { e.target.style.background = '#f3e8ff'; }}
+                      onMouseOut={(e) => { e.target.style.background = 'white'; }}
                     >
                       📄 View PDF
+                    </button>
+                    <button
+                      onClick={() => handleDelete(mif.id)}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1.5px solid #ef4444',
+                        background: 'white',
+                        color: '#ef4444',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        width: '100%',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => { e.target.style.background = '#fef2f2'; }}
+                      onMouseOut={(e) => { e.target.style.background = 'white'; }}
+                    >
+                      🗑️ Delete
                     </button>
                   </div>
                 </div>

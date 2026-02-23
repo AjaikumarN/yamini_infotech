@@ -74,6 +74,18 @@ export default function StockManagement() {
     return `${day}/${month}/${year}`;
   };
 
+  const handleDelete = async (movementId) => {
+    if (!confirm('Are you sure you want to delete this stock movement?')) return;
+    try {
+      await apiRequest(`/api/stock-movements/${movementId}`, { method: 'DELETE' });
+      alert('✅ Stock movement deleted successfully');
+      loadMovements();
+    } catch (error) {
+      console.error('Failed to delete stock movement:', error);
+      alert('❌ Failed to delete: ' + (error.message || 'Unknown error'));
+    }
+  };
+
   if (loading) {
     return <div style={{ padding: '24px' }}>⏳ Loading stock movements...</div>;
   }
@@ -157,6 +169,7 @@ export default function StockManagement() {
                 <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🔢 Quantity</th>
                 <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📋 Reference</th>
                 <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>💳 Payment</th>
+                <th style={{ padding: '16px 20px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>⚡ Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -182,6 +195,27 @@ export default function StockManagement() {
                     </td>
                     <td style={{ padding: '14px 20px' }}>
                       {getPaymentBadge(movement.payment_status)}
+                    </td>
+                    <td style={{ padding: '14px 20px' }}>
+                      <button
+                        onClick={() => handleDelete(movement.id)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: '1.5px solid #ef4444',
+                          background: 'white',
+                          color: '#ef4444',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => { e.target.style.background = '#fef2f2'; }}
+                        onMouseOut={(e) => { e.target.style.background = 'white'; }}
+                        title="Delete movement"
+                      >
+                        🗑️ Delete
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -250,6 +284,27 @@ export default function StockManagement() {
                   <div>
                     <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px', fontWeight: '600', textTransform: 'uppercase' }}>Payment</div>
                     <div>{getPaymentBadge(movement.payment_status)}</div>
+                  </div>
+                  <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+                    <button
+                      onClick={() => handleDelete(movement.id)}
+                      style={{
+                        padding: '10px',
+                        borderRadius: '8px',
+                        border: '1.5px solid #ef4444',
+                        background: 'white',
+                        color: '#ef4444',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        width: '100%',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseOver={(e) => { e.target.style.background = '#fef2f2'; }}
+                      onMouseOut={(e) => { e.target.style.background = 'white'; }}
+                    >
+                      🗑️ Delete Movement
+                    </button>
                   </div>
                 </div>
               </div>

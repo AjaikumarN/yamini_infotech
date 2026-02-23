@@ -531,9 +531,6 @@ def delete_order(
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
     
-    if order.status != "PENDING":
-        raise HTTPException(status_code=400, detail="Cannot delete approved/rejected orders")
-    
     # Soft-delete instead of hard delete
     order.is_deleted = True
     db.commit()
