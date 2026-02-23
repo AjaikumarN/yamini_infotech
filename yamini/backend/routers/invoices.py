@@ -29,9 +29,10 @@ def get_all_invoices(
     if current_user.role not in [models.UserRole.ADMIN, models.UserRole.RECEPTION]:
         raise HTTPException(status_code=403, detail="Admin or Reception access required")
     
-    # Get orders that have invoices generated
+    # Get orders that have invoices generated (exclude soft-deleted)
     orders_with_invoices = db.query(models.Order).filter(
-        models.Order.invoice_generated == True
+        models.Order.invoice_generated == True,
+        models.Order.is_deleted == False
     ).all()
     
     invoices = []
