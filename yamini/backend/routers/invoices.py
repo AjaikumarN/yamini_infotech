@@ -234,6 +234,38 @@ def export_invoice(
     }
 
 
+@router.delete("/{invoice_id}")
+def delete_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_admin)
+):
+    """Delete invoice - Admin only (soft-delete underlying order)"""
+    order = db.query(models.Order).filter(
+        models.Order.id == invoice_id,
+        models.Order.invoice_generated == True
+    ).first()
+
+    if not order:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+
+    order.is_deleted = True
+    db.commit()
+
+    log_action(
+        db=db,
+        user_id=current_user.id,
+        username=current_user.username,
+        action="DELETE",
+        module="Invoice",
+        record_id=str(invoice_id),
+        record_type="Invoice",
+        changes={"invoice_number": order.invoice_number}
+    )
+
+    return {"message": "Invoice deleted successfully", "id": invoice_id}
+
+
 @router.get("/outstanding/summary", response_model=dict)
 def get_outstanding_summary(
     db: Session = Depends(get_db),

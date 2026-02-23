@@ -331,6 +331,18 @@ export default function Invoices({ mode = 'staff' }) {
     }, 500);
   };
 
+  const handleDelete = async (invoiceId) => {
+    if (!confirm('Are you sure you want to delete this invoice? This cannot be undone.')) return;
+    try {
+      await apiRequest(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
+      alert('\u2705 Invoice deleted successfully');
+      loadInvoices();
+    } catch (error) {
+      console.error('Failed to delete invoice:', error);
+      alert('\u274c Failed to delete: ' + (error.message || 'Unknown error'));
+    }
+  };
+
   const handleUpdatePaymentStatus = async (invoiceId, newStatus) => {
     if (!confirm(`Mark invoice as ${newStatus}?`)) return;
     
@@ -565,6 +577,25 @@ export default function Invoices({ mode = 'staff' }) {
                                 ✅ Mark Paid
                               </button>
                             )}
+                            <button
+                              onClick={() => handleDelete(invoice.id)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: '8px',
+                                border: '1.5px solid #ef4444',
+                                background: 'white',
+                                color: '#ef4444',
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseOver={(e) => { e.target.style.background = '#fef2f2'; }}
+                              onMouseOut={(e) => { e.target.style.background = 'white'; }}
+                              title="Delete invoice"
+                            >
+                              🗑️
+                            </button>
                           </div>
                         </td>
                       )}
@@ -686,6 +717,25 @@ export default function Invoices({ mode = 'staff' }) {
                           ✅ Mark Paid
                         </button>
                       )}
+                      <button
+                        onClick={() => handleDelete(invoice.id)}
+                        style={{
+                          padding: '10px',
+                          borderRadius: '8px',
+                          border: '1.5px solid #ef4444',
+                          background: 'white',
+                          color: '#ef4444',
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          width: '100%',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => { e.target.style.background = '#fef2f2'; }}
+                        onMouseOut={(e) => { e.target.style.background = 'white'; }}
+                      >
+                        🗑️ Delete
+                      </button>
                     </div>
                   )}
                 </div>
