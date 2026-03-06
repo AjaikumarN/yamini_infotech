@@ -54,6 +54,8 @@ class StockMovementCreate(BaseModel):
     engineer_id: Optional[int] = None
     service_request_id: Optional[int] = None
     notes: Optional[str] = None
+    payment_status: Optional[str] = "PENDING"
+    paid_amount: Optional[float] = 0.0
 
     @validator("engineer_id", "service_request_id", pre=True)
     def empty_str_to_none_int(cls, v):
@@ -189,6 +191,16 @@ def log_stock_movement(
         ticket = db.query(Complaint).filter(Complaint.id == data.service_request_id).first()
         if not ticket:
             raise HTTPException(400, f"Ticket ID {data.service_request_id} not found")
+    # Determine payment status
+    pay_status = data.payment_status or "PENDING"
+    pay_amount = data.paid_amount or 0.0
+    if pay_status == "PAID":
+        pay_amount = data.total_cost or 0.0
+    elif pay_status == "PARTIALLY_PAID" and pay_amount <= 0:
+        pay_status = "PENDING"
+    elif pay_status == "PENDING":
+        pay_amount = 0.0
+
     movement = StockMovement(
         movement_type=data.movement_type,
         category=data.category,
@@ -202,7 +214,8 @@ def log_stock_movement(
         service_request_id=data.service_request_id,
         engineer_id=data.engineer_id,
         notes=data.notes,
-        payment_status="PENDING",
+        payment_status=pay_status,
+        paid_amount=pay_amount,
         approval_status="PENDING",
         date=date.today(),
         logged_by=current_user.id,

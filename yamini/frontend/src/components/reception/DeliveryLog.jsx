@@ -102,7 +102,8 @@ const DeliveryLog = () => {
   const [form, setForm] = useState({
     movement_type: 'IN', category: '', sub_type: '', item_name: '',
     quantity: 1, total_cost: 0, reference_type: '', notes: '',
-    engineer_id: '', service_request_id: ''
+    engineer_id: '', service_request_id: '',
+    payment_status: 'PENDING', paid_amount: 0
   });
 
   useEffect(() => {
@@ -213,7 +214,9 @@ const DeliveryLog = () => {
         engineer_id: form.engineer_id ? Number(form.engineer_id) : null,
         service_request_id: form.service_request_id ? Number(form.service_request_id) : null,
         reference_type: form.reference_type || null,
-        notes: form.notes || null
+        notes: form.notes || null,
+        payment_status: form.payment_status || 'PENDING',
+        paid_amount: Number(form.paid_amount) || 0
       };
       await apiRequest('/api/stock-movements/', { method: 'POST', body: JSON.stringify(payload) });
       setShowLogForm(false);
@@ -229,7 +232,8 @@ const DeliveryLog = () => {
     setForm({
       movement_type: 'IN', category: '', sub_type: '', item_name: '',
       quantity: 1, total_cost: 0, reference_type: '', notes: '',
-      engineer_id: '', service_request_id: ''
+      engineer_id: '', service_request_id: '',
+      payment_status: 'PENDING', paid_amount: 0
     });
     setItemSearch('');
     setStockWarning('');
@@ -323,8 +327,8 @@ const DeliveryLog = () => {
     noStock: inventory.filter(i => i.no_stock).length,
     totalIn: movements.filter(d => d.movement_type === 'IN').length,
     totalOut: movements.filter(d => d.movement_type === 'OUT').length,
-    paymentPending: movements.filter(d => d.movement_type === 'OUT' && (d.payment_status === 'PENDING' || d.payment_status === 'PARTIALLY_PAID')).length,
-    paid: movements.filter(d => d.movement_type === 'OUT' && d.payment_status === 'PAID').length
+    paymentPending: movements.filter(d => (d.payment_status === 'PENDING' || d.payment_status === 'PARTIALLY_PAID')).length,
+    paid: movements.filter(d => d.payment_status === 'PAID').length
   };
 
   if (loading) {
@@ -565,24 +569,22 @@ const DeliveryLog = () => {
                         <td style={tdStyle}>{m.service_request_id || '-'}</td>
                         <td style={tdStyle}>{m.total_cost ? 'Rs.' + m.total_cost : '-'}</td>
                         <td style={tdStyle}>
-                          {m.movement_type === 'OUT' ? (
-                            m.payment_status === 'PAID' ? (
-                              <span style={{padding:'3px 10px',borderRadius:'4px',fontSize:'11px',fontWeight:600,background:'#27ae60',color:'white'}}>PAID</span>
-                            ) : m.payment_status === 'PARTIALLY_PAID' ? (
-                              <span onClick={() => openPaymentModal(m)} style={{
-                                padding:'3px 10px',borderRadius:'4px',fontSize:'11px',fontWeight:600,
-                                background:'#f39c12',color:'white',cursor:'pointer'
-                              }}>PARTIAL (Rs.{m.paid_amount || 0})</span>
-                            ) : (
-                              <button onClick={() => openPaymentModal(m)} style={{
-                                padding:'5px 10px',border:'none',borderRadius:'5px',cursor:'pointer',fontSize:'11px',fontWeight:600,
-                                background:'linear-gradient(135deg,#9b59b6,#8e44ad)',color:'white'
-                              }}>Mark Paid</button>
-                            )
-                          ) : '-'}
+                          {m.payment_status === 'PAID' ? (
+                            <span style={{padding:'3px 10px',borderRadius:'4px',fontSize:'11px',fontWeight:600,background:'#27ae60',color:'white'}}>PAID</span>
+                          ) : m.payment_status === 'PARTIALLY_PAID' ? (
+                            <span onClick={() => openPaymentModal(m)} style={{
+                              padding:'3px 10px',borderRadius:'4px',fontSize:'11px',fontWeight:600,
+                              background:'#f39c12',color:'white',cursor:'pointer'
+                            }}>PARTIAL (Rs.{m.paid_amount || 0})</span>
+                          ) : (
+                            <button onClick={() => openPaymentModal(m)} style={{
+                              padding:'5px 10px',border:'none',borderRadius:'5px',cursor:'pointer',fontSize:'11px',fontWeight:600,
+                              background:'linear-gradient(135deg,#9b59b6,#8e44ad)',color:'white'
+                            }}>Mark Paid</button>
+                          )}
                         </td>
                         <td style={tdStyle}>
-                          {m.movement_type === 'OUT' && m.payment_status !== 'PAID' && (
+                          {m.payment_status !== 'PAID' && (
                             <button onClick={() => openEditModal(m)} style={{
                               padding:'5px 10px',border:'none',borderRadius:'5px',cursor:'pointer',fontSize:'11px',fontWeight:600,
                               background:'linear-gradient(135deg,#3498db,#2980b9)',color:'white'
@@ -734,6 +736,58 @@ const DeliveryLog = () => {
                 <input type="number" min="0" step="0.01" placeholder="0.00" value={form.total_cost}
                   onChange={(e) => setForm({...form, total_cost: e.target.value})}
                   style={fiStyle} />
+              </div>
+
+              {/* Payment Status & Paid Amount */}
+              <div style={{background:'#f0f9ff',padding:'16px',borderRadius:'10px',border:'1px solid #bae6fd',marginBottom:'14px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'12px'}}>
+                  <span className="material-icons" style={{fontSize:'20px',color:'#0284c7'}}>payments</span>
+                  <span style={{fontWeight:700,fontSize:'14px',color:'#0369a1'}}>Payment Details</span>
+                </div>
+                <div style={fgStyle}>
+                  <label style={flStyle}>Payment Status *</label>
+                  <select value={form.payment_status}
+                    onChange={(e) => {
+                      const status = e.target.value;
+                      setForm({...form, payment_status: status, 
+                        paid_amount: status === 'PAID' ? (Number(form.total_cost) || 0) : status === 'PENDING' ? 0 : form.paid_amount
+                      });
+                    }} style={fiStyle}>
+                    <option value="PENDING">Pending - Not Paid Yet</option>
+                    <option value="PARTIALLY_PAID">Partially Paid</option>
+                    <option value="PAID">Fully Paid</option>
+                  </select>
+                </div>
+                {form.payment_status === 'PARTIALLY_PAID' && (
+                  <div style={fgStyle}>
+                    <label style={flStyle}>Amount Paid (Rs.)</label>
+                    <input type="number" min="0" step="0.01" placeholder="Enter amount paid"
+                      value={form.paid_amount}
+                      onChange={(e) => setForm({...form, paid_amount: e.target.value})}
+                      style={fiStyle} />
+                  </div>
+                )}
+                {/* Payment Summary */}
+                {Number(form.total_cost) > 0 && (
+                  <div style={{background:'white',padding:'12px',borderRadius:'8px',marginTop:'8px',border:'1px solid #e0f2fe'}}>
+                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
+                      <span style={{fontSize:'13px',color:'#64748b'}}>Total Cost:</span>
+                      <span style={{fontSize:'13px',fontWeight:700,color:'#1e293b'}}>Rs.{Number(form.total_cost).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div style={{display:'flex',justifyContent:'space-between',marginBottom:'6px'}}>
+                      <span style={{fontSize:'13px',color:'#64748b'}}>Paid:</span>
+                      <span style={{fontSize:'13px',fontWeight:700,color:'#059669'}}>
+                        Rs.{(form.payment_status === 'PAID' ? Number(form.total_cost) : Number(form.paid_amount) || 0).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <div style={{borderTop:'1px solid #e2e8f0',paddingTop:'6px',display:'flex',justifyContent:'space-between'}}>
+                      <span style={{fontSize:'13px',fontWeight:600,color:'#64748b'}}>Remaining:</span>
+                      <span style={{fontSize:'15px',fontWeight:800,color: form.payment_status === 'PAID' ? '#059669' : '#dc2626'}}>
+                        Rs.{Math.max(0, Number(form.total_cost) - (form.payment_status === 'PAID' ? Number(form.total_cost) : Number(form.paid_amount) || 0)).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Engineer & Ticket (for OUT) */}
