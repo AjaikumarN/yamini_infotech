@@ -90,6 +90,7 @@ import AdminStockManagement from './admin/pages/StockManagement.jsx'
 import AdminStockAnalytics from './admin/pages/StockAnalytics.jsx'
 import AdminSLAMonitoring from './admin/pages/service/SLAMonitoring.jsx'
 import AdminMIF from './admin/pages/service/MIF.jsx'
+import OurCustomers from './components/reception/OurCustomers.jsx'
 import AdminAttendance from './admin/pages/Attendance.jsx'
 import AdminAnalytics from './admin/pages/Analytics.jsx'
 import AdminAuditLogs from './admin/pages/AuditLogs.jsx'
@@ -197,6 +198,7 @@ function App() {
  <Route path="repeat-complaints" element={<RepeatComplaints />} />
  <Route path="delivery-log" element={<DeliveryLog />} />
  <Route path="mif" element={<AdminMIF />} />
+ <Route path="customers" element={<OurCustomers />} />
  <Route path="outstanding" element={<OutstandingSummary />} />
  <Route path="missing-reports" element={<MissingReports />} />
  <Route path="visitors" element={<VisitorLog />} />
@@ -388,6 +390,7 @@ function App() {
  <Route path="service/sla" element={<AdminSLAMonitoring />} />
  <Route path="service/mif" element={<AdminMIF />} />
  <Route path="mif" element={<AdminMIF />} />
+ <Route path="customers" element={<OurCustomers />} />
  
  {/* Operations - Reuse existing */}
  <Route path="attendance" element={<AdminAttendance />} />

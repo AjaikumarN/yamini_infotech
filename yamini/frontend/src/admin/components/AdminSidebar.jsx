@@ -79,7 +79,8 @@ export default function AdminSidebar({ collapsed, onToggle }) {
  expanded: expandedGroups.sales,
  items: [
  { path: '/admin/enquiries', icon: 'contact_page', label: 'Enquiries', badge: badgeCounts.enquiries || 0 },
- { path: '/admin/orders', icon: 'receipt_long', label: 'Orders', badge: badgeCounts.orders || 0 }
+ { path: '/admin/orders', icon: 'receipt_long', label: 'Orders', badge: badgeCounts.orders || 0 },
+ { path: '/admin/customers', icon: 'groups', label: 'Our Customers'}
  ]
  },
  {

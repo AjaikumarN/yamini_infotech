@@ -49,7 +49,8 @@ const ReceptionNav = ({ isOpen, onClose, initialCompact = false }) => {
  title: 'Main',
  items: [
  { icon: 'home', label: 'Dashboard', path: '/reception/dashboard'},
- { icon: 'schedule', label: 'Enquiry Board', path: '/reception/enquiries'}
+ { icon: 'schedule', label: 'Enquiry Board', path: '/reception/enquiries'},
+ { icon: 'groups', label: 'Our Customers', path: '/reception/customers'}
  ]
  },
  {

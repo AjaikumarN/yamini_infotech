@@ -255,6 +255,7 @@ class MIFRecordBase(BaseModel):
     installation_date: datetime
     location: str
     machine_value: float
+    warranty_months: Optional[int] = 0
     amc_status: Optional[str]
     amc_expiry: Optional[datetime]
     engineer_name: Optional[str] = None
@@ -269,6 +270,7 @@ class MIFRecordUpdate(BaseModel):
     installation_date: Optional[datetime] = None
     location: Optional[str] = None
     machine_value: Optional[float] = None
+    warranty_months: Optional[int] = None
     amc_status: Optional[str] = None
     amc_expiry: Optional[datetime] = None
     last_service: Optional[datetime] = None

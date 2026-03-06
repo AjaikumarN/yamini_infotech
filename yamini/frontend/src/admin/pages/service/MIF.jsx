@@ -11,6 +11,7 @@ export default function MIF() {
  machine_model: '',
  serial_number: '',
  installation_date: new Date().toISOString(),
+ warranty_months: 12,
  location: '',
  machine_value: 0,
  amc_status: 'INACTIVE',
@@ -165,10 +166,16 @@ export default function MIF() {
  <div class="section-title">Service / AMC Details</div>
  <table>
  <tr>
+ <td class="label">AMC Date</td>
+ <td>${mif.amc_expiry ? new Date(mif.amc_expiry).toLocaleDateString() : 'N/A'}</td>
  <td class="label">AMC Status</td>
  <td>${mif.amc_status}</td>
- <td class="label">AMC Expiry</td>
- <td>${mif.amc_expiry ? new Date(mif.amc_expiry).toLocaleDateString() : 'N/A'}</td>
+</tr>
+ <tr>
+ <td class="label">Warranty Period</td>
+ <td>${mif.warranty_months ? mif.warranty_months + ' months' : 'N/A'}</td>
+ <td class="label">Warranty Expiry</td>
+ <td>${mif.warranty_months && mif.installation_date ? (() => { const d = new Date(mif.installation_date); d.setMonth(d.getMonth() + mif.warranty_months); return d.toLocaleDateString(); })() : 'N/A'}</td>
 </tr>
  <tr>
  <td class="label">Machine Value</td>
@@ -240,7 +247,8 @@ export default function MIF() {
  ...formData,
  installation_date: new Date(formData.installation_date).toISOString(),
  amc_expiry: formData.amc_expiry ? new Date(formData.amc_expiry).toISOString() : null,
- machine_value: parseFloat(formData.machine_value)
+ machine_value: parseFloat(formData.machine_value),
+ warranty_months: parseInt(formData.warranty_months) || 0
  };
  await apiRequest('/api/mif/', {
  method: 'POST',
@@ -253,6 +261,7 @@ export default function MIF() {
  machine_model: '',
  serial_number: '',
  installation_date: new Date().toISOString(),
+ warranty_months: 12,
  location: '',
  machine_value: 0,
  amc_status: 'INACTIVE',
@@ -356,6 +365,7 @@ export default function MIF() {
  <th style={{ padding: '18px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px'}}> Machine Model</th>
  <th style={{ padding: '18px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px'}}> Serial Number</th>
  <th style={{ padding: '18px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px'}}> Installed By</th>
+ <th style={{ padding: '18px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px'}}> Warranty</th>
  <th style={{ padding: '18px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px'}}> Status</th>
  <th style={{ padding: '18px 20px', textAlign: 'left', fontSize: '13px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px'}}> Actions</th>
 </tr>
@@ -363,7 +373,7 @@ export default function MIF() {
  <tbody>
  {mifs.length === 0 ? (
  <tr>
- <td colSpan="7" style={{ padding: '60px 20px', textAlign: 'center', color: '#9ca3af', fontSize: '15px', borderBottom: '1px solid #e5e7eb'}}>
+ <td colSpan="8" style={{ padding: '60px 20px', textAlign: 'center', color: '#9ca3af', fontSize: '15px', borderBottom: '1px solid #e5e7eb'}}>
  No MIF records found
 </td>
 </tr>
@@ -388,6 +398,26 @@ export default function MIF() {
 </td>
  <td style={{ padding: '14px 20px', fontSize: '14px', color: '#374151'}}>
  {mif.engineer_name}
+</td>
+ <td style={{ padding: '14px 20px', fontSize: '13px'}}>
+ {(() => {
+ if (!mif.warranty_months || !mif.installation_date) return <span style={{ color: '#9ca3af' }}>N/A</span>;
+ const inst = new Date(mif.installation_date);
+ const exp = new Date(inst);
+ exp.setMonth(exp.getMonth() + mif.warranty_months);
+ const days = Math.ceil((exp - new Date()) / 86400000);
+ const isExp = days <= 0;
+ const isSoon = days > 0 && days <= 30;
+ return (
+ <span style={{ padding: '3px 10px', borderRadius: '10px', fontSize: '12px', fontWeight: '600',
+ background: isExp ? '#FEE2E2' : isSoon ? '#FEF3C7' : '#ECFDF5',
+ color: isExp ? '#991B1B' : isSoon ? '#92400E' : '#065F46',
+ border: `1px solid ${isExp ? '#FECACA' : isSoon ? '#FCD34D' : '#A7F3D0'}`
+ }}>
+ {isExp ? 'Expired' : isSoon ? `${days}d left` : `${mif.warranty_months}mo`}
+ </span>
+ );
+ })()}
 </td>
  <td style={{ padding: '14px 20px'}}>
  {getStatusBadge(mif.status)}
@@ -633,6 +663,7 @@ export default function MIF() {
  }}
  />
 </div>
+ {/* Installation Date + Warranty Period side by side */}
  <div>
  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
  Installation Date *
@@ -652,6 +683,94 @@ export default function MIF() {
  />
 </div>
  <div>
+ <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
+ Warranty Period (Months) *
+</label>
+ <input
+ type="number"
+ required
+ min="0"
+ max="120"
+ value={formData.warranty_months}
+ onChange={(e) => setFormData({ ...formData, warranty_months: e.target.value })}
+ style={{
+ width: '100%',
+ padding: '8px 12px',
+ border: '1px solid #E5E7EB',
+ borderRadius: '6px',
+ fontSize: '14px'
+ }}
+ />
+</div>
+ {/* Warranty Expiry Auto-calculated Preview */}
+ {formData.installation_date && formData.warranty_months > 0 && (() => {
+ const instDate = new Date(formData.installation_date);
+ const expiryDate = new Date(instDate);
+ expiryDate.setMonth(expiryDate.getMonth() + parseInt(formData.warranty_months));
+ const now = new Date();
+ const daysLeft = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+ const isExpired = daysLeft <= 0;
+ const isExpiring = daysLeft > 0 && daysLeft <= 30;
+ const bgColor = isExpired ? '#FEE2E2' : isExpiring ? '#FEF3C7' : '#ECFDF5';
+ const textColor = isExpired ? '#991B1B' : isExpiring ? '#92400E' : '#065F46';
+ const borderColor = isExpired ? '#FECACA' : isExpiring ? '#FCD34D' : '#A7F3D0';
+ const icon = isExpired ? 'error' : isExpiring ? 'warning' : 'verified';
+ return (
+ <div style={{ gridColumn: '1 / -1', padding: '12px 16px', background: bgColor, borderRadius: '8px', border: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', gap: '10px' }}>
+ <span className="material-icons" style={{ color: textColor, fontSize: '22px' }}>{icon}</span>
+ <div style={{ flex: 1 }}>
+ <div style={{ fontSize: '13px', fontWeight: '700', color: textColor }}>
+ Warranty Expiry: {expiryDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+ </div>
+ <div style={{ fontSize: '12px', color: textColor, marginTop: '2px' }}>
+ {isExpired ? `Expired ${Math.abs(daysLeft)} days ago` : isExpiring ? `Only ${daysLeft} days remaining - Expiring soon!` : `${daysLeft} days remaining`}
+ </div>
+ </div>
+ </div>
+ );
+ })()}
+ {/* AMC Date (left) + AMC Status (right) - SWAPPED */}
+ <div>
+ <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
+ AMC Date {formData.amc_status === 'ACTIVE'? '*': ''}
+</label>
+ <input
+ type="datetime-local"
+ required={formData.amc_status === 'ACTIVE'}
+ value={formData.amc_expiry ? new Date(formData.amc_expiry).toISOString().slice(0, 16) : ''}
+ onChange={(e) => setFormData({ ...formData, amc_expiry: e.target.value || null })}
+ style={{
+ width: '100%',
+ padding: '8px 12px',
+ border: '1px solid #E5E7EB',
+ borderRadius: '6px',
+ fontSize: '14px'
+ }}
+ />
+</div>
+ <div>
+ <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
+ AMC Status *
+</label>
+ <select
+ required
+ value={formData.amc_status}
+ onChange={(e) => setFormData({ ...formData, amc_status: e.target.value })}
+ style={{
+ width: '100%',
+ padding: '8px 12px',
+ border: '1px solid #E5E7EB',
+ borderRadius: '6px',
+ fontSize: '14px'
+ }}
+ >
+ <option value="ACTIVE">Active</option>
+ <option value="INACTIVE">Inactive</option>
+ <option value="EXPIRED">Expired</option>
+</select>
+</div>
+ {/* Machine Value - below AMC row */}
+ <div style={{ gridColumn: '1 / -1'}}>
  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
  Machine Value (₹) *
 </label>
@@ -704,45 +823,6 @@ export default function MIF() {
  borderRadius: '6px',
  fontSize: '14px',
  minHeight: '80px'
- }}
- />
-</div>
- <div>
- <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
- AMC Status *
-</label>
- <select
- required
- value={formData.amc_status}
- onChange={(e) => setFormData({ ...formData, amc_status: e.target.value })}
- style={{
- width: '100%',
- padding: '8px 12px',
- border: '1px solid #E5E7EB',
- borderRadius: '6px',
- fontSize: '14px'
- }}
- >
- <option value="ACTIVE">Active</option>
- <option value="INACTIVE">Inactive</option>
- <option value="EXPIRED">Expired</option>
-</select>
-</div>
- <div>
- <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px'}}>
- AMC Expiry Date {formData.amc_status === 'ACTIVE'? '*': ''}
-</label>
- <input
- type="datetime-local"
- required={formData.amc_status === 'ACTIVE'}
- value={formData.amc_expiry ? new Date(formData.amc_expiry).toISOString().slice(0, 16) : ''}
- onChange={(e) => setFormData({ ...formData, amc_expiry: e.target.value || null })}
- style={{
- width: '100%',
- padding: '8px 12px',
- border: '1px solid #E5E7EB',
- borderRadius: '6px',
- fontSize: '14px'
  }}
  />
 </div>

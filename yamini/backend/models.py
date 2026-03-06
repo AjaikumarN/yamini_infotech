@@ -317,6 +317,7 @@ class MIFRecord(Base):
     installation_date = Column(DateTime)
     location = Column(Text)
     machine_value = Column(Float)
+    warranty_months = Column(Integer, default=0)  # Warranty period in months
     amc_status = Column(String)
     amc_expiry = Column(DateTime)
     amc_reminder_sent_date = Column(DateTime)

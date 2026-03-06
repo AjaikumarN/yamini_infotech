@@ -52,6 +52,7 @@ from routers import geofencing          # Extracted geofencing/device monitoring
 from routers import whatsapp_logs       # WhatsApp notification audit logs
 from routers import staff_notifications  # Staff notification center + comm queue
 from routers import seo                  # SEO: dynamic sitemap & product meta
+from routers import customer_hub          # Customer Hub 360° view
 from services.daily_report import generate_daily_report
 
 # Global scheduler for daily reports
@@ -184,6 +185,7 @@ app.include_router(geofencing.router)                 # Geofencing & device moni
 app.include_router(whatsapp_logs.router)              # WhatsApp notification audit logs
 app.include_router(staff_notifications.router)        # Staff notification center + comm queue
 app.include_router(seo.router)                          # SEO: dynamic sitemap & product meta
+app.include_router(customer_hub.router)                  # Customer Hub 360° view
 
 # Mount static files for uploads
 upload_dir = Path("uploads")
