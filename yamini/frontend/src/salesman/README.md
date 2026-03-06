@@ -1,10 +1,10 @@
 # Salesman Portal - Clean Rebuild
 
-## 🎯 Overview
+## Overview
 
 Complete rebuild of the Salesman Portal with professional UI, clean architecture, and mobile-first design. Built from scratch using Receptionist Dashboard as design reference.
 
-## ✨ Key Features
+## Key Features
 
 ### 1. **No Forced Attendance Blocking**
 - Attendance marking is **completely optional**
@@ -14,23 +14,23 @@ Complete rebuild of the Salesman Portal with professional UI, clean architecture
 
 ### 2. **Professional Design System**
 - **Colors:**
-  - Primary Blue: `#2563EB`
-  - Hover Background: `#F1F5F9`
-  - Active Background: `#EFF6FF`
-  - Text: `#334155`
-  - Muted Text: `#64748B`
+ - Primary Blue: `#2563EB`
+ - Hover Background: `#F1F5F9`
+ - Active Background: `#EFF6FF`
+ - Text: `#334155`
+ - Muted Text: `#64748B`
 
 - **Sidebar:**
-  - Width: 260px (expanded), 72px (collapsed)
-  - Clean white background
-  - Smooth collapse/expand animation
-  - Active item highlighting with blue accent
+ - Width: 260px (expanded), 72px (collapsed)
+ - Clean white background
+ - Smooth collapse/expand animation
+ - Active item highlighting with blue accent
 
 - **Components:**
-  - Card-based layout throughout
-  - 12px border radius for all cards
-  - Subtle shadows and hover effects
-  - Consistent spacing (16px, 24px, 32px)
+ - Card-based layout throughout
+ - 12px border radius for all cards
+ - Subtle shadows and hover effects
+ - Consistent spacing (16px, 24px, 32px)
 
 ### 3. **Mobile-First Responsive Design**
 - Hamburger menu for mobile navigation
@@ -40,48 +40,48 @@ Complete rebuild of the Salesman Portal with professional UI, clean architecture
 - Full-width buttons for easy tapping
 
 ### 4. **Voice-to-Text Input**
-- 🎤 Microphone button on Calls page
+- Microphone button on Calls page
 - Browser-based speech recognition
 - Hands-free call note entry
 - Fallback message for unsupported browsers
 
 ### 5. **Complete Feature Set**
-- 📊 Dashboard with stats overview
-- 🕘 Optional attendance marking (photo + GPS)
-- 📋 Enquiries & leads management
-- 📞 Call logging with voice input
-- 🔁 Follow-up tracking
-- 🧾 Orders view (read-only)
-- 📝 Daily report submission
-- ⚖️ Discipline & compliance guidelines
+- Dashboard with stats overview
+- Optional attendance marking (photo + GPS)
+- Enquiries & leads management
+- Call logging with voice input
+- Follow-up tracking
+- Orders view (read-only)
+- Daily report submission
+- Discipline & compliance guidelines
 
-## 📁 Architecture
+## Architecture
 
 ```
 frontend/src/salesman/
-├── layout/
-│   └── SalesmanLayout.jsx          # Main layout with sidebar + topbar
-├── pages/
-│   ├── Dashboard.jsx               # Overview with stats
-│   ├── Attendance.jsx              # Optional attendance marking
-│   ├── Enquiries.jsx               # Leads management
-│   ├── Calls.jsx                   # Call logging + voice input
-│   ├── FollowUps.jsx               # Follow-up tracking
-│   ├── Orders.jsx                  # Orders view
-│   ├── DailyReport.jsx             # EOD report submission
-│   └── Compliance.jsx              # Compliance rules
-├── components/
-│   ├── StatCard.jsx                # Reusable stat card
-│   ├── EmptyState.jsx              # Empty state UI
-│   └── AttendanceCard.jsx          # Attendance reminder banner
-├── hooks/
-│   └── useSalesmanApi.js           # Centralized API functions
-├── styles/
-│   └── salesman.css                # Complete styling (460+ lines)
-└── index.js                        # Module exports
+ layout/
+ SalesmanLayout.jsx # Main layout with sidebar + topbar
+ pages/
+ Dashboard.jsx # Overview with stats
+ Attendance.jsx # Optional attendance marking
+ Enquiries.jsx # Leads management
+ Calls.jsx # Call logging + voice input
+ FollowUps.jsx # Follow-up tracking
+ Orders.jsx # Orders view
+ DailyReport.jsx # EOD report submission
+ Compliance.jsx # Compliance rules
+ components/
+ StatCard.jsx # Reusable stat card
+ EmptyState.jsx # Empty state UI
+ AttendanceCard.jsx # Attendance reminder banner
+ hooks/
+ useSalesmanApi.js # Centralized API functions
+ styles/
+ salesman.css # Complete styling (460+ lines)
+ index.js # Module exports
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Backend running on `http://localhost:8000`
@@ -104,16 +104,16 @@ npm run cypress:open
 npm run cypress:run
 ```
 
-## 📱 Mobile Testing
+## Mobile Testing
 
 Test on actual mobile viewport:
 ```javascript
 cy.viewport('iphone-x')
-cy.viewport(375, 667)  // iPhone SE
-cy.viewport(414, 896)  // iPhone 11 Pro Max
+cy.viewport(375, 667) // iPhone SE
+cy.viewport(414, 896) // iPhone 11 Pro Max
 ```
 
-## 🎨 Design Specifications
+## Design Specifications
 
 ### Sidebar
 - **Expanded:** 260px width
@@ -143,19 +143,19 @@ cy.viewport(414, 896)  // iPhone 11 Pro Max
 - **Full Width:** On mobile screens
 - **Spacing:** Increased padding for easier tapping
 
-## 🧪 Testing
+## Testing
 
 ### Test Coverage
-- ✅ Dashboard loads without blocking
-- ✅ All sidebar navigation works
-- ✅ Attendance is optional (not forced)
-- ✅ Voice input button visible on Calls page
-- ✅ Mobile hamburger menu functions
-- ✅ Empty states display correctly
-- ✅ All pages accessible without attendance
-- ✅ Color scheme matches specifications
-- ✅ Sidebar width correct (260px)
-- ✅ Touch targets adequate on mobile
+- Dashboard loads without blocking
+- All sidebar navigation works
+- Attendance is optional (not forced)
+- Voice input button visible on Calls page
+- Mobile hamburger menu functions
+- Empty states display correctly
+- All pages accessible without attendance
+- Color scheme matches specifications
+- Sidebar width correct (260px)
+- Touch targets adequate on mobile
 
 ### Running Tests
 ```bash
@@ -169,7 +169,7 @@ npx cypress run
 npx cypress run --spec "cypress/e2e/salesman-portal.cy.js"
 ```
 
-## 🔑 API Endpoints Used
+## API Endpoints Used
 
 All API calls are centralized in `hooks/useSalesmanApi.js`:
 
@@ -186,7 +186,7 @@ All API calls are centralized in `hooks/useSalesmanApi.js`:
 | `getTodayReport()` | `/api/sales/daily-report/:date` | GET | Check today's report |
 | `getDashboardStats()` | Multiple | GET | Aggregated dashboard stats |
 
-## 🎯 Design Philosophy
+## Design Philosophy
 
 ### 1. **Optional, Not Mandatory**
 Attendance is encouraged but never enforced. Soft yellow banners remind users without blocking access.
@@ -209,32 +209,32 @@ Enterprise-grade design matching modern SaaS applications. Clean white cards, su
 - Keyboard navigation support
 - Screen reader friendly
 
-## 📋 Menu Structure
+## Menu Structure
 
-1. 🏠 **Dashboard** - Overview with stats
-2. 🕘 **Attendance** - Optional marking
-3. 📋 **Enquiries & Leads** - Lead management
-4. 📞 **Calls** - Call logging + voice input
-5. 🔁 **Follow-Ups** - Pending follow-ups
-6. 🧾 **Orders** - Order view (read-only)
-7. 📝 **Daily Report** - EOD report
-8. ⚖️ **Discipline & Compliance** - Rules & guidelines
-9. 🚪 **Logout** - Sign out
+1. **Dashboard** - Overview with stats
+2. **Attendance** - Optional marking
+3. **Enquiries & Leads** - Lead management
+4. **Calls** - Call logging + voice input
+5. **Follow-Ups** - Pending follow-ups
+6. **Orders** - Order view (read-only)
+7. **Daily Report** - EOD report
+8. **Discipline & Compliance** - Rules & guidelines
+9. **Logout** - Sign out
 
-## 🐛 Known Issues
+## Known Issues
 
 None! This is a complete clean rebuild with no legacy code.
 
-## 🔄 Migration from Old UI
+## Refresh Migration from Old UI
 
 ### What Changed
-- ❌ Deleted entire `components/salesman/` directory
-- ✅ Created new `src/salesman/` structure
-- ❌ Removed forced attendance blocking (AttendanceGate)
-- ✅ Added professional design system
-- ✅ Added mobile responsiveness
-- ✅ Added voice input
-- ✅ Added Cypress tests
+- Deleted entire `components/salesman/` directory
+- Created new `src/salesman/` structure
+- Removed forced attendance blocking (AttendanceGate)
+- Added professional design system
+- Added mobile responsiveness
+- Added voice input
+- Added Cypress tests
 
 ### Breaking Changes
 - Old import paths no longer work
@@ -242,7 +242,7 @@ None! This is a complete clean rebuild with no legacy code.
 - `GatedSalesmanLayout` removed
 - New routes: `/salesman/*` instead of `/employee/salesman`
 
-## 📝 Code Style
+## Code Style
 
 ### Component Template
 ```javascript
@@ -250,11 +250,11 @@ import React, { useState, useEffect } from 'react';
 import '../styles/salesman.css';
 
 export default function ComponentName() {
-  return (
-    <div className="component-class">
-      {/* Content */}
-    </div>
-  );
+ return (
+ <div className="component-class">
+ {/* Content */}
+</div>
+ );
 }
 ```
 
@@ -266,7 +266,7 @@ export default function ComponentName() {
 - `.btn-*` - Button variants
 - `.form-*` - Form elements
 
-## 🎓 Learning Resources
+## Learning Resources
 
 - React Router v6 (nested routes with `<Outlet />`)
 - CSS Grid for responsive card layouts
@@ -274,7 +274,7 @@ export default function ComponentName() {
 - Web Speech API for voice input
 - Cypress for E2E testing
 
-## 🤝 Contributing
+## Contributing
 
 When adding new features:
 1. Follow existing component structure
@@ -283,11 +283,11 @@ When adding new features:
 4. Add Cypress tests
 5. Never block user access based on attendance
 
-## 📄 License
+## License
 
 Part of the Company Management System
 
-## 🆘 Support
+## Support
 
 For issues or questions:
 1. Check browser console for errors
@@ -298,6 +298,6 @@ For issues or questions:
 
 ---
 
-**Version:** 3.0.0 (Complete Rebuild)  
-**Last Updated:** January 2025  
-**Status:** ✅ Production Ready
+**Version:** 3.0.0 (Complete Rebuild) 
+**Last Updated:** January 2025 
+**Status:** Production Ready

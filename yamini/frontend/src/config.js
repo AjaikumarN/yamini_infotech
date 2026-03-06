@@ -19,12 +19,12 @@ export const DEFAULT_AVATAR = '/assets/default-avatar.svg';
  * @returns {string} Full URL to the file
  */
 export function getUploadUrl(path) {
-  if (!path) return '';
-  // Already a full URL — return as-is
-  if (path.startsWith('http://') || path.startsWith('https://')) return path;
-  // Relative paths starting with /uploads/ or /assets/ → prefix with API base
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${API_BASE_URL}${cleanPath}`;
+ if (!path) return '';
+ // Already a full URL — return as-is
+ if (path.startsWith('http://') || path.startsWith('https://')) return path;
+ // Relative paths starting with /uploads/ or /assets/ → prefix with API base
+ const cleanPath = path.startsWith('/') ? path : `/${path}`;
+ return `${API_BASE_URL}${cleanPath}`;
 }
 
 /**
@@ -33,11 +33,11 @@ export function getUploadUrl(path) {
  * @returns {string} Full URL to the photo, or default avatar
  */
 export function getEmployeePhotoUrl(photo) {
-  if (!photo) return '';
-  if (photo.startsWith('data:')) return photo;
-  if (photo.startsWith('http://') || photo.startsWith('https://')) return photo;
-  if (photo.startsWith('/')) return `${API_BASE_URL}${photo}`;
-  return `${API_BASE_URL}/uploads/employees/${photo}`;
+ if (!photo) return '';
+ if (photo.startsWith('data:')) return photo;
+ if (photo.startsWith('http://') || photo.startsWith('https://')) return photo;
+ if (photo.startsWith('/')) return `${API_BASE_URL}${photo}`;
+ return `${API_BASE_URL}/uploads/employees/${photo}`;
 }
 
 /**
@@ -46,6 +46,6 @@ export function getEmployeePhotoUrl(photo) {
  * @returns {string} Full URL to the photo, or default avatar path
  */
 export function getPhotoUrlWithFallback(photo) {
-  const url = getEmployeePhotoUrl(photo);
-  return url || DEFAULT_AVATAR;
+ const url = getEmployeePhotoUrl(photo);
+ return url || DEFAULT_AVATAR;
 }

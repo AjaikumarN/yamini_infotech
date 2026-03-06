@@ -6,15 +6,15 @@
  */
 
 export const LONG_TAIL_PAGES = [
-  // ─── MICRO-INTENT PAGES ───
-  {
-    slug: 'office-printer-for-school-tirunelveli',
-    type: 'micro-intent',
-    title: 'Office Printer for Schools in Tirunelveli — Best Deals | Yamini Infotech',
-    h1: 'Best Office Printer for Schools & Colleges in Tirunelveli',
-    description: 'Find the best office printer for schools and educational institutions in Tirunelveli. Low-cost printers with bulk printing, duplex, and network features. Call 98421 22952.',
-    keywords: 'office printer for school Tirunelveli, school printer, college copier Tirunelveli, education printer, bulk printer for school, Yamini Infotech school printer',
-    content: `### Why Schools Need the Right Printer
+ // MICRO-INTENT PAGES 
+ {
+ slug: 'office-printer-for-school-tirunelveli',
+ type: 'micro-intent',
+ title: 'Office Printer for Schools in Tirunelveli — Best Deals | Yamini Infotech',
+ h1: 'Best Office Printer for Schools & Colleges in Tirunelveli',
+ description: 'Find the best office printer for schools and educational institutions in Tirunelveli. Low-cost printers with bulk printing, duplex, and network features. Call 98421 22952.',
+ keywords: 'office printer for school Tirunelveli, school printer, college copier Tirunelveli, education printer, bulk printer for school, Yamini Infotech school printer',
+ content: `### Why Schools Need the Right Printer
 
 Schools and colleges in Tirunelveli print **thousands of pages every month** — exam papers, worksheets, circulars, report cards, and administrative documents. Choosing the wrong printer means high toner costs, frequent breakdowns, and wasted time.
 
@@ -70,21 +70,21 @@ Government Higher Secondary Schools, St. Xavier's College, Sadakathullah Appa Co
 ### Get a School Printer Quote
 
 Call **98421 22952** or WhatsApp us for a customized quote based on your monthly volume and budget. We offer special educational institution pricing with extended warranty.`,
-    popularModels: ['Kyocera ECOSYS M2040dn', 'Canon imageRUNNER 2625i', 'Kyocera P2235dn', 'Konica Minolta bizhub 225i'],
-    faqs: [
-      { question: 'What is the best printer for a school in Tirunelveli?', answer: 'For most schools in Tirunelveli, the Kyocera ECOSYS M2040dn is the best choice — it prints 40 pages/minute, costs only ₹0.40 per page, and the drum lasts 100,000+ pages. Yamini Infotech offers it with free installation.' },
-      { question: 'Can schools rent printers instead of buying?', answer: 'Yes, Yamini Infotech offers printer rental for schools starting from ₹2,500/month. Rental includes toner and maintenance, making it a zero-headache option for educational institutions.' },
-      { question: 'Do you provide printer AMC for schools in Tirunelveli?', answer: 'Yes, we provide school-specific AMC plans from ₹6,000/year. Plans cover unlimited service visits, spare parts, and priority response during exam seasons.' },
-    ],
-  },
-  {
-    slug: 'a3-copier-machine-tirunelveli',
-    type: 'micro-intent',
-    title: 'A3 Copier Machine in Tirunelveli — Sales & Rental | Yamini Infotech',
-    h1: 'A3 Copier Machine Sales & Rental in Tirunelveli',
-    description: 'Buy or rent A3 copier machines in Tirunelveli. Kyocera, Canon, Konica Minolta A3 copiers for offices, print shops, and institutions. Free demo. Call 98421 22952.',
-    keywords: 'A3 copier machine Tirunelveli, A3 printer Tirunelveli, A3 copier price, A3 copier rental, large format copier, Yamini Infotech A3 copier',
-    content: `### What is an A3 Copier Machine?
+ popularModels: ['Kyocera ECOSYS M2040dn', 'Canon imageRUNNER 2625i', 'Kyocera P2235dn', 'Konica Minolta bizhub 225i'],
+ faqs: [
+ { question: 'What is the best printer for a school in Tirunelveli?', answer: 'For most schools in Tirunelveli, the Kyocera ECOSYS M2040dn is the best choice — it prints 40 pages/minute, costs only ₹0.40 per page, and the drum lasts 100,000+ pages. Yamini Infotech offers it with free installation.'},
+ { question: 'Can schools rent printers instead of buying?', answer: 'Yes, Yamini Infotech offers printer rental for schools starting from ₹2,500/month. Rental includes toner and maintenance, making it a zero-headache option for educational institutions.'},
+ { question: 'Do you provide printer AMC for schools in Tirunelveli?', answer: 'Yes, we provide school-specific AMC plans from ₹6,000/year. Plans cover unlimited service visits, spare parts, and priority response during exam seasons.'},
+ ],
+ },
+ {
+ slug: 'a3-copier-machine-tirunelveli',
+ type: 'micro-intent',
+ title: 'A3 Copier Machine in Tirunelveli — Sales & Rental | Yamini Infotech',
+ h1: 'A3 Copier Machine Sales & Rental in Tirunelveli',
+ description: 'Buy or rent A3 copier machines in Tirunelveli. Kyocera, Canon, Konica Minolta A3 copiers for offices, print shops, and institutions. Free demo. Call 98421 22952.',
+ keywords: 'A3 copier machine Tirunelveli, A3 printer Tirunelveli, A3 copier price, A3 copier rental, large format copier, Yamini Infotech A3 copier',
+ content: `### What is an A3 Copier Machine?
 
 An A3 copier prints on paper sizes up to **A3 (297 × 420 mm)** — twice the size of regular A4 paper. These machines are essential for businesses that print ledger-size reports, architectural drawings, certificates, banners, and wide-format documents.
 
@@ -143,22 +143,22 @@ Every A3 copier from Yamini Infotech includes:
 ### Get an A3 Copier Demo
 
 Call **98421 22952** to schedule a free demo at your office. We'll bring the machine, show you the output quality, and provide a customized quote based on your volume needs.`,
-    popularModels: ['Kyocera TASKalfa 2554ci', 'Canon imageRUNNER 2625i', 'Konica Minolta bizhub C250i', 'Ricoh IM C2000'],
-    faqs: [
-      { question: 'What is the price of an A3 copier in Tirunelveli?', answer: 'A3 copier prices at Yamini Infotech Tirunelveli start from ₹90,000 for B&W models (Canon imageRUNNER 2625i) to ₹3,50,000 for high-speed color machines (Kyocera TASKalfa 3554ci). Call 98421 22952 for current pricing.' },
-      { question: 'Can I rent an A3 copier in Tirunelveli?', answer: 'Yes, Yamini Infotech offers A3 copier rental starting from ₹4,000/month for B&W and ₹7,000/month for color. Rental includes toner, maintenance, and free support.' },
-      { question: 'Which A3 copier is best for a print shop?', answer: 'For print shops in Tirunelveli, we recommend the Kyocera TASKalfa 3554ci (35 ppm, color) or Canon imageRUNNER C3226. Both handle high volumes and multiple paper sizes reliably.' },
-      { question: 'Does Yamini Infotech offer free A3 copier demo?', answer: 'Yes, we provide free on-site demo for all A3 copier models. Our team will bring the machine to your office, demonstrate features, and provide a volume-based quote.' },
-    ],
-  },
-  {
-    slug: 'color-photocopier-rental-tirunelveli',
-    type: 'micro-intent',
-    title: 'Color Photocopier Rental in Tirunelveli — Monthly Plans | Yamini Infotech',
-    h1: 'Color Photocopier Rental in Tirunelveli',
-    description: 'Rent color photocopiers in Tirunelveli from ₹5,000/month. Kyocera, Canon, Konica Minolta color copiers with toner and maintenance included. Call 98421 22952.',
-    keywords: 'color photocopier rental Tirunelveli, color copier rent, color printer rental, monthly copier rental, Yamini Infotech color copier, color xerox machine rent',
-    content: `### Why Rent a Color Photocopier?
+ popularModels: ['Kyocera TASKalfa 2554ci', 'Canon imageRUNNER 2625i', 'Konica Minolta bizhub C250i', 'Ricoh IM C2000'],
+ faqs: [
+ { question: 'What is the price of an A3 copier in Tirunelveli?', answer: 'A3 copier prices at Yamini Infotech Tirunelveli start from ₹90,000 for B&W models (Canon imageRUNNER 2625i) to ₹3,50,000 for high-speed color machines (Kyocera TASKalfa 3554ci). Call 98421 22952 for current pricing.'},
+ { question: 'Can I rent an A3 copier in Tirunelveli?', answer: 'Yes, Yamini Infotech offers A3 copier rental starting from ₹4,000/month for B&W and ₹7,000/month for color. Rental includes toner, maintenance, and free support.'},
+ { question: 'Which A3 copier is best for a print shop?', answer: 'For print shops in Tirunelveli, we recommend the Kyocera TASKalfa 3554ci (35 ppm, color) or Canon imageRUNNER C3226. Both handle high volumes and multiple paper sizes reliably.'},
+ { question: 'Does Yamini Infotech offer free A3 copier demo?', answer: 'Yes, we provide free on-site demo for all A3 copier models. Our team will bring the machine to your office, demonstrate features, and provide a volume-based quote.'},
+ ],
+ },
+ {
+ slug: 'color-photocopier-rental-tirunelveli',
+ type: 'micro-intent',
+ title: 'Color Photocopier Rental in Tirunelveli — Monthly Plans | Yamini Infotech',
+ h1: 'Color Photocopier Rental in Tirunelveli',
+ description: 'Rent color photocopiers in Tirunelveli from ₹5,000/month. Kyocera, Canon, Konica Minolta color copiers with toner and maintenance included. Call 98421 22952.',
+ keywords: 'color photocopier rental Tirunelveli, color copier rent, color printer rental, monthly copier rental, Yamini Infotech color copier, color xerox machine rent',
+ content: `### Why Rent a Color Photocopier?
 
 Buying a color copier costs **₹1.5–3.5 lakh upfront**. For many businesses in Tirunelveli, that's a significant investment — especially when color printing may only be 20-30% of total volume. Renting gives you the same capability with **zero capital investment**.
 
@@ -222,22 +222,22 @@ For a Kyocera TASKalfa 2554ci:
 ### Service Coverage
 
 We serve all areas within Tirunelveli corporation and nearby towns: Palayamkottai, Melapalayam, Thatchanallur, Pettai, Vannarapettai, Ambasamudram, Tenkasi, and Sankarankovil.`,
-    popularModels: ['Kyocera TASKalfa 2554ci', 'Kyocera TASKalfa 3554ci', 'Ricoh IM C2000', 'Canon iR-ADV C3530'],
-    faqs: [
-      { question: 'How much does color copier rental cost in Tirunelveli?', answer: 'Color copier rental at Yamini Infotech Tirunelveli starts from ₹5,000/month for a 20 ppm machine with 1,000 color and 3,000 B&W pages included. Higher plans range up to ₹12,000/month for enterprise-grade machines.' },
-      { question: 'Is toner included in the color copier rental?', answer: 'Yes, all color and black toner cartridges are included in every rental plan. We replace toner as needed at no extra cost during the rental period.' },
-      { question: 'Can I upgrade my rental copier later?', answer: 'Yes, you can upgrade to a faster or more capable machine after 12 months at no penalty. We deliver the new machine and remove the old one seamlessly.' },
-      { question: 'What is the minimum rental period?', answer: 'The minimum rental period is 12 months. After the minimum period, you can continue month-to-month with 30-day cancellation notice.' },
-    ],
-  },
-  {
-    slug: 'printer-repair-near-me-tirunelveli',
-    type: 'micro-intent',
-    title: 'Printer Repair Near Me in Tirunelveli — Same Day Service | Yamini Infotech',
-    h1: 'Printer Repair Near Me — Tirunelveli & Surrounding Areas',
-    description: 'Fast printer repair service near you in Tirunelveli. Same-day repair for all printer brands — Kyocera, Canon, HP, Epson, Ricoh. Onsite service. Call 98421 22952.',
-    keywords: 'printer repair near me Tirunelveli, printer service near me, copier repair near me, xerox machine repair Tirunelveli, HP printer repair, Canon printer repair, Epson repair',
-    content: `### Looking for Printer Repair Near You in Tirunelveli?
+ popularModels: ['Kyocera TASKalfa 2554ci', 'Kyocera TASKalfa 3554ci', 'Ricoh IM C2000', 'Canon iR-ADV C3530'],
+ faqs: [
+ { question: 'How much does color copier rental cost in Tirunelveli?', answer: 'Color copier rental at Yamini Infotech Tirunelveli starts from ₹5,000/month for a 20 ppm machine with 1,000 color and 3,000 B&W pages included. Higher plans range up to ₹12,000/month for enterprise-grade machines.'},
+ { question: 'Is toner included in the color copier rental?', answer: 'Yes, all color and black toner cartridges are included in every rental plan. We replace toner as needed at no extra cost during the rental period.'},
+ { question: 'Can I upgrade my rental copier later?', answer: 'Yes, you can upgrade to a faster or more capable machine after 12 months at no penalty. We deliver the new machine and remove the old one seamlessly.'},
+ { question: 'What is the minimum rental period?', answer: 'The minimum rental period is 12 months. After the minimum period, you can continue month-to-month with 30-day cancellation notice.'},
+ ],
+ },
+ {
+ slug: 'printer-repair-near-me-tirunelveli',
+ type: 'micro-intent',
+ title: 'Printer Repair Near Me in Tirunelveli — Same Day Service | Yamini Infotech',
+ h1: 'Printer Repair Near Me — Tirunelveli & Surrounding Areas',
+ description: 'Fast printer repair service near you in Tirunelveli. Same-day repair for all printer brands — Kyocera, Canon, HP, Epson, Ricoh. Onsite service. Call 98421 22952.',
+ keywords: 'printer repair near me Tirunelveli, printer service near me, copier repair near me, xerox machine repair Tirunelveli, HP printer repair, Canon printer repair, Epson repair',
+ content: `### Looking for Printer Repair Near You in Tirunelveli?
 
 When your printer breaks down, you need it fixed **fast**. Yamini Infotech provides **same-day printer repair** across Tirunelveli with a team of certified engineers who carry common spare parts for on-the-spot fixes.
 
@@ -268,15 +268,15 @@ We provide **on-site printer repair** (we come to you) across all these areas:
 
 | Brand | Printers | Copiers | Scanners |
 |-------|----------|---------|----------|
-| Kyocera | ✅ | ✅ | ✅ |
-| Canon | ✅ | ✅ | ✅ |
-| Konica Minolta | ✅ | ✅ | ✅ |
-| HP | ✅ | ✅ | ✅ |
-| Epson | ✅ | — | ✅ |
-| Brother | ✅ | ✅ | ✅ |
-| Ricoh | ✅ | ✅ | ✅ |
-| Samsung | ✅ | — | — |
-| Sharp | — | ✅ | — |
+| Kyocera | | | |
+| Canon | | | |
+| Konica Minolta | | | |
+| HP | | | |
+| Epson | | — | |
+| Brother | | | |
+| Ricoh | | | |
+| Samsung | | — | — |
+| Sharp | — | | — |
 
 ### Common Problems We Fix
 
@@ -330,24 +330,24 @@ Business can't wait? We offer **priority emergency repair** for critical situati
 - Temporary replacement machine available while yours is being fixed
 
 Call **98421 22952** now for immediate printer repair service.`,
-    popularModels: [],
-    faqs: [
-      { question: 'How fast can you repair my printer in Tirunelveli?', answer: 'For Tirunelveli corporation areas, our engineer reaches within 2–4 hours of your call. Most printer repairs are completed same-day. Emergency priority service available within 1–2 hours.' },
-      { question: 'How much does printer repair cost in Tirunelveli?', answer: 'Service visit charge is ₹500 (waived if repair is done). Common repairs range from ₹500 (paper jam) to ₹8,000 (motherboard repair). We provide a quote before starting any work.' },
-      { question: 'Do you repair HP and Epson printers?', answer: 'Yes, Yamini Infotech repairs all major brands including HP, Epson, Canon, Kyocera, Ricoh, Brother, Samsung, and Konica Minolta. We carry common spare parts for all brands.' },
-      { question: 'Is there a warranty on printer repair?', answer: 'Yes, all repairs by Yamini Infotech carry a 30-day warranty on parts and labour. If the same issue recurs within 30 days, we fix it free of charge.' },
-    ],
-  },
+ popularModels: [],
+ faqs: [
+ { question: 'How fast can you repair my printer in Tirunelveli?', answer: 'For Tirunelveli corporation areas, our engineer reaches within 2–4 hours of your call. Most printer repairs are completed same-day. Emergency priority service available within 1–2 hours.'},
+ { question: 'How much does printer repair cost in Tirunelveli?', answer: 'Service visit charge is ₹500 (waived if repair is done). Common repairs range from ₹500 (paper jam) to ₹8,000 (motherboard repair). We provide a quote before starting any work.'},
+ { question: 'Do you repair HP and Epson printers?', answer: 'Yes, Yamini Infotech repairs all major brands including HP, Epson, Canon, Kyocera, Ricoh, Brother, Samsung, and Konica Minolta. We carry common spare parts for all brands.'},
+ { question: 'Is there a warranty on printer repair?', answer: 'Yes, all repairs by Yamini Infotech carry a 30-day warranty on parts and labour. If the same issue recurs within 30 days, we fix it free of charge.'},
+ ],
+ },
 
-  // ─── CASE STUDY PAGES ───
-  {
-    slug: 'kyocera-installation-school-tirunelveli',
-    type: 'case-study',
-    title: 'Kyocera Copier Installation at School in Tirunelveli — Case Study | Yamini Infotech',
-    h1: 'Case Study: Kyocera Copier Installation at Educational Institution in Tirunelveli',
-    description: 'How Yamini Infotech installed Kyocera ECOSYS copiers at a leading school in Tirunelveli, reducing printing costs by 45% and eliminating paper jams. Read the full case study.',
-    keywords: 'Kyocera installation school Tirunelveli, copier case study, school printer installation, Kyocera ECOSYS school, Yamini Infotech case study, reduce printing cost school',
-    content: `### The Challenge
+ // CASE STUDY PAGES 
+ {
+ slug: 'kyocera-installation-school-tirunelveli',
+ type: 'case-study',
+ title: 'Kyocera Copier Installation at School in Tirunelveli — Case Study | Yamini Infotech',
+ h1: 'Case Study: Kyocera Copier Installation at Educational Institution in Tirunelveli',
+ description: 'How Yamini Infotech installed Kyocera ECOSYS copiers at a leading school in Tirunelveli, reducing printing costs by 45% and eliminating paper jams. Read the full case study.',
+ keywords: 'Kyocera installation school Tirunelveli, copier case study, school printer installation, Kyocera ECOSYS school, Yamini Infotech case study, reduce printing cost school',
+ content: `### The Challenge
 
 A leading CBSE school in Palayamkottai, Tirunelveli with **1,500+ students** was facing serious printing problems:
 
@@ -410,7 +410,7 @@ We recommended replacing all 3 aging Canon machines with **2 Kyocera ECOSYS M204
 
 ### Principal's Feedback
 
-> "We were spending more on printer repairs than on some teachers' salaries. Yamini Infotech's Kyocera solution has saved us over ₹60,000 in the first year alone. The machines run non-stop during exams without a single jam. I wish we had switched earlier."
+> "We were spending more on printer repairs than on some teachers'salaries. Yamini Infotech's Kyocera solution has saved us over ₹60,000 in the first year alone. The machines run non-stop during exams without a single jam. I wish we had switched earlier."
 
 ### Key Takeaway
 
@@ -421,21 +421,21 @@ Schools don't need expensive machines — they need the **right machine** with *
 If your school or college in Tirunelveli is struggling with printer problems, Yamini Infotech can conduct a **free assessment** and recommend the right solution.
 
 Call **98421 22952** or WhatsApp us for a school printer consultation.`,
-    popularModels: ['Kyocera ECOSYS M2040dn', 'Kyocera ECOSYS P2235dn'],
-    faqs: [
-      { question: 'How much did the school save after switching to Kyocera?', answer: 'The school saved 57% on annual printing costs — from ₹1,20,000+/year to approximately ₹52,000/year. This includes toner, maintenance, and reduced paper wastage.' },
-      { question: 'Is Kyocera ECOSYS M2040dn suitable for schools?', answer: 'Yes, the Kyocera ECOSYS M2040dn is ideal for schools. It prints 40 pages/minute, has a 100,000-page drum life, automatic duplex, and network printing. It handles exam-season peak loads without breakdowns.' },
-      { question: 'Does Yamini Infotech offer school printer packages?', answer: 'Yes, we offer special educational institution packages starting from ₹18,000 with free installation, network setup, staff training, and AMC options. Call 98421 22952 for a customized school quote.' },
-    ],
-  },
-  {
-    slug: 'printer-rental-for-hospital-tirunelveli',
-    type: 'case-study',
-    title: 'Printer Rental for Hospital in Tirunelveli — Case Study | Yamini Infotech',
-    h1: 'Case Study: Printer Rental Solution for Hospital in Tirunelveli',
-    description: 'How Yamini Infotech provided a multiprinter rental solution to a 200-bed hospital in Tirunelveli, covering OPD, lab, pharmacy, and admin with zero downtime. Read the case study.',
-    keywords: 'printer rental hospital Tirunelveli, hospital printer solution, medical printer, OPD printer, copier rental hospital, Yamini Infotech hospital case study',
-    content: `### The Challenge
+ popularModels: ['Kyocera ECOSYS M2040dn', 'Kyocera ECOSYS P2235dn'],
+ faqs: [
+ { question: 'How much did the school save after switching to Kyocera?', answer: 'The school saved 57% on annual printing costs — from ₹1,20,000+/year to approximately ₹52,000/year. This includes toner, maintenance, and reduced paper wastage.'},
+ { question: 'Is Kyocera ECOSYS M2040dn suitable for schools?', answer: 'Yes, the Kyocera ECOSYS M2040dn is ideal for schools. It prints 40 pages/minute, has a 100,000-page drum life, automatic duplex, and network printing. It handles exam-season peak loads without breakdowns.'},
+ { question: 'Does Yamini Infotech offer school printer packages?', answer: 'Yes, we offer special educational institution packages starting from ₹18,000 with free installation, network setup, staff training, and AMC options. Call 98421 22952 for a customized school quote.'},
+ ],
+ },
+ {
+ slug: 'printer-rental-for-hospital-tirunelveli',
+ type: 'case-study',
+ title: 'Printer Rental for Hospital in Tirunelveli — Case Study | Yamini Infotech',
+ h1: 'Case Study: Printer Rental Solution for Hospital in Tirunelveli',
+ description: 'How Yamini Infotech provided a multiprinter rental solution to a 200-bed hospital in Tirunelveli, covering OPD, lab, pharmacy, and admin with zero downtime. Read the case study.',
+ keywords: 'printer rental hospital Tirunelveli, hospital printer solution, medical printer, OPD printer, copier rental hospital, Yamini Infotech hospital case study',
+ content: `### The Challenge
 
 A **200-bed multi-speciality hospital** in Tirunelveli was managing its printing needs with a mix of consumer-grade printers bought ad-hoc over the years:
 
@@ -532,20 +532,20 @@ Instead of buying 6 new machines outright (cost: ~₹4,00,000), we proposed a **
 If your hospital, clinic, or diagnostic center in Tirunelveli needs a reliable printing solution, Yamini Infotech can design a custom managed rental plan.
 
 Call **98421 22952** or WhatsApp us for a **free hospital printing assessment**.`,
-    popularModels: ['Kyocera ECOSYS P2235dn', 'Kyocera ECOSYS M2040dn', 'Kyocera TASKalfa 2554ci'],
-    faqs: [
-      { question: 'How much does hospital printer rental cost?', answer: 'Hospital printer rental from Yamini Infotech starts from ₹18,000/month for a 6-machine setup covering OPD, pharmacy, lab, and admin. Plans are customized based on departments and volume.' },
-      { question: 'Is there guaranteed uptime for hospital printers?', answer: 'Yes, our hospital rental plans include a 4-hour SLA guarantee. If any machine has an issue, our engineer responds within 4 hours. We also keep a backup machine ready.' },
-      { question: 'Can you provide printers for a small clinic?', answer: 'Yes, we offer printer rental for clinics starting from ₹3,000/month for a single Kyocera ECOSYS printer. The plan includes toner, maintenance, and same-day support.' },
-      { question: 'Do you provide color printers for hospitals?', answer: 'Yes, our hospital plans include color printers for admin and billing departments. The Kyocera TASKalfa 2554ci handles color and B&W printing, scanning, and copying in A3 and A4 sizes.' },
-    ],
-  },
+ popularModels: ['Kyocera ECOSYS P2235dn', 'Kyocera ECOSYS M2040dn', 'Kyocera TASKalfa 2554ci'],
+ faqs: [
+ { question: 'How much does hospital printer rental cost?', answer: 'Hospital printer rental from Yamini Infotech starts from ₹18,000/month for a 6-machine setup covering OPD, pharmacy, lab, and admin. Plans are customized based on departments and volume.'},
+ { question: 'Is there guaranteed uptime for hospital printers?', answer: 'Yes, our hospital rental plans include a 4-hour SLA guarantee. If any machine has an issue, our engineer responds within 4 hours. We also keep a backup machine ready.'},
+ { question: 'Can you provide printers for a small clinic?', answer: 'Yes, we offer printer rental for clinics starting from ₹3,000/month for a single Kyocera ECOSYS printer. The plan includes toner, maintenance, and same-day support.'},
+ { question: 'Do you provide color printers for hospitals?', answer: 'Yes, our hospital plans include color printers for admin and billing departments. The Kyocera TASKalfa 2554ci handles color and B&W printing, scanning, and copying in A3 and A4 sizes.'},
+ ],
+ },
 ];
 
 export function getLongTailPage(slug) {
-  return LONG_TAIL_PAGES.find(p => p.slug === slug) || null;
+ return LONG_TAIL_PAGES.find(p => p.slug === slug) || null;
 }
 
 export function getAllLongTailPages() {
-  return LONG_TAIL_PAGES;
+ return LONG_TAIL_PAGES;
 }

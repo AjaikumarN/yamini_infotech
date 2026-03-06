@@ -21,40 +21,40 @@ const CACHE_TTL = 30000; // 30 seconds
  * @returns {Promise<Object>} Call stats object
  */
 export async function getCallStats() {
-  const now = Date.now();
-  
-  // Return cached data if still valid
-  if (statsCache && (now - statsCacheTime) < CACHE_TTL) {
-    return statsCache;
-  }
-  
-  try {
-    const stats = await apiRequest('/api/calls/stats');
-    statsCache = {
-      todayCalls: stats.today_calls || 0,
-      dailyTarget: stats.daily_target || 40,
-      completionPercentage: stats.completion_percentage || 0,
-      notInterestedCount: stats.not_interested_count || 0,
-      interestedBuyLaterCount: stats.interested_buy_later_count || 0,
-      purchasedCount: stats.purchased_count || 0,
-      pendingMonthlyFollowups: stats.pending_monthly_followups || 0,
-      todaysFollowups: stats.todays_followups || 0
-    };
-    statsCacheTime = now;
-    return statsCache;
-  } catch (error) {
-    console.error('Failed to fetch call stats:', error);
-    return {
-      todayCalls: 0,
-      dailyTarget: 40,
-      completionPercentage: 0,
-      notInterestedCount: 0,
-      interestedBuyLaterCount: 0,
-      purchasedCount: 0,
-      pendingMonthlyFollowups: 0,
-      todaysFollowups: 0
-    };
-  }
+ const now = Date.now();
+ 
+ // Return cached data if still valid
+ if (statsCache && (now - statsCacheTime) < CACHE_TTL) {
+ return statsCache;
+ }
+ 
+ try {
+ const stats = await apiRequest('/api/calls/stats');
+ statsCache = {
+ todayCalls: stats.today_calls || 0,
+ dailyTarget: stats.daily_target || 40,
+ completionPercentage: stats.completion_percentage || 0,
+ notInterestedCount: stats.not_interested_count || 0,
+ interestedBuyLaterCount: stats.interested_buy_later_count || 0,
+ purchasedCount: stats.purchased_count || 0,
+ pendingMonthlyFollowups: stats.pending_monthly_followups || 0,
+ todaysFollowups: stats.todays_followups || 0
+ };
+ statsCacheTime = now;
+ return statsCache;
+ } catch (error) {
+ console.error('Failed to fetch call stats:', error);
+ return {
+ todayCalls: 0,
+ dailyTarget: 40,
+ completionPercentage: 0,
+ notInterestedCount: 0,
+ interestedBuyLaterCount: 0,
+ purchasedCount: 0,
+ pendingMonthlyFollowups: 0,
+ todaysFollowups: 0
+ };
+ }
 }
 
 /**
@@ -63,13 +63,13 @@ export async function getCallStats() {
  * @returns {Promise<Array>} Array of today's call records
  */
 export async function getTodaysCalls() {
-  try {
-    const calls = await apiRequest('/api/calls/today');
-    return Array.isArray(calls) ? calls : [];
-  } catch (error) {
-    console.error('Failed to fetch today calls:', error);
-    return [];
-  }
+ try {
+ const calls = await apiRequest('/api/calls/today');
+ return Array.isArray(calls) ? calls : [];
+ } catch (error) {
+ console.error('Failed to fetch today calls:', error);
+ return [];
+ }
 }
 
 /**
@@ -78,13 +78,13 @@ export async function getTodaysCalls() {
  * @returns {Promise<Array>} Array of all call records
  */
 export async function getAllCallHistory(limit = 100) {
-  try {
-    const calls = await apiRequest(`/api/calls/history?limit=${limit}`);
-    return Array.isArray(calls) ? calls : [];
-  } catch (error) {
-    console.error('Failed to fetch call history:', error);
-    return [];
-  }
+ try {
+ const calls = await apiRequest(`/api/calls/history?limit=${limit}`);
+ return Array.isArray(calls) ? calls : [];
+ } catch (error) {
+ console.error('Failed to fetch call history:', error);
+ return [];
+ }
 }
 
 /**
@@ -92,13 +92,13 @@ export async function getAllCallHistory(limit = 100) {
  * @returns {Promise<Array>} Array of follow-up records
  */
 export async function getMonthlyFollowups() {
-  try {
-    const followups = await apiRequest('/api/calls/monthly-followups');
-    return Array.isArray(followups) ? followups : [];
-  } catch (error) {
-    console.error('Failed to fetch monthly followups:', error);
-    return [];
-  }
+ try {
+ const followups = await apiRequest('/api/calls/monthly-followups');
+ return Array.isArray(followups) ? followups : [];
+ } catch (error) {
+ console.error('Failed to fetch monthly followups:', error);
+ return [];
+ }
 }
 
 /**
@@ -106,13 +106,13 @@ export async function getMonthlyFollowups() {
  * @returns {Promise<Array>} Array of follow-ups due today
  */
 export async function getTodaysFollowups() {
-  try {
-    const followups = await apiRequest('/api/calls/monthly-followups/today');
-    return Array.isArray(followups) ? followups : [];
-  } catch (error) {
-    console.error('Failed to fetch today followups:', error);
-    return [];
-  }
+ try {
+ const followups = await apiRequest('/api/calls/monthly-followups/today');
+ return Array.isArray(followups) ? followups : [];
+ } catch (error) {
+ console.error('Failed to fetch today followups:', error);
+ return [];
+ }
 }
 
 /**
@@ -121,15 +121,15 @@ export async function getTodaysFollowups() {
  * @returns {Promise<Object>} Created call record
  */
 export async function logCall(callData) {
-  // Invalidate cache
-  statsCache = null;
-  
-  const response = await apiRequest('/api/calls/', {
-    method: 'POST',
-    body: JSON.stringify(callData)
-  });
-  
-  return response;
+ // Invalidate cache
+ statsCache = null;
+ 
+ const response = await apiRequest('/api/calls/', {
+ method: 'POST',
+ body: JSON.stringify(callData)
+ });
+ 
+ return response;
 }
 
 /**
@@ -138,23 +138,23 @@ export async function logCall(callData) {
  * @returns {Promise<Object>} Created follow-up record
  */
 export async function submitFollowup(followupData) {
-  // Invalidate cache
-  statsCache = null;
-  
-  const response = await apiRequest('/api/calls/monthly-followup', {
-    method: 'POST',
-    body: JSON.stringify(followupData)
-  });
-  
-  return response;
+ // Invalidate cache
+ statsCache = null;
+ 
+ const response = await apiRequest('/api/calls/monthly-followup', {
+ method: 'POST',
+ body: JSON.stringify(followupData)
+ });
+ 
+ return response;
 }
 
 /**
  * Invalidate the stats cache (call after any data modification)
  */
 export function invalidateCache() {
-  statsCache = null;
-  statsCacheTime = 0;
+ statsCache = null;
+ statsCacheTime = 0;
 }
 
 /**
@@ -163,14 +163,14 @@ export function invalidateCache() {
  * @returns {boolean} True if call is from today
  */
 export function isCallFromToday(call) {
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  
-  const callDate = call.call_date || call.created_at;
-  if (!callDate) return false;
-  
-  const callDateStr = callDate.split('T')[0];
-  return callDateStr === todayStr;
+ const today = new Date();
+ const todayStr = today.toISOString().split('T')[0];
+ 
+ const callDate = call.call_date || call.created_at;
+ if (!callDate) return false;
+ 
+ const callDateStr = callDate.split('T')[0];
+ return callDateStr === todayStr;
 }
 
 /**
@@ -180,21 +180,21 @@ export function isCallFromToday(call) {
  * @returns {Array} Filtered calls from today (excluding follow-ups)
  */
 export function filterTodaysCalls(calls) {
-  if (!Array.isArray(calls)) return [];
-  
-  return calls.filter(call => 
-    isCallFromToday(call) && !call.is_followup_call
-  );
+ if (!Array.isArray(calls)) return [];
+ 
+ return calls.filter(call => 
+ isCallFromToday(call) && !call.is_followup_call
+ );
 }
 
 export default {
-  getCallStats,
-  getTodaysCalls,
-  getMonthlyFollowups,
-  getTodaysFollowups,
-  logCall,
-  submitFollowup,
-  invalidateCache,
-  isCallFromToday,
-  filterTodaysCalls
+ getCallStats,
+ getTodaysCalls,
+ getMonthlyFollowups,
+ getTodaysFollowups,
+ logCall,
+ submitFollowup,
+ invalidateCache,
+ isCallFromToday,
+ filterTodaysCalls
 };

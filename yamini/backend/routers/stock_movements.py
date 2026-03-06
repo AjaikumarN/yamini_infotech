@@ -44,6 +44,7 @@ class StockMovementCreate(BaseModel):
     item_name: str
     quantity: int
     unit_cost: float = 0.0
+    total_cost: float = 0.0
     reference_type: Optional[str] = None
     reference_id: Optional[str] = None
     engineer_id: Optional[int] = None
@@ -79,6 +80,8 @@ class StockMovementResponse(BaseModel):
     approved_by_name: Optional[str] = None
     approved_at: Optional[datetime] = None
     payment_status: str
+    paid_amount: float = 0.0
+    total_cost: float = 0.0
     invoice_reference: Optional[str]
     payment_updated_by: Optional[int] = None
     payment_updated_at: Optional[datetime] = None
@@ -99,6 +102,7 @@ class ApprovalUpdate(BaseModel):
 
 class PaymentUpdate(BaseModel):
     payment_status: str
+    amount: Optional[float] = None  # Amount being paid (for partial payments)
 
 
 class DeliveryStatusUpdate(BaseModel):
@@ -135,6 +139,8 @@ def _build_response(m: StockMovement, db: Session) -> StockMovementResponse:
         approved_by_name=approved.full_name if approved else None,
         approved_at=m.approved_at,
         payment_status=m.payment_status or "PENDING",
+        paid_amount=m.paid_amount or 0.0,
+        total_cost=m.total_cost or 0.0,
         invoice_reference=m.invoice_reference,
         payment_updated_by=m.payment_updated_by,
         payment_updated_at=m.payment_updated_at,
@@ -164,6 +170,13 @@ def log_stock_movement(
         eng = db.query(User).filter(User.id == data.engineer_id).first()
         if not eng or eng.role != UserRole.SERVICE_ENGINEER:
             raise HTTPException(400, "Invalid engineer ID")
+    # Stock availability check for OUT movements
+    if data.movement_type == "OUT":
+        available = get_item_stock_balance(db, data.item_name)
+        if available <= 0:
+            raise HTTPException(400, f"No stock available for '{data.item_name}'. Current stock: 0")
+        if available < data.quantity:
+            raise HTTPException(400, f"Insufficient stock for '{data.item_name}'. Available: {available}, Requested: {data.quantity}")
     if data.service_request_id:
         ticket = db.query(Complaint).filter(Complaint.id == data.service_request_id).first()
         if not ticket:
@@ -173,6 +186,7 @@ def log_stock_movement(
         item_name=data.item_name,
         quantity=data.quantity,
         unit_cost=data.unit_cost,
+        total_cost=data.total_cost,
         reference_type=data.reference_type,
         reference_id=data.reference_id,
         service_request_id=data.service_request_id,
@@ -258,14 +272,94 @@ def update_payment_status(
     db: Session = Depends(get_db),
 ):
     _require_reception_or_admin(current_user)
-    if data.payment_status != "PAID":
-        raise HTTPException(400, "Only transition to PAID is allowed")
+    if data.payment_status not in ("PAID", "PARTIALLY_PAID"):
+        raise HTTPException(400, "payment_status must be PAID or PARTIALLY_PAID")
     try:
-        mark_paid(db, movement_id, current_user)
+        movement = mark_paid(db, movement_id, current_user, amount=data.amount)
         db.commit()
+        db.refresh(movement)
     except ValueError as e:
         raise HTTPException(400, str(e))
-    return {"message": "Payment status updated to PAID"}
+    return {
+        "message": f"Payment status updated to {movement.payment_status}",
+        "payment_status": movement.payment_status,
+        "paid_amount": movement.paid_amount or 0.0,
+        "total_cost": movement.total_cost or 0.0
+    }
+
+
+# === EDIT STOCK MOVEMENT (Reception + Admin) — for returns/corrections ===
+
+class StockMovementEdit(BaseModel):
+    quantity: Optional[int] = None
+    notes: Optional[str] = None
+    total_cost: Optional[float] = None
+
+    @validator("notes", pre=True)
+    def empty_str_to_none_str(cls, v):
+        if v == "" or v == "":
+            return None
+        return v
+
+
+@router.put("/{movement_id}", response_model=StockMovementResponse)
+def edit_stock_movement(
+    movement_id: int,
+    data: StockMovementEdit,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Edit a stock movement - primarily for returns (reducing OUT quantity)."""
+    _require_reception_or_admin(current_user)
+    movement = db.query(StockMovement).filter(StockMovement.id == movement_id).first()
+    if not movement:
+        raise HTTPException(404, "Stock movement not found")
+
+    if data.quantity is not None:
+        if data.quantity < 0:
+            raise HTTPException(400, "Quantity cannot be negative")
+        if data.quantity > movement.quantity and movement.movement_type == "OUT":
+            # Check stock availability for increase
+            available = get_item_stock_balance(db, movement.item_name)
+            increase = data.quantity - movement.quantity
+            if increase > available:
+                raise HTTPException(400, f"Insufficient stock for '{movement.item_name}'. Available: {available}")
+        movement.quantity = data.quantity
+
+    if data.notes is not None:
+        movement.notes = data.notes
+
+    if data.total_cost is not None:
+        movement.total_cost = data.total_cost
+
+    try:
+        db.commit()
+        db.refresh(movement)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, str(e))
+
+    return _build_response(movement, db)
+
+
+# === STOCK CHECK (Reception + Admin) ===
+
+@router.get("/stock-check/{item_name}")
+def check_stock(
+    item_name: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Check available stock for a given item."""
+    _require_reception_or_admin(current_user)
+    balance = get_item_stock_balance(db, item_name)
+    low_stock = balance <= 5
+    return {
+        "item_name": item_name,
+        "available_stock": balance,
+        "low_stock": low_stock,
+        "no_stock": balance <= 0
+    }
 
 
 # === DELETE (Admin only, PENDING only) ===

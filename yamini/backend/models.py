@@ -590,8 +590,10 @@ class StockMovement(Base):
     approved_at = Column(DateTime)
     
     # Payment Status (Financial Truth) - Can be updated after creation by Admin/Finance
-    # UNBILLED -> PENDING -> PAID
-    payment_status = Column(String, default="UNBILLED")  # UNBILLED, PENDING, PAID
+    # UNBILLED -> PENDING -> PAID -> PARTIALLY_PAID
+    payment_status = Column(String, default="UNBILLED")  # UNBILLED, PENDING, PAID, PARTIALLY_PAID
+    paid_amount = Column(Float, default=0.0)              # Amount paid so far
+    total_cost = Column(Float, default=0.0)               # Total cost for this movement
     invoice_reference = Column(String)  # Invoice number when billed
     payment_updated_by = Column(Integer, ForeignKey("users.id"))
     payment_updated_at = Column(DateTime)

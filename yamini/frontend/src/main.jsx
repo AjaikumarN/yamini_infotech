@@ -5,7 +5,7 @@ import App from './App.jsx'
 import './styles.css'
 
 createRoot(document.getElementById('root')).render(
-  <HelmetProvider>
-    <App />
-  </HelmetProvider>
+ <HelmetProvider>
+ <App />
+</HelmetProvider>
 )

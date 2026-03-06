@@ -10,31 +10,31 @@ import ChatWidget from '../components/ChatWidget';
  * Includes: Global Header + Page Content + Footer + ChatWidget
  */
 export default function PublicLayout({ showNotificationPanel, setShowNotificationPanel }) {
-  return (
-    <div className="app public-layout">
-      <Header 
-        showNotificationPanel={showNotificationPanel}
-        setShowNotificationPanel={setShowNotificationPanel}
-      />
-      
-      <main className="content">
-        <Outlet />
-      </main>
+ return (
+ <div className="app public-layout">
+ <Header 
+ showNotificationPanel={showNotificationPanel}
+ setShowNotificationPanel={setShowNotificationPanel}
+ />
+ 
+ <main className="content">
+ <Outlet />
+</main>
 
-      <ChatWidget />
-      <Footer />
+ <ChatWidget />
+ <Footer />
 
-      <style>{`
-        .app.public-layout {
-          min-height: 100vh;
-          display: flex;
-          flex-direction: column;
-        }
+ <style>{`
+ .app.public-layout {
+ min-height: 100vh;
+ display: flex;
+ flex-direction: column;
+ }
 
-        .app.public-layout .content {
-          flex: 1;
-        }
-      `}</style>
-    </div>
-  );
+ .app.public-layout .content {
+ flex: 1;
+ }
+ `}</style>
+</div>
+ );
 }

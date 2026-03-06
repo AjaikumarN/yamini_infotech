@@ -117,11 +117,13 @@ def reject_movement(
 #  PAYMENT CONTROL
 # ────────────────────────────────────────────────────────
 
-def mark_paid(db: Session, movement_id: int, user: User) -> StockMovement:
+def mark_paid(db: Session, movement_id: int, user: User, amount: float = None) -> StockMovement:
     """
-    Mark a movement as PAID.
+    Mark a movement as PAID or PARTIALLY_PAID.
     Rules:
       - Cannot revert PAID → PENDING
+      - If amount is provided and less than total_cost, mark as PARTIALLY_PAID
+      - If amount >= total_cost or no total_cost set, mark as PAID
     """
     movement = db.query(StockMovement).filter(StockMovement.id == movement_id).first()
     if not movement:
@@ -129,7 +131,19 @@ def mark_paid(db: Session, movement_id: int, user: User) -> StockMovement:
     if movement.payment_status == "PAID":
         raise ValueError("Already marked as PAID — cannot revert")
 
-    movement.payment_status = "PAID"
+    total = movement.total_cost or 0.0
+    if amount is not None and amount > 0:
+        new_paid = (movement.paid_amount or 0.0) + amount
+        movement.paid_amount = new_paid
+        if total > 0 and new_paid < total:
+            movement.payment_status = "PARTIALLY_PAID"
+        else:
+            movement.payment_status = "PAID"
+    else:
+        movement.payment_status = "PAID"
+        if total > 0:
+            movement.paid_amount = total
+
     movement.payment_updated_by = user.id
     movement.payment_updated_at = datetime.utcnow()
     db.flush()
