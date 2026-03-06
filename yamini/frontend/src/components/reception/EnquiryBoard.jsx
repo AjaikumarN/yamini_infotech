@@ -299,11 +299,12 @@ const EnquiryBoard = ({ mode = 'staff'}) => {
  <td>{new Date(enq.created_at).toLocaleDateString()}</td>
  <td>
  <button 
- className="btn-action" 
+ className="btn-action btn-followup" 
  onClick={() => addFollowUpNote(enq.id)}
  title="Add follow-up note"
+ style={{background:'#2563eb',color:'#fff',border:'none',borderRadius:6,padding:'5px 12px',cursor:'pointer',fontWeight:600,fontSize:13,marginRight:6}}
  >
- 
+ Follow-up
 </button>
  <button 
  className="btn-action btn-delete" 

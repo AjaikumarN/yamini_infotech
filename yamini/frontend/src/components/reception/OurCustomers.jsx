@@ -19,6 +19,9 @@ export default function OurCustomers() {
   const [createForm, setCreateForm] = useState({ name: '', phone: '', email: '', address: '', company: '' });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [detailTab, setDetailTab] = useState('overview');
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', address: '', company: '' });
+  const [editingCustomer, setEditingCustomer] = useState(null);
 
   useEffect(() => {
     const h = () => setIsMobile(window.innerWidth < 768);
@@ -72,6 +75,63 @@ export default function OurCustomers() {
     }
   };
 
+  const openEdit = (customer, e) => {
+    if (e) e.stopPropagation();
+    setEditingCustomer(customer);
+    setEditForm({
+      name: customer.name || '',
+      phone: customer.phone || '',
+      email: customer.email || '',
+      address: customer.address || '',
+      company: customer.company || '',
+    });
+    setShowEdit(true);
+  };
+
+  const handleEdit = async (e) => {
+    e.preventDefault();
+    if (!editingCustomer) return;
+    try {
+      await apiRequest(`/api/customer-hub/customers/${encodeURIComponent(editingCustomer.key)}/edit`, {
+        method: 'PUT',
+        body: JSON.stringify(editForm)
+      });
+      alert('Customer updated across all records');
+      setShowEdit(false);
+      setEditingCustomer(null);
+      loadCustomers();
+      // If detail view was open, reload it with new key
+      if (selectedCustomer) {
+        const newKey = editForm.name.trim().toLowerCase().replace(/\s+/g, ' ') + '|' + (editForm.phone || '').replace(/\D/g, '').slice(-10);
+        const updatedCustomer = { ...selectedCustomer, ...editForm, key: newKey };
+        loadDetail(updatedCustomer);
+      }
+    } catch (err) {
+      alert('Failed: ' + (err.message || 'Unknown error'));
+    }
+  };
+
+  const handleDelete = async (customer, e) => {
+    if (e) e.stopPropagation();
+    const confirmed = window.confirm(
+      `Delete "${customer.name}"?\n\nThis will remove them from ALL records:\n• Enquiries\n• Service Complaints\n• Outstanding\n• MIF Records\n\nThis action cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      await apiRequest(`/api/customer-hub/customers/${encodeURIComponent(customer.key)}/delete`, {
+        method: 'DELETE'
+      });
+      alert('Customer deleted from all records');
+      if (selectedCustomer && selectedCustomer.key === customer.key) {
+        setSelectedCustomer(null);
+        setDetail(null);
+      }
+      loadCustomers();
+    } catch (err) {
+      alert('Failed: ' + (err.message || 'Unknown error'));
+    }
+  };
+
   const formatINR = (v) => {
     const n = parseFloat(v || 0);
     return '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 0 });
@@ -115,6 +175,16 @@ export default function OurCustomers() {
               {selectedCustomer.phone && <span style={{ fontSize: '14px', color: '#6b7280' }}>📞 {selectedCustomer.phone}</span>}
               {selectedCustomer.email && <span style={{ fontSize: '14px', color: '#6b7280' }}>✉️ {selectedCustomer.email}</span>}
             </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={(e) => openEdit(selectedCustomer, e)}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #6366F1', background: 'white', cursor: 'pointer', fontWeight: '600', fontSize: '14px', color: '#6366F1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="material-icons" style={{ fontSize: '18px' }}>edit</span> Edit
+            </button>
+            <button onClick={(e) => handleDelete(selectedCustomer, e)}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #EF4444', background: 'white', cursor: 'pointer', fontWeight: '600', fontSize: '14px', color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="material-icons" style={{ fontSize: '18px' }}>delete</span> Delete
+            </button>
           </div>
         </div>
 
@@ -517,7 +587,7 @@ export default function OurCustomers() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  {['Customer', 'Phone', 'Enquiries', 'Services', 'Machines', 'Outstanding', 'Sources', 'Last Activity'].map(h => (
+                  {['Customer', 'Phone', 'Enquiries', 'Services', 'Machines', 'Outstanding', 'Sources', 'Last Activity', 'Actions'].map(h => (
                     <th key={h} style={_th}>{h}</th>
                   ))}
                 </tr>
@@ -558,6 +628,16 @@ export default function OurCustomers() {
                     <td style={{ ..._td, fontSize: '13px', color: '#6b7280' }}>
                       {c.latest_activity ? formatDate(c.latest_activity) : '-'}
                     </td>
+                    <td style={{ ..._td, whiteSpace: 'nowrap' }}>
+                      <button onClick={(e) => openEdit(c, e)} title="Edit"
+                        style={{ padding: '5px 10px', background: '#EFF6FF', color: '#3B82F6', border: '1px solid #3B82F620', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '12px', marginRight: '6px' }}>
+                        <span className="material-icons" style={{ fontSize: '15px', verticalAlign: 'middle' }}>edit</span>
+                      </button>
+                      <button onClick={(e) => handleDelete(c, e)} title="Delete"
+                        style={{ padding: '5px 10px', background: '#FEF2F2', color: '#EF4444', border: '1px solid #EF444420', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '12px' }}>
+                        <span className="material-icons" style={{ fontSize: '15px', verticalAlign: 'middle' }}>delete</span>
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -573,7 +653,14 @@ export default function OurCustomers() {
                       <div style={{ fontWeight: '700', fontSize: '15px', color: '#1f2937' }}>{c.name}</div>
                       {c.phone && <div style={{ fontSize: '13px', color: '#6b7280' }}>{c.phone}</div>}
                     </div>
-                    <span className="material-icons" style={{ fontSize: '18px', color: '#9ca3af' }}>chevron_right</span>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      <button onClick={(e) => openEdit(c, e)} style={{ padding: '4px 8px', background: '#EFF6FF', color: '#3B82F6', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                        <span className="material-icons" style={{ fontSize: '16px' }}>edit</span>
+                      </button>
+                      <button onClick={(e) => handleDelete(c, e)} style={{ padding: '4px 8px', background: '#FEF2F2', color: '#EF4444', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                        <span className="material-icons" style={{ fontSize: '16px' }}>delete</span>
+                      </button>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {c.enquiry_count > 0 && <span style={{ fontSize: '12px', color: '#3B82F6', fontWeight: '600' }}>{c.enquiry_count} Enquiry</span>}
@@ -626,6 +713,49 @@ export default function OurCustomers() {
                 <button type="submit"
                   style={{ padding: '10px 20px', background: '#6366F1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                   Create Customer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEdit && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', borderRadius: isMobile ? '16px 16px 0 0' : '12px', padding: '24px', width: isMobile ? '100%' : '480px', maxHeight: '90vh', overflow: 'auto' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: '700', marginBottom: '6px' }}>Edit Customer</h2>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px' }}>Changes will propagate to Enquiries, Services, Outstanding & MIF records</p>
+            <form onSubmit={handleEdit}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {[
+                  { key: 'name', label: 'Customer Name *', type: 'text', required: true },
+                  { key: 'phone', label: 'Phone', type: 'tel' },
+                  { key: 'email', label: 'Email', type: 'email' },
+                  { key: 'company', label: 'Company', type: 'text' },
+                ].map(f => (
+                  <div key={f.key}>
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>{f.label}</label>
+                    <input type={f.type} required={f.required} value={editForm[f.key]}
+                      onChange={(e) => setEditForm({ ...editForm, [f.key]: e.target.value })}
+                      style={{ width: '100%', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px' }} />
+                  </div>
+                ))}
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}>Address</label>
+                  <textarea value={editForm.address}
+                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px', minHeight: '60px' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '20px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => { setShowEdit(false); setEditingCustomer(null); }}
+                  style={{ padding: '10px 20px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                  Cancel
+                </button>
+                <button type="submit"
+                  style={{ padding: '10px 20px', background: '#6366F1', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                  Save Changes
                 </button>
               </div>
             </form>

@@ -470,3 +470,181 @@ def create_hub_customer(
         "customer_id": customer.id,
         "customer_name": customer.name
     }
+
+
+# ─── Edit Customer (propagate everywhere) ──────────────────────────
+
+@router.put("/customers/{customer_key:path}/edit")
+def edit_customer(
+    customer_key: str,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Edit a customer's info and propagate changes across ALL tables:
+    Customers, Enquiry, Complaint, Outstanding, MIF.
+    """
+    parts = customer_key.split("|", 1)
+    name_norm = parts[0].strip() if parts else ""
+    phone_norm = parts[1].strip() if len(parts) > 1 else ""
+
+    if not name_norm:
+        raise HTTPException(400, "Invalid customer key")
+
+    new_name = data.get("name", "").strip()
+    new_phone = data.get("phone", "").strip()
+    new_email = data.get("email", "").strip()
+    new_address = data.get("address", "").strip()
+    new_company = data.get("company", "").strip()
+
+    if not new_name:
+        raise HTTPException(400, "Customer name is required")
+
+    def _name_match(record_name):
+        return _normalize(record_name) == name_norm
+
+    def _phone_match(record_phone):
+        if not phone_norm:
+            return True
+        rp = "".join(c for c in (record_phone or "") if c.isdigit())
+        if len(rp) > 10:
+            rp = rp[-10:]
+        return rp == phone_norm
+
+    updated_counts = {"customers": 0, "enquiries": 0, "complaints": 0, "outstanding": 0, "mif": 0}
+
+    # 1) Update Customers table
+    for cust in db.query(models.Customer).all():
+        if _name_match(cust.name) and _phone_match(cust.phone):
+            cust.name = new_name
+            if new_phone: cust.phone = new_phone
+            if new_email: cust.email = new_email
+            if new_address: cust.address = new_address
+            if new_company: cust.company = new_company
+            updated_counts["customers"] += 1
+
+    # 2) Update Enquiries
+    for enq in db.query(models.Enquiry).filter(
+        or_(models.Enquiry.is_deleted == False, models.Enquiry.is_deleted == None)
+    ).all():
+        if _name_match(enq.customer_name) and _phone_match(enq.phone):
+            enq.customer_name = new_name
+            if new_phone: enq.phone = new_phone
+            if new_email: enq.email = new_email
+            if new_address: enq.address = new_address
+            updated_counts["enquiries"] += 1
+
+    # 3) Update Complaints
+    for comp in db.query(models.Complaint).filter(
+        or_(models.Complaint.is_deleted == False, models.Complaint.is_deleted == None)
+    ).all():
+        if _name_match(comp.customer_name) and _phone_match(comp.phone):
+            comp.customer_name = new_name
+            if new_phone: comp.phone = new_phone
+            if new_email: comp.email = new_email
+            if new_address: comp.address = new_address
+            if new_company: comp.company = new_company
+            updated_counts["complaints"] += 1
+
+    # 4) Update Outstanding
+    for out in db.query(models.Outstanding).filter(
+        or_(models.Outstanding.is_deleted == False, models.Outstanding.is_deleted == None)
+    ).all():
+        if _name_match(out.customer_name) and _phone_match(out.customer_phone):
+            out.customer_name = new_name
+            if new_phone: out.customer_phone = new_phone
+            if new_email: out.customer_email = new_email
+            updated_counts["outstanding"] += 1
+
+    # 5) Update MIF Records
+    for mif in db.query(models.MIFRecord).all():
+        if _name_match(mif.customer_name):
+            mif.customer_name = new_name
+            if new_address: mif.location = new_address
+            updated_counts["mif"] += 1
+
+    db.commit()
+
+    total = sum(updated_counts.values())
+    return {
+        "message": f"Customer updated across {total} records",
+        "updated": updated_counts
+    }
+
+
+# ─── Delete Customer (from everywhere) ─────────────────────────────
+
+@router.delete("/customers/{customer_key:path}/delete")
+def delete_customer(
+    customer_key: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """
+    Delete a customer from ALL tables.
+    Soft-delete where is_deleted exists, hard-delete otherwise.
+    """
+    parts = customer_key.split("|", 1)
+    name_norm = parts[0].strip() if parts else ""
+    phone_norm = parts[1].strip() if len(parts) > 1 else ""
+
+    if not name_norm:
+        raise HTTPException(400, "Invalid customer key")
+
+    def _name_match(record_name):
+        return _normalize(record_name) == name_norm
+
+    def _phone_match(record_phone):
+        if not phone_norm:
+            return True
+        rp = "".join(c for c in (record_phone or "") if c.isdigit())
+        if len(rp) > 10:
+            rp = rp[-10:]
+        return rp == phone_norm
+
+    deleted_counts = {"customers": 0, "enquiries": 0, "complaints": 0, "outstanding": 0, "mif": 0}
+
+    # 1) Delete from Customers table (hard delete)
+    for cust in db.query(models.Customer).all():
+        if _name_match(cust.name) and _phone_match(cust.phone):
+            db.delete(cust)
+            deleted_counts["customers"] += 1
+
+    # 2) Soft-delete Enquiries
+    for enq in db.query(models.Enquiry).filter(
+        or_(models.Enquiry.is_deleted == False, models.Enquiry.is_deleted == None)
+    ).all():
+        if _name_match(enq.customer_name) and _phone_match(enq.phone):
+            enq.is_deleted = True
+            deleted_counts["enquiries"] += 1
+
+    # 3) Soft-delete Complaints
+    for comp in db.query(models.Complaint).filter(
+        or_(models.Complaint.is_deleted == False, models.Complaint.is_deleted == None)
+    ).all():
+        if _name_match(comp.customer_name) and _phone_match(comp.phone):
+            comp.is_deleted = True
+            deleted_counts["complaints"] += 1
+
+    # 4) Soft-delete Outstanding
+    for out in db.query(models.Outstanding).filter(
+        or_(models.Outstanding.is_deleted == False, models.Outstanding.is_deleted == None)
+    ).all():
+        if _name_match(out.customer_name) and _phone_match(out.customer_phone):
+            out.is_deleted = True
+            deleted_counts["outstanding"] += 1
+
+    # 5) Hard-delete MIF (no is_deleted field)
+    for mif in db.query(models.MIFRecord).all():
+        if _name_match(mif.customer_name):
+            db.delete(mif)
+            deleted_counts["mif"] += 1
+
+    db.commit()
+
+    total = sum(deleted_counts.values())
+    return {
+        "message": f"Customer removed from {total} records",
+        "deleted": deleted_counts
+    }
