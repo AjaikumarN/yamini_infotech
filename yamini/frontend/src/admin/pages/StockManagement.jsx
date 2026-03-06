@@ -6,6 +6,9 @@ export default function StockManagement() {
  const [loading, setLoading] = useState(true);
  const [filter, setFilter] = useState('all');
  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
+ const [showReportMenu, setShowReportMenu] = useState(false);
+ const [reportDateFrom, setReportDateFrom] = useState('');
+ const [reportDateTo, setReportDateTo] = useState('');
 
  useEffect(() => {
  const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -86,6 +89,111 @@ export default function StockManagement() {
  }
  };
 
+ const downloadStockCSV = (type) => {
+ const now = new Date();
+ const dateStr = `${now.getDate().toString().padStart(2,'0')}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getFullYear()}`;
+ let data = movements;
+ if (type === 'in') data = movements.filter(m => m.movement_type === 'IN');
+ if (type === 'out') data = movements.filter(m => m.movement_type === 'OUT');
+ if (type === 'pending') data = movements.filter(m => m.payment_status === 'PENDING');
+ 
+ const headers = ['Date', 'Type', 'Category', 'Item Name', 'Quantity', 'Engineer', 'Service ID', 'Payment Status', 'Total Cost', 'Paid Amount', 'Notes'];
+ const rows = data.map(m => [
+ formatDate(m.date),
+ m.movement_type,
+ m.category || 'N/A',
+ m.item_name,
+ m.quantity,
+ m.engineer_name || 'N/A',
+ m.service_id || 'N/A',
+ m.payment_status || 'N/A',
+ m.total_cost || 0,
+ m.paid_amount || 0,
+ (m.notes || '').replace(/,/g, ' ')
+ ]);
+ 
+ const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+ const blob = new Blob([csv], { type: 'text/csv' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = `Stock_${type}_Report_${dateStr}.csv`;
+ a.click();
+ URL.revokeObjectURL(url);
+ setShowReportMenu(false);
+ };
+
+ const downloadInventoryCSV = async () => {
+ try {
+ const inventory = await apiRequest('/api/stock-movements/inventory');
+ const now = new Date();
+ const dateStr = `${now.getDate().toString().padStart(2,'0')}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getFullYear()}`;
+ const headers = ['Item Name', 'Category', 'Current Stock', 'Total IN', 'Total OUT'];
+ const rows = inventory.map(item => [
+ item.item_name,
+ item.category || 'N/A',
+ item.balance,
+ item.total_in,
+ item.total_out
+ ]);
+ const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+ const blob = new Blob([csv], { type: 'text/csv' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = `Inventory_Report_${dateStr}.csv`;
+ a.click();
+ URL.revokeObjectURL(url);
+ } catch (e) {
+ alert('Failed to download inventory report');
+ }
+ setShowReportMenu(false);
+ };
+
+ const downloadStockPDF = (type) => {
+ const now = new Date();
+ const dateStr = `${now.getDate().toString().padStart(2,'0')}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getFullYear()}`;
+ let data = movements;
+ let title = 'All Stock Movements Report';
+ if (type === 'in') { data = movements.filter(m => m.movement_type === 'IN'); title = 'Stock IN Report'; }
+ if (type === 'out') { data = movements.filter(m => m.movement_type === 'OUT'); title = 'Stock OUT Report'; }
+ if (type === 'pending') { data = movements.filter(m => m.payment_status === 'PENDING'); title = 'Payment Pending Report'; }
+
+ const totalValue = data.reduce((sum, m) => sum + (m.total_cost || 0), 0);
+ const totalPaid = data.reduce((sum, m) => sum + (m.paid_amount || 0), 0);
+
+ const html = `<!DOCTYPE html><html><head><title>${title}</title><style>
+ @page { size: A4 landscape; margin: 15mm; }
+ body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; }
+ .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #4f46e5; padding-bottom: 15px; }
+ .header h1 { margin: 0; color: #4f46e5; font-size: 22px; }
+ .header p { margin: 5px 0 0; color: #666; font-size: 12px; }
+ .summary { display: flex; gap: 15px; margin-bottom: 20px; }
+ .summary-card { flex: 1; padding: 12px; border-radius: 8px; text-align: center; }
+ table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+ th { background: #4f46e5; color: white; padding: 10px 8px; text-align: left; font-size: 11px; }
+ td { padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
+ tr:nth-child(even) { background: #f9fafb; }
+ .footer { margin-top: 20px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+ .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+ .badge-in { background: #DEF7EC; color: #03543F; }
+ .badge-out { background: #FEE2E2; color: #991B1B; }
+ .badge-paid { background: #DEF7EC; color: #03543F; }
+ .badge-pending { background: #FEF3C7; color: #92400E; }
+ </style></head><body>
+ <div class="header"><h1>Yamini Infotech</h1><h2>${title}</h2><p>Generated: ${dateStr} | Total Records: ${data.length} | Total Value: Rs.${totalValue.toLocaleString()} | Paid: Rs.${totalPaid.toLocaleString()}</p></div>
+ <table><thead><tr><th>S.No</th><th>Date</th><th>Type</th><th>Category</th><th>Item</th><th>Qty</th><th>Engineer</th><th>Service ID</th><th>Payment</th><th>Cost</th><th>Paid</th></tr></thead><tbody>
+ ${data.map((m, i) => `<tr><td>${i+1}</td><td>${formatDate(m.date)}</td><td><span class="badge badge-${m.movement_type.toLowerCase()}">${m.movement_type}</span></td><td>${m.category || '-'}</td><td>${m.item_name}</td><td>${m.quantity}</td><td>${m.engineer_name || '-'}</td><td>${m.service_id || '-'}</td><td><span class="badge badge-${(m.payment_status||'').toLowerCase()}">${m.payment_status || '-'}</span></td><td>${m.total_cost || 0}</td><td>${m.paid_amount || 0}</td></tr>`).join('')}
+ </tbody></table>
+ <div class="footer">Yamini Infotech - Stock Management Report | Confidential</div></body></html>`;
+
+ const win = window.open('', '_blank');
+ win.document.write(html);
+ win.document.close();
+ setTimeout(() => { win.print(); }, 500);
+ setShowReportMenu(false);
+ };
+
  if (loading) {
  return <div style={{ padding: '24px'}}> Loading stock movements...</div>;
  }
@@ -95,9 +203,92 @@ export default function StockManagement() {
  {/* Header Section */}
  <div style={{ padding: '32px 20px', background: 'white', borderBottom: '1px solid #e5e7eb'}}>
  <div style={{ maxWidth: '1200px', margin: '0 auto'}}>
- <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px'}}>
+ <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px'}}>
+ <div style={{ display: 'flex', alignItems: 'center', gap: '12px'}}>
  <span style={{ fontSize: '32px'}}></span>
  <h1 style={{ margin: 0, fontSize: '32px', fontWeight: '800', color: '#111827'}}>Stock Management</h1>
+ </div>
+ <div style={{ position: 'relative'}}>
+ <button
+ onClick={() => setShowReportMenu(!showReportMenu)}
+ style={{
+ padding: '12px 20px',
+ borderRadius: '12px',
+ border: '2px solid #4f46e5',
+ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+ color: 'white',
+ fontWeight: '700',
+ fontSize: '14px',
+ cursor: 'pointer',
+ display: 'flex',
+ alignItems: 'center',
+ gap: '8px',
+ boxShadow: '0 4px 14px rgba(79,70,229,0.3)',
+ transition: 'all 0.2s'
+ }}
+ >
+ <span className="material-icons" style={{ fontSize: '18px'}}>download</span>
+ Download Reports
+ </button>
+ {showReportMenu && (
+ <div style={{
+ position: 'absolute',
+ top: '100%',
+ right: 0,
+ marginTop: '8px',
+ background: 'white',
+ borderRadius: '16px',
+ boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+ border: '1px solid #e5e7eb',
+ padding: '8px',
+ zIndex: 1000,
+ minWidth: '280px',
+ animation: 'fadeIn 0.2s ease'
+ }}>
+ <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6'}}>
+ <div style={{ fontSize: '13px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>CSV Reports</div>
+ </div>
+ {[
+ { label: 'All Movements', desc: 'Complete stock movement history', action: () => downloadStockCSV('all'), icon: 'list_alt' },
+ { label: 'Stock IN Report', desc: 'All incoming stock entries', action: () => downloadStockCSV('in'), icon: 'arrow_downward' },
+ { label: 'Stock OUT Report', desc: 'All outgoing stock entries', action: () => downloadStockCSV('out'), icon: 'arrow_upward' },
+ { label: 'Payment Pending', desc: 'Unpaid stock movements', action: () => downloadStockCSV('pending'), icon: 'pending_actions' },
+ { label: 'Current Inventory', desc: 'Live stock balances per item', action: () => downloadInventoryCSV(), icon: 'inventory' },
+ ].map((item, i) => (
+ <button key={i} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 16px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '10px', transition: 'background 0.2s', textAlign: 'left' }}
+ onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+ onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+ >
+ <span className="material-icons" style={{ fontSize: '20px', color: '#4f46e5'}}>{item.icon}</span>
+ <div>
+ <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937'}}>{item.label}</div>
+ <div style={{ fontSize: '12px', color: '#6b7280'}}>{item.desc}</div>
+ </div>
+ </button>
+ ))}
+ <div style={{ padding: '12px 16px', borderTop: '1px solid #f3f4f6', borderBottom: '1px solid #f3f4f6', marginTop: '4px'}}>
+ <div style={{ fontSize: '13px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>PDF Reports (Print)</div>
+ </div>
+ {[
+ { label: 'All Movements PDF', desc: 'Printable full report', action: () => downloadStockPDF('all'), icon: 'print' },
+ { label: 'Stock IN PDF', desc: 'Print incoming stock', action: () => downloadStockPDF('in'), icon: 'print' },
+ { label: 'Stock OUT PDF', desc: 'Print outgoing stock', action: () => downloadStockPDF('out'), icon: 'print' },
+ { label: 'Payment Pending PDF', desc: 'Print pending payments', action: () => downloadStockPDF('pending'), icon: 'print' },
+ ].map((item, i) => (
+ <button key={i} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 16px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '10px', transition: 'background 0.2s', textAlign: 'left' }}
+ onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+ onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+ >
+ <span className="material-icons" style={{ fontSize: '20px', color: '#7c3aed'}}>{item.icon}</span>
+ <div>
+ <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937'}}>{item.label}</div>
+ <div style={{ fontSize: '12px', color: '#6b7280'}}>{item.desc}</div>
+ </div>
+ </button>
+ ))}
+ </div>
+ )}
+ </div>
 </div>
  <p style={{ margin: '8px 0 0 0', fontSize: '15px', color: '#6b7280', lineHeight: '1.6'}}>
  Track inventory movements and stock changes with real-time updates

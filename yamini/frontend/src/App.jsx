@@ -196,6 +196,7 @@ function App() {
  <Route path="service-complaints" element={<ServiceComplaints />} />
  <Route path="repeat-complaints" element={<RepeatComplaints />} />
  <Route path="delivery-log" element={<DeliveryLog />} />
+ <Route path="mif" element={<AdminMIF />} />
  <Route path="outstanding" element={<OutstandingSummary />} />
  <Route path="missing-reports" element={<MissingReports />} />
  <Route path="visitors" element={<VisitorLog />} />

@@ -11,6 +11,8 @@ export default function Attendance() {
  const [isMobile, setIsMobile] = useState(window.innerWidth < 640);
  const [photoModalOpen, setPhotoModalOpen] = useState(false);
  const [selectedPhoto, setSelectedPhoto] = useState(null);
+ const [showReportMenu, setShowReportMenu] = useState(false);
+ const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0,7));
 
  useEffect(() => {
  const handleResize = () => setIsMobile(window.innerWidth < 640);
@@ -109,6 +111,97 @@ export default function Attendance() {
  console.error('Failed to correct attendance:', error);
  alert('Failed to correct attendance');
  }
+ };
+
+ const downloadAttendanceCSV = (reportType) => {
+ const now = new Date();
+ const dateStr = `${now.getDate().toString().padStart(2,'0')}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getFullYear()}`;
+ let data = attendance;
+ let filename = `Daily_Attendance_Report_${dateStr}`;
+ let title = 'Daily Attendance Report';
+
+ if (reportType === 'present') { data = attendance.filter(a => a.status === 'Present' || a.status === 'On Time'); filename = `Present_Employees_${dateStr}`; }
+ if (reportType === 'absent') { data = attendance.filter(a => a.status === 'Absent'); filename = `Absent_Employees_${dateStr}`; }
+ if (reportType === 'late') { data = attendance.filter(a => a.status === 'Late'); filename = `Late_Employees_${dateStr}`; }
+
+ const headers = ['S.No', 'Employee Name', 'Role', 'Check-In Time', 'Location', 'Status'];
+ const rows = data.map((r, i) => [
+ i + 1,
+ r.employee_name,
+ r.role || 'N/A',
+ r.time,
+ (r.location || 'N/A').replace(/,/g, ' '),
+ r.status
+ ]);
+
+ const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+ const blob = new Blob([csv], { type: 'text/csv' });
+ const url = URL.createObjectURL(blob);
+ const a = document.createElement('a');
+ a.href = url;
+ a.download = `${filename}.csv`;
+ a.click();
+ URL.revokeObjectURL(url);
+ setShowReportMenu(false);
+ };
+
+ const downloadAttendancePDF = (reportType) => {
+ const now = new Date();
+ const dateStr = `${now.getDate().toString().padStart(2,'0')}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getFullYear()}`;
+ let data = attendance;
+ let title = 'Daily Attendance Report';
+
+ if (reportType === 'present') { data = attendance.filter(a => a.status === 'Present' || a.status === 'On Time'); title = 'Present Employees Report'; }
+ if (reportType === 'absent') { data = attendance.filter(a => a.status === 'Absent'); title = 'Absent Employees Report'; }
+ if (reportType === 'late') { data = attendance.filter(a => a.status === 'Late'); title = 'Late Employees Report'; }
+ if (reportType === 'summary') { title = 'Attendance Summary Report'; }
+
+ const presentCount = attendance.filter(a => a.status === 'Present' || a.status === 'On Time').length;
+ const lateCount = attendance.filter(a => a.status === 'Late').length;
+ const absentCount = attendance.filter(a => a.status === 'Absent').length;
+
+ const html = `<!DOCTYPE html><html><head><title>${title}</title><style>
+ @page { size: A4; margin: 15mm; }
+ body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; }
+ .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #5560ff; padding-bottom: 15px; }
+ .header h1 { margin: 0; color: #5560ff; font-size: 22px; }
+ .header h2 { margin: 5px 0; color: #333; font-size: 16px; }
+ .header p { margin: 5px 0 0; color: #666; font-size: 12px; }
+ .summary-grid { display: flex; gap: 10px; margin-bottom: 20px; }
+ .summary-card { flex: 1; padding: 15px; border-radius: 10px; text-align: center; }
+ .summary-card.total { background: #f0f4ff; border: 1px solid #c7d2fe; }
+ .summary-card.present { background: #DEF7EC; border: 1px solid #84E1BC; }
+ .summary-card.late { background: #FEF3C7; border: 1px solid #FCD34D; }
+ .summary-card.absent { background: #FEE2E2; border: 1px solid #FCA5A5; }
+ .summary-card h3 { margin: 0; font-size: 28px; }
+ .summary-card p { margin: 5px 0 0; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+ table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+ th { background: #5560ff; color: white; padding: 10px 8px; text-align: left; font-size: 11px; }
+ td { padding: 8px; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
+ tr:nth-child(even) { background: #f9fafb; }
+ .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+ .badge-present { background: #DEF7EC; color: #03543F; }
+ .badge-late { background: #FEF3C7; color: #92400E; }
+ .badge-absent { background: #FEE2E2; color: #991B1B; }
+ .footer { margin-top: 20px; text-align: center; font-size: 10px; color: #999; border-top: 1px solid #e5e7eb; padding-top: 10px; }
+ </style></head><body>
+ <div class="header"><h1>Yamini Infotech</h1><h2>${title}</h2><p>Date: ${dateStr} | Generated at: ${now.toLocaleTimeString()}</p></div>
+ <div class="summary-grid">
+ <div class="summary-card total"><h3>${attendance.length}</h3><p>Total Staff</p></div>
+ <div class="summary-card present"><h3>${presentCount}</h3><p>Present</p></div>
+ <div class="summary-card late"><h3>${lateCount}</h3><p>Late</p></div>
+ <div class="summary-card absent"><h3>${absentCount}</h3><p>Absent</p></div>
+ </div>
+ <table><thead><tr><th>S.No</th><th>Employee Name</th><th>Role</th><th>Check-In Time</th><th>Location</th><th>Status</th></tr></thead><tbody>
+ ${data.map((r, i) => `<tr><td>${i+1}</td><td style="font-weight:700">${r.employee_name}</td><td>${r.role || '-'}</td><td>${r.time}</td><td>${r.location || '-'}</td><td><span class="badge badge-${r.status.toLowerCase()}">${r.status}</span></td></tr>`).join('')}
+ </tbody></table>
+ <div class="footer">Yamini Infotech - Attendance Report | Confidential | Page 1</div></body></html>`;
+
+ const win = window.open('', '_blank');
+ win.document.write(html);
+ win.document.close();
+ setTimeout(() => { win.print(); }, 500);
+ setShowReportMenu(false);
  };
 
  const getStatusBadge = (status) => {
@@ -277,6 +370,88 @@ export default function Attendance() {
  <p style={{ margin: 0, maxWidth: '720px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.5 }}>
  Monitor check-ins in real time, spot exceptions faster, and act on corrections without leaving the page.
 </p>
+</div>
+ <div style={{ position: 'relative', alignSelf: 'flex-end'}}>
+ <button
+ onClick={() => setShowReportMenu(!showReportMenu)}
+ style={{
+ padding: '10px 18px',
+ borderRadius: '12px',
+ border: '2px solid rgba(255,255,255,0.4)',
+ background: 'rgba(255,255,255,0.15)',
+ color: 'white',
+ fontWeight: '700',
+ fontSize: '14px',
+ cursor: 'pointer',
+ display: 'flex',
+ alignItems: 'center',
+ gap: '8px',
+ backdropFilter: 'blur(10px)',
+ transition: 'all 0.2s'
+ }}
+ onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
+ onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+ >
+ <span className="material-icons" style={{ fontSize: '18px'}}>download</span>
+ Download Reports
+ </button>
+ {showReportMenu && (
+ <div style={{
+ position: 'absolute',
+ top: '100%',
+ right: 0,
+ marginTop: '8px',
+ background: 'white',
+ borderRadius: '16px',
+ boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+ border: '1px solid #e5e7eb',
+ padding: '8px',
+ zIndex: 1000,
+ minWidth: '300px'
+ }}>
+ <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6'}}>
+ <div style={{ fontSize: '13px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>CSV Reports</div>
+ </div>
+ {[
+ { label: 'Daily Attendance Report', desc: 'All employees attendance for the day', action: () => downloadAttendanceCSV('all'), icon: 'today' },
+ { label: 'Present Employees', desc: 'Employees present / on time today', action: () => downloadAttendanceCSV('present'), icon: 'check_circle' },
+ { label: 'Absent Employees', desc: 'Employees absent today', action: () => downloadAttendanceCSV('absent'), icon: 'cancel' },
+ { label: 'Late Employees', desc: 'Employees who checked in late', action: () => downloadAttendanceCSV('late'), icon: 'schedule' },
+ ].map((item, i) => (
+ <button key={i} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 16px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '10px', transition: 'background 0.2s', textAlign: 'left' }}
+ onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+ onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+ >
+ <span className="material-icons" style={{ fontSize: '20px', color: '#5560ff'}}>{item.icon}</span>
+ <div>
+ <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937'}}>{item.label}</div>
+ <div style={{ fontSize: '12px', color: '#6b7280'}}>{item.desc}</div>
+ </div>
+ </button>
+ ))}
+ <div style={{ padding: '12px 16px', borderTop: '1px solid #f3f4f6', borderBottom: '1px solid #f3f4f6', marginTop: '4px'}}>
+ <div style={{ fontSize: '13px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>PDF Reports (Print)</div>
+ </div>
+ {[
+ { label: 'Daily Attendance PDF', desc: 'Printable attendance with summary stats', action: () => downloadAttendancePDF('all'), icon: 'print' },
+ { label: 'Present Report PDF', desc: 'Print present employees list', action: () => downloadAttendancePDF('present'), icon: 'print' },
+ { label: 'Absent Report PDF', desc: 'Print absent employees list', action: () => downloadAttendancePDF('absent'), icon: 'print' },
+ { label: 'Summary Report PDF', desc: 'Overview with charts and totals', action: () => downloadAttendancePDF('summary'), icon: 'summarize' },
+ ].map((item, i) => (
+ <button key={i} onClick={item.action} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 16px', border: 'none', background: 'transparent', cursor: 'pointer', borderRadius: '10px', transition: 'background 0.2s', textAlign: 'left' }}
+ onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'}
+ onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+ >
+ <span className="material-icons" style={{ fontSize: '20px', color: '#7c3aed'}}>{item.icon}</span>
+ <div>
+ <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937'}}>{item.label}</div>
+ <div style={{ fontSize: '12px', color: '#6b7280'}}>{item.desc}</div>
+ </div>
+ </button>
+ ))}
+ </div>
+ )}
+ </div>
 </div>
 </div>
  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
