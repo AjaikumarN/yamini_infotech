@@ -53,7 +53,7 @@ export default function AdminSidebar({ isCompact: initialCompact = false, onClos
  title: 'Records',
  items: [
  { icon: 'history', label: 'Call History', path: '/reception/calls'},
- { icon: 'local_shipping', label: 'Delivery Log', path: '/reception/delivery-log'},
+ { icon: 'inventory_2', label: 'Stock', path: '/reception/delivery-log'},
  { icon: 'account_balance_wallet', label: 'Outstanding', path: '/reception/outstanding'}
  ]
  },

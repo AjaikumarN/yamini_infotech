@@ -51,6 +51,58 @@ def get_item_stock_balance(db: Session, item_name: str) -> int:
     return int(row)
 
 
+def get_item_practical_balance(db: Session, item_name: str) -> int:
+    """Practical stock balance (all non-rejected movements) for OUT checks."""
+    row = (
+        db.query(
+            func.coalesce(
+                func.sum(
+                    case(
+                        (StockMovement.movement_type == "IN", StockMovement.quantity),
+                        else_=-StockMovement.quantity,
+                    )
+                ),
+                0,
+            )
+        )
+        .filter(
+            StockMovement.item_name == item_name,
+            StockMovement.approval_status != "REJECTED",
+        )
+        .scalar()
+    )
+    return int(row)
+
+
+def get_all_practical_balances(db: Session) -> list[dict]:
+    """Per-item practical stock (all non-rejected) with category info."""
+    rows = (
+        db.query(
+            StockMovement.item_name,
+            StockMovement.category,
+            func.sum(
+                case(
+                    (StockMovement.movement_type == "IN", StockMovement.quantity),
+                    else_=-StockMovement.quantity,
+                )
+            ).label("balance"),
+        )
+        .filter(StockMovement.approval_status != "REJECTED")
+        .group_by(StockMovement.item_name, StockMovement.category)
+        .all()
+    )
+    return [
+        {
+            "item_name": r.item_name,
+            "category": r.category or "Uncategorized",
+            "available_stock": int(r.balance),
+            "low_stock": int(r.balance) <= 5 and int(r.balance) > 0,
+            "no_stock": int(r.balance) <= 0,
+        }
+        for r in rows
+    ]
+
+
 def get_all_stock_balances(db: Session) -> list[dict]:
     """Per-item available stock across all items (approved only)."""
     rows = (

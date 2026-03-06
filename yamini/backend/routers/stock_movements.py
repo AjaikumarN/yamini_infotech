@@ -17,9 +17,11 @@ from models import StockMovement, User, UserRole, Complaint
 from services.stock_service import (
     approve_movement,
     get_all_stock_balances,
+    get_all_practical_balances,
     get_engineer_analytics,
     get_engineer_own_usage,
     get_item_stock_balance,
+    get_item_practical_balance,
     get_low_stock_alerts,
     get_stock_valuation,
     get_summary_stats,
@@ -41,6 +43,8 @@ router = APIRouter(prefix="/api/stock-movements", tags=["stock-movements"])
 
 class StockMovementCreate(BaseModel):
     movement_type: str
+    category: Optional[str] = None
+    sub_type: Optional[str] = None
     item_name: str
     quantity: int
     unit_cost: float = 0.0
@@ -67,6 +71,8 @@ class StockMovementCreate(BaseModel):
 class StockMovementResponse(BaseModel):
     id: int
     movement_type: str
+    category: Optional[str] = None
+    sub_type: Optional[str] = None
     item_name: str
     quantity: int
     unit_cost: float
@@ -126,6 +132,8 @@ def _build_response(m: StockMovement, db: Session) -> StockMovementResponse:
     return StockMovementResponse(
         id=m.id,
         movement_type=m.movement_type,
+        category=m.category,
+        sub_type=m.sub_type,
         item_name=m.item_name,
         quantity=m.quantity,
         unit_cost=m.unit_cost or 0,
@@ -172,7 +180,7 @@ def log_stock_movement(
             raise HTTPException(400, "Invalid engineer ID")
     # Stock availability check for OUT movements
     if data.movement_type == "OUT":
-        available = get_item_stock_balance(db, data.item_name)
+        available = get_item_practical_balance(db, data.item_name)
         if available <= 0:
             raise HTTPException(400, f"No stock available for '{data.item_name}'. Current stock: 0")
         if available < data.quantity:
@@ -183,6 +191,8 @@ def log_stock_movement(
             raise HTTPException(400, f"Ticket ID {data.service_request_id} not found")
     movement = StockMovement(
         movement_type=data.movement_type,
+        category=data.category,
+        sub_type=data.sub_type,
         item_name=data.item_name,
         quantity=data.quantity,
         unit_cost=data.unit_cost,
@@ -223,6 +233,7 @@ def get_stock_movements(
     today: bool = False,
     approval_status: Optional[str] = None,
     payment_status: Optional[str] = None,
+    category: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -234,8 +245,22 @@ def get_stock_movements(
         q = q.filter(StockMovement.approval_status == approval_status)
     if payment_status:
         q = q.filter(StockMovement.payment_status == payment_status)
+    if category:
+        q = q.filter(StockMovement.category == category)
     movements = q.order_by(StockMovement.created_at.desc()).all()
     return [_build_response(m, db) for m in movements]
+
+
+# === INVENTORY (Reception + Admin) ===
+
+@router.get("/inventory")
+def get_inventory(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get current stock inventory grouped by category with practical balances."""
+    _require_reception_or_admin(current_user)
+    return {"items": get_all_practical_balances(db)}
 
 
 # === APPROVE / REJECT (Admin only) ===
@@ -352,7 +377,7 @@ def check_stock(
 ):
     """Check available stock for a given item."""
     _require_reception_or_admin(current_user)
-    balance = get_item_stock_balance(db, item_name)
+    balance = get_item_practical_balance(db, item_name)
     low_stock = balance <= 5
     return {
         "item_name": item_name,

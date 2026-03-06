@@ -63,7 +63,7 @@ const ReceptionNav = ({ isOpen, onClose, initialCompact = false }) => {
  {
  title: 'Records',
  items: [
- { icon: 'local_shipping', label: 'Delivery Log', path: '/reception/delivery-log'},
+ { icon: 'inventory_2', label: 'Stock', path: '/reception/delivery-log'},
  { icon: 'people', label: 'Visitor Log', path: '/reception/visitors'}
  ]
  },

@@ -575,6 +575,8 @@ class StockMovement(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     movement_type = Column(String, nullable=False)  # IN, OUT
+    category = Column(String, nullable=True)         # SPARE, MACHINE, TONER, STABILIZER, etc.
+    sub_type = Column(String, nullable=True)         # For Machine: New, RC, Exchange
     item_name = Column(String, nullable=False)
     quantity = Column(Integer, nullable=False)
     unit_cost = Column(Float, default=0.0)            # Per-unit cost for valuation
