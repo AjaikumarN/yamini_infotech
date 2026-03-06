@@ -371,6 +371,7 @@ export default function Attendance() {
  Monitor check-ins in real time, spot exceptions faster, and act on corrections without leaving the page.
 </p>
 </div>
+</div>
  <div style={{ position: 'relative', alignSelf: 'flex-end'}}>
  <button
  onClick={() => setShowReportMenu(!showReportMenu)}
@@ -452,8 +453,6 @@ export default function Attendance() {
  </div>
  )}
  </div>
-</div>
-</div>
  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
  {getStatusBadge('Present')}
  {getStatusBadge('Late')}
