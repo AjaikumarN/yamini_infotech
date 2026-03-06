@@ -125,16 +125,17 @@ export default function StockManagement() {
 
  const downloadInventoryCSV = async () => {
  try {
- const inventory = await apiRequest('/api/stock-movements/inventory');
+ const response = await apiRequest('/api/stock-movements/inventory');
+ const inventory = response.items || response || [];
  const now = new Date();
  const dateStr = `${now.getDate().toString().padStart(2,'0')}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getFullYear()}`;
  const headers = ['Item Name', 'Category', 'Current Stock', 'Total IN', 'Total OUT'];
  const rows = inventory.map(item => [
  item.item_name,
  item.category || 'N/A',
- item.balance,
- item.total_in,
- item.total_out
+ item.balance || item.stock || 0,
+ item.total_in || 0,
+ item.total_out || 0
  ]);
  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
  const blob = new Blob([csv], { type: 'text/csv' });

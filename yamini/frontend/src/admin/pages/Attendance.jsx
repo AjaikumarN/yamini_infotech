@@ -27,7 +27,10 @@ export default function Attendance() {
  const loadAttendance = async () => {
  try {
  setLoading(true);
- const endpoint = '/api/attendance/all/today';
+ let endpoint = '/api/attendance/all/today';
+ if (filter === 'custom' && selectedDate) {
+ endpoint = `/api/attendance/all?date=${selectedDate}`;
+ }
  
  const data = await apiRequest(endpoint);
  console.log('Attendance API Response:', data);
@@ -398,17 +401,19 @@ export default function Attendance() {
  </button>
  {showReportMenu && (
  <div style={{
- position: 'absolute',
- top: '100%',
- right: 0,
+ position: 'fixed',
+ top: 'auto',
+ right: '40px',
  marginTop: '8px',
  background: 'white',
  borderRadius: '16px',
  boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
  border: '1px solid #e5e7eb',
  padding: '8px',
- zIndex: 1000,
- minWidth: '300px'
+ zIndex: 9999,
+ minWidth: '300px',
+ maxHeight: '70vh',
+ overflowY: 'auto'
  }}>
  <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6'}}>
  <div style={{ fontSize: '13px', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.5px'}}>CSV Reports</div>
