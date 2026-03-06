@@ -30,6 +30,9 @@ export default function Attendance() {
  let endpoint = '/api/attendance/all/today';
  if (filter === 'custom' && selectedDate) {
  endpoint = `/api/attendance/all?date=${selectedDate}`;
+ } else if (filter === 'week') {
+ // For "This Week", just load today's data (API doesn't support week range)
+ endpoint = '/api/attendance/all/today';
  }
  
  const data = await apiRequest(endpoint);
@@ -45,6 +48,13 @@ export default function Attendance() {
  
  if (hasAttendance) {
  const attendanceData = emp.attendance;
+ // Normalize status to consistent values
+ const rawStatus = (attendanceData.status || 'Present').toLowerCase();
+ let normalizedStatus = 'Present';
+ if (rawStatus === 'late') normalizedStatus = 'Late';
+ else if (rawStatus === 'absent') normalizedStatus = 'Absent';
+ else normalizedStatus = 'Present'; // covers 'present', 'on time', 'PRESENT', etc.
+ 
  return {
  id: attendanceData.id,
  employee_id: emp.employee_id,
@@ -52,7 +62,7 @@ export default function Attendance() {
  role: emp.role,
  time: attendanceData.check_in_time || attendanceData.time || 'Marked',
  location: attendanceData.location || 'Not available',
- status: attendanceData.status || 'Present',
+ status: normalizedStatus,
  photo_path: attendanceData.photo_path || attendanceData.photo_url
  };
  }
